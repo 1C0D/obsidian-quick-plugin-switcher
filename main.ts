@@ -1,89 +1,73 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+// this.addSettingTab(new QPSSettingTab(this.app, this));
+import { App, DropdownComponent, Modal, Plugin, PluginSettingTab, Setting, TextComponent, ToggleComponent } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+interface QuickPluginSwitcherSettings {
+	allPluginsList: PluginInfo[]
+	filters: "all" | "enabled" | "disabled" | "mostSwitched",
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: QuickPluginSwitcherSettings = {
+	allPluginsList: [],
+	filters: "all"
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+interface PluginInfo {
+	name: string;
+	id: string;
+	desc: string;
+	enabled: boolean;
+	switched: number
+}
+
+export default class QuickPluginSwitcher extends Plugin {
+	settings: QuickPluginSwitcherSettings;
+
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
+			// this.settings.allPluginsList =[] for debugging
+			const actualPLugins = this.getPluginsInfo();
+			new QuickPluginSwitcherModal(this.app, this).open();
 		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
-	onunload() {
+	isEnabled(name: string): boolean {
+		return (this.app as any).plugins.enabledPlugins.has(name)
+	}
 
+	getPluginsInfo = async () => {
+		const allPluginsList = this.settings.allPluginsList;
+		const manifests = (this.app as any).plugins.manifests;
+		// if plugins have been deleted
+		const installedPlugins = allPluginsList.filter(plugin =>
+			Object.keys(manifests).includes(plugin.id)
+		);
+
+		for (const key of Object.keys(manifests)) {
+			const exists = installedPlugins.some(plugin => plugin.id === manifests[key]?.id);
+
+			if (exists) {
+				continue
+			};
+
+			const pluginObject: PluginInfo = {
+				name: manifests[key]?.name,
+				id: manifests[key]?.id,
+				desc: manifests[key]?.description,
+				enabled: this.isEnabled(manifests[key]?.id),
+				switched: 0
+			};
+
+			installedPlugins.push(pluginObject);
+		}
+		this.settings.allPluginsList = installedPlugins;
+		await this.saveSettings()
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = { ...DEFAULT_SETTINGS, ...await this.loadData() };
 	}
 
 	async saveSettings() {
@@ -91,47 +75,78 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
+class QuickPluginSwitcherModal extends Modal {
+	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
+		this.plugin = plugin;
 	}
 
 	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
+		const { contentEl } = this;
+		contentEl.empty();
+		this.addFirstline(contentEl)
+		contentEl.createEl("p") // empty line
+		this.addItems(contentEl)
+	}
+
+	addFirstline(contentEl: HTMLElement) {
+		const div0 = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-modal-title"] })
+		new DropdownComponent(div0).addOptions({
+			all: "All",
+			enabled: "Enabled",
+			disabled: "Disabled",
+			mostSwitched: "Most Switched"
+
+		})
+			.setValue(this.plugin.settings.filters)
+			.onChange(async (value: "all" | "enabled" | "disabled" | "mostSwitched") => {
+				this.plugin.settings.filters = value;
+				this.plugin.saveSettings();
+				this.onOpen()
+			})
+	}
+
+	addItems(contentEl: HTMLElement) {
+		let counter = 0 //counter to add 2 items per line
+		let div = contentEl.createEl("div")
+		// div.empty()
+		let allPluginsList = this.plugin.settings.allPluginsList
+
+		// mostSwitched at start of the list
+		if (this.plugin.settings.filters === "mostSwitched") {
+			allPluginsList.sort((a, b) => b.switched - a.switched)
+		} else {
+			allPluginsList.sort((a, b) => a.name.localeCompare(b.name))
+		}
+
+		for (const plugin of allPluginsList) {
+			if (this.plugin.settings.filters === "enabled" && !plugin.enabled
+				|| this.plugin.settings.filters === "disabled" && plugin.enabled) continue
+
+			// new div after two added items
+			if (counter > 1) {
+				div = contentEl.createEl("div");
+				counter = 0
+			}
+
+			new ToggleComponent(div).setValue(plugin.enabled).onChange(async (value) => {
+				plugin.enabled = value;
+				value ? (this.app as any).plugins.enablePlugin(plugin.id) :
+					(this.app as any).plugins.disablePlugin(plugin.id)
+				plugin.switched++
+				this.onOpen()
+				this.plugin.saveSettings();
+			})
+
+			new TextComponent(div).setValue(plugin.name)
+
+			counter++
+		}
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
-}

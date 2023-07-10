@@ -91,8 +91,9 @@ class QuickPluginSwitcherModal extends Modal {
 	}
 
 	addFirstline(contentEl: HTMLElement) {
-		const div0 = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-modal-title"] })
-		new DropdownComponent(div0).addOptions({
+
+		const headBar = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-headbar"] })
+		new DropdownComponent(headBar).addOptions({
 			all: "All",
 			enabled: "Enabled",
 			disabled: "Disabled",
@@ -105,8 +106,8 @@ class QuickPluginSwitcherModal extends Modal {
 				this.onOpen()
 				await this.plugin.saveSettings();
 			})
-		
-		new ExtraButtonComponent(div0).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => { 
+
+		new ExtraButtonComponent(headBar).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
 			this.plugin.settings.allPluginsList = []
 			this.plugin.getPluginsInfo()
 			this.plugin.reset = true
@@ -114,14 +115,12 @@ class QuickPluginSwitcherModal extends Modal {
 			await this.plugin.saveSettings();
 		})
 
-		div0.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
+		headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
 	}
 
 	addItems(contentEl: HTMLElement) {
-		let counter = 0 //counter to add 2 items per line
-		let div = contentEl.createEl("div",{cls: ["qps-item-pair"] })
-		// div.empty()
-		let allPluginsList = this.plugin.settings.allPluginsList
+		const allPluginsList = this.plugin.settings.allPluginsList;
+		const qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });
 
 		// mostSwitched at start of the list
 		if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {
@@ -132,29 +131,33 @@ class QuickPluginSwitcherModal extends Modal {
 		}
 
 		for (const plugin of allPluginsList) {
-			if (this.plugin.settings.filters === "enabled" && !plugin.enabled
-				|| this.plugin.settings.filters === "disabled" && plugin.enabled) continue
-
-			// new div after two added items
-			if (counter > 1) {
-				div = contentEl.createEl("div", { cls: ["qps-item-pair"] });
-				counter = 0
+			if (
+				(this.plugin.settings.filters === "enabled" && !plugin.enabled) ||
+				(this.plugin.settings.filters === "disabled" && plugin.enabled)
+			) {
+				continue;
 			}
 
-			new ToggleComponent(div).setValue(plugin.enabled).onChange(async (value) => {
-				plugin.enabled = value;
-				value ? (this.app as any).plugins.enablePlugin(plugin.id) :
-					(this.app as any).plugins.disablePlugin(plugin.id)
-				plugin.switched++
-				this.onOpen()
-				await this.plugin.saveSettings();
-			})
+			const itemContainer = qpsItems.createEl("div");
 
-			new TextComponent(div).setValue(plugin.name).setDisabled(true);
-			
-			counter++
+			new ToggleComponent(itemContainer)
+				.setValue(plugin.enabled)
+				.onChange(async (value) => {
+					plugin.enabled = value;
+					value
+						? (this.app as any).plugins.enablePlugin(plugin.id)
+						: (this.app as any).plugins.disablePlugin(plugin.id);
+					plugin.switched++;
+					this.onOpen();
+					await this.plugin.saveSettings();
+				})
+
+			new TextComponent(itemContainer)
+				.setValue(plugin.name)
+				.setDisabled(true);
 		}
 	}
+
 
 	onClose() {
 		const { contentEl } = this;

@@ -7,4 +7,6 @@ You can choose from the following filters: All, Enabled, Disabled, and Most Swit
 
 This plugin simplifies the process of managing your plugins, making it easy to enable or disable them based on your needs.
   
+![vid](GIFDemo.gif)
+    
 ![demo](demo.jpg)

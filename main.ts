@@ -117,7 +117,7 @@ class QuickPluginSwitcherModal extends Modal {
 
 		headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
 	}
-
+	
 	addItems(contentEl: HTMLElement) {
 		const allPluginsList = this.plugin.settings.allPluginsList;
 		const qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });

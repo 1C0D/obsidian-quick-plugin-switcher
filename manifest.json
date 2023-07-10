@@ -5,6 +5,6 @@
 	"minAppVersion": "0.15.0",
 	"description": "Adds a ribbon icon to quickly switch plugins with filters (all, enabled, disabled, most switched)",
 	"author": "1C0D",
-	"authorUrl": "",
+	"authorUrl": "https://github.com/1C0D",
 	"isDesktopOnly": false
 }

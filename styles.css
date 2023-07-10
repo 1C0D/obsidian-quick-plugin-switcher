@@ -6,6 +6,7 @@
 .qps-headbar .dropdown,
 .qps-headbar .setting-editor-extra-setting-button {
   margin-left: 20px;
+  background-color: none;
 }
 
 .qps-headbar .reset-desc {
@@ -33,6 +34,6 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-      margin-left: 10px;
+      margin-left: 15px;
   }
 }

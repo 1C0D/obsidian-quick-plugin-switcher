@@ -1,4 +1,27 @@
 
 .qps-modal-title .dropdown {
-  margin-left: 12px;
+  margin-left: 20px;
+  display: inline;
 }
+
+.qps-modal-title .setting-editor-extra-setting-button {
+  margin-left: 20px;
+  width: fit-content;
+  display: inline;
+}
+
+.qps-modal-title .setting-editor-extra-setting-button {
+  margin-left: 20px;
+  width: fit-content;
+  display: inline;
+}
+
+/* checkbox-container */
+.qps-item-pair div {
+  margin-left: 10px;
+  display: inline-block;
+}
+
+/* .qps-item-pair input{
+  display: inline-block;
+} */

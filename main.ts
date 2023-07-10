@@ -1,5 +1,5 @@
 // this.addSettingTab(new QPSSettingTab(this.app, this));
-import { App, DropdownComponent, Modal, Plugin, PluginSettingTab, Setting, TextComponent, ToggleComponent } from 'obsidian';
+import { App, DropdownComponent, ExtraButtonComponent, Modal, Plugin, PluginSettingTab, Setting, TextComponent, ToggleComponent } from 'obsidian';
 
 interface QuickPluginSwitcherSettings {
 	allPluginsList: PluginInfo[]
@@ -21,14 +21,14 @@ interface PluginInfo {
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QuickPluginSwitcherSettings;
+	reset: boolean = false
 
 
 	async onload() {
 		await this.loadSettings();
 
 		const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
-			// this.settings.allPluginsList =[] for debugging
-			const actualPLugins = this.getPluginsInfo();
+			// this.settings.allPluginsList =[] //for debugging
 			new QuickPluginSwitcherModal(this.app, this).open();
 		});
 	}
@@ -38,6 +38,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	getPluginsInfo = async () => {
+		console.debug("debug comment");
 		const allPluginsList = this.settings.allPluginsList;
 		const manifests = (this.app as any).plugins.manifests;
 		// if plugins have been deleted
@@ -101,22 +102,33 @@ class QuickPluginSwitcherModal extends Modal {
 			.setValue(this.plugin.settings.filters)
 			.onChange(async (value: "all" | "enabled" | "disabled" | "mostSwitched") => {
 				this.plugin.settings.filters = value;
-				this.plugin.saveSettings();
 				this.onOpen()
+				await this.plugin.saveSettings();
 			})
+		
+		new ExtraButtonComponent(div0).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => { 
+			this.plugin.settings.allPluginsList = []
+			this.plugin.getPluginsInfo()
+			this.plugin.reset = true
+			this.onOpen()
+			await this.plugin.saveSettings();
+		})
+
+		div0.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
 	}
 
 	addItems(contentEl: HTMLElement) {
 		let counter = 0 //counter to add 2 items per line
-		let div = contentEl.createEl("div")
+		let div = contentEl.createEl("div",{cls: ["qps-item-pair"] })
 		// div.empty()
 		let allPluginsList = this.plugin.settings.allPluginsList
 
 		// mostSwitched at start of the list
-		if (this.plugin.settings.filters === "mostSwitched") {
+		if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {
 			allPluginsList.sort((a, b) => b.switched - a.switched)
 		} else {
 			allPluginsList.sort((a, b) => a.name.localeCompare(b.name))
+			if (this.plugin.reset) this.plugin.reset = false
 		}
 
 		for (const plugin of allPluginsList) {
@@ -125,7 +137,7 @@ class QuickPluginSwitcherModal extends Modal {
 
 			// new div after two added items
 			if (counter > 1) {
-				div = contentEl.createEl("div");
+				div = contentEl.createEl("div", { cls: ["qps-item-pair"] });
 				counter = 0
 			}
 
@@ -135,11 +147,11 @@ class QuickPluginSwitcherModal extends Modal {
 					(this.app as any).plugins.disablePlugin(plugin.id)
 				plugin.switched++
 				this.onOpen()
-				this.plugin.saveSettings();
+				await this.plugin.saveSettings();
 			})
 
-			new TextComponent(div).setValue(plugin.name)
-
+			new TextComponent(div).setValue(plugin.name).setDisabled(true);
+			
 			counter++
 		}
 	}

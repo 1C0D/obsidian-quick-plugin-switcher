@@ -64,7 +64,6 @@ export default class QuickPluginSwitcher extends Plugin {
 			installedPlugins.push(pluginObject);
 		}
 		this.settings.allPluginsList = installedPlugins;
-		console.log("installedPlugins", installedPlugins)
 		await this.saveSettings()
 	}
 

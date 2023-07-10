@@ -29,6 +29,7 @@ export default class QuickPluginSwitcher extends Plugin {
 
 		const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
 			// this.settings.allPluginsList =[] //for debugging
+			this.getPluginsInfo()
 			new QuickPluginSwitcherModal(this.app, this).open();
 		});
 	}
@@ -38,7 +39,6 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	getPluginsInfo = async () => {
-		console.debug("debug comment");
 		const allPluginsList = this.settings.allPluginsList;
 		const manifests = (this.app as any).plugins.manifests;
 		// if plugins have been deleted
@@ -64,6 +64,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			installedPlugins.push(pluginObject);
 		}
 		this.settings.allPluginsList = installedPlugins;
+		console.log("installedPlugins", installedPlugins)
 		await this.saveSettings()
 	}
 

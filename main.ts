@@ -1,14 +1,15 @@
-// this.addSettingTab(new QPSSettingTab(this.app, this));
-import { App, DropdownComponent, ExtraButtonComponent, Modal, Plugin, PluginSettingTab, Setting, TextComponent, ToggleComponent } from 'obsidian';
+import { App, DropdownComponent, ExtraButtonComponent, Modal, Plugin, SearchComponent, Setting, TextComponent, ToggleComponent } from 'obsidian';
 
 interface QuickPluginSwitcherSettings {
 	allPluginsList: PluginInfo[]
 	filters: "all" | "enabled" | "disabled" | "mostSwitched",
+	search: string
 }
 
 const DEFAULT_SETTINGS: QuickPluginSwitcherSettings = {
 	allPluginsList: [],
-	filters: "all"
+	filters: "all",
+	search: ""
 }
 
 interface PluginInfo {
@@ -22,7 +23,6 @@ interface PluginInfo {
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QuickPluginSwitcherSettings;
 	reset: boolean = false
-
 
 	async onload() {
 		await this.loadSettings();
@@ -81,17 +81,22 @@ class QuickPluginSwitcherModal extends Modal {
 		super(app);
 		this.plugin = plugin;
 	}
+	qpsItems: HTMLElement
+	listItems:PluginInfo[] =[]
 
 	onOpen() {
+		console.log("opening")
 		const { contentEl } = this;
 		contentEl.empty();
 		this.addFirstline(contentEl)
-		contentEl.createEl("p") // empty line
-		this.addItems(contentEl)
+		contentEl.createEl("br")
+		this.addSearch(contentEl)
+		contentEl.createEl("br")
+		const allPluginsList = this.plugin.settings.allPluginsList
+		this.addItems(contentEl, allPluginsList)
 	}
 
 	addFirstline(contentEl: HTMLElement) {
-
 		const headBar = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-headbar"] })
 		new DropdownComponent(headBar).addOptions({
 			all: "All",
@@ -117,20 +122,38 @@ class QuickPluginSwitcherModal extends Modal {
 
 		headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
 	}
-	
-	addItems(contentEl: HTMLElement) {
-		const allPluginsList = this.plugin.settings.allPluginsList;
-		const qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });
 
+	addSearch(contentEl: HTMLElement) {
+		new Setting(contentEl)
+			.setName("Search Plugin")
+			.setDesc("")
+			.addSearch(async (search: SearchComponent) => {
+				search
+					.setValue(this.plugin.settings.search)
+					.setPlaceholder("Search")
+					.onChange(async (value: string) => {
+						const listItems = []
+						for (const plugin of this.plugin.settings.allPluginsList)
+						if (plugin.name.toLowerCase().includes(value)) {
+							listItems.push(plugin)
+							}		
+						this.qpsItems.empty()
+						this.addItems(contentEl, listItems)						
+					});
+			});
+	}
+	
+	addItems(contentEl: HTMLElement,listItems: PluginInfo[]) {
+		this.qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });
 		// mostSwitched at start of the list
 		if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {
-			allPluginsList.sort((a, b) => b.switched - a.switched)
+			listItems.sort((a, b) => b.switched - a.switched)
 		} else {
-			allPluginsList.sort((a, b) => a.name.localeCompare(b.name))
+			listItems.sort((a, b) => a.name.localeCompare(b.name))
 			if (this.plugin.reset) this.plugin.reset = false
 		}
 
-		for (const plugin of allPluginsList) {
+		for (const plugin of listItems) {
 			if (
 				(this.plugin.settings.filters === "enabled" && !plugin.enabled) ||
 				(this.plugin.settings.filters === "disabled" && plugin.enabled)
@@ -138,7 +161,7 @@ class QuickPluginSwitcherModal extends Modal {
 				continue;
 			}
 
-			const itemContainer = qpsItems.createEl("div");
+			const itemContainer = this.qpsItems.createEl("div");
 
 			new ToggleComponent(itemContainer)
 				.setValue(plugin.enabled)
@@ -158,10 +181,8 @@ class QuickPluginSwitcherModal extends Modal {
 		}
 	}
 
-
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
-

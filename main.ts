@@ -170,8 +170,8 @@ class QuickPluginSwitcherModal extends Modal {
 				.onChange(async (value) => {
 					plugin.enabled = value;
 					value
-						? (this.app as any).plugins.enablePlugin(plugin.id)
-						: (this.app as any).plugins.disablePlugin(plugin.id);
+						? await (this.app as any).plugins.enablePlugin(plugin.id)
+						: await (this.app as any).plugins.disablePlugin(plugin.id);
 					plugin.switched++;
 					this.onOpen();
 					await this.plugin.saveSettings();

@@ -10,4 +10,4 @@ This plugin simplifies the process of managing your plugins, making it easy to e
     
 ![search](search.jpg)
 
-![filter](mostSwitched.jpg)
+![filter&search](filter&search.jpg)

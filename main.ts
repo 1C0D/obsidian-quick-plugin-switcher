@@ -82,7 +82,7 @@ class QuickPluginSwitcherModal extends Modal {
 		this.plugin = plugin;
 	}
 	qpsItems: HTMLElement
-	listItems:PluginInfo[] =[]
+	listItems: PluginInfo[] = []
 
 	onOpen() {
 		console.log("opening")
@@ -112,15 +112,17 @@ class QuickPluginSwitcherModal extends Modal {
 				await this.plugin.saveSettings();
 			})
 
-		new ExtraButtonComponent(headBar).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
-			this.plugin.settings.allPluginsList = []
-			this.plugin.getPluginsInfo()
-			this.plugin.reset = true
-			this.onOpen()
-			await this.plugin.saveSettings();
-		})
+		if (this.plugin.settings.filters === "mostSwitched") {
+			new ExtraButtonComponent(headBar).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
+				this.plugin.settings.allPluginsList = []
+				this.plugin.getPluginsInfo()
+				this.plugin.reset = true
+				this.onOpen()
+				await this.plugin.saveSettings();
+			})
 
-		headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
+			headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
+		}
 	}
 
 	addSearch(contentEl: HTMLElement) {
@@ -134,16 +136,16 @@ class QuickPluginSwitcherModal extends Modal {
 					.onChange(async (value: string) => {
 						const listItems = []
 						for (const plugin of this.plugin.settings.allPluginsList)
-						if (plugin.name.toLowerCase().includes(value)) {
-							listItems.push(plugin)
-							}		
+							if (plugin.name.toLowerCase().includes(value)) {
+								listItems.push(plugin)
+							}
 						this.qpsItems.empty()
-						this.addItems(contentEl, listItems)						
+						this.addItems(contentEl, listItems)
 					});
 			});
 	}
-	
-	addItems(contentEl: HTMLElement,listItems: PluginInfo[]) {
+
+	addItems(contentEl: HTMLElement, listItems: PluginInfo[]) {
 		this.qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });
 		// mostSwitched at start of the list
 		if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {

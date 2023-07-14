@@ -1,7 +1,7 @@
 {
 	"id": "quick-plugin-switcher",
 	"name": "Quick Plugin Switcher",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"minAppVersion": "0.15.0",
 	"description": "Adds a ribbon icon to quickly switch plugins with filters (all, enabled, disabled, most switched)",
 	"author": "1C0D",

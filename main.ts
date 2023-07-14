@@ -31,9 +31,11 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.loadSettings();
 
 		const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
-			// this.settings.allPluginsList =[] //for debugging
+			this.settings.allPluginsList = [] //for debugging
 			this.getPluginsInfo()
+			this.setLength()
 			new QuickPluginSwitcherModal(this.app, this).open();
+			console.log("allPluginsList", this.settings.allPluginsList)
 		});
 	}
 
@@ -54,20 +56,21 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.setLength();
 		const manifests = (this.app as any).plugins.manifests;
 		// if plugins have been deleted
-		const installedPlugins = allPluginsList.filter(plugin =>
+		const stillInstalled = allPluginsList.filter(plugin =>
 			Object.keys(manifests).includes(plugin.id)
 		);
 
 		for (const key of Object.keys(manifests)) {
-			const pluginToUpdate = installedPlugins.find(plugin => plugin.id === manifests[key]?.id);
-			if (pluginToUpdate) {
-				if (this.isEnabled(manifests[key]?.id) !== pluginToUpdate.enabled) {
-					pluginToUpdate.enabled = this.isEnabled(manifests[key]?.id);
+			const pluginInList = stillInstalled.find(plugin => plugin.id === manifests[key]?.id);
+			if (pluginInList) {
+				// if plugin has been toggled from obsidian settings
+				if (this.isEnabled(manifests[key]?.id) !== pluginInList.enabled) {
+					pluginInList.enabled = !pluginInList.enabled;
 				}
 				continue
 			}
 
-			const pluginObject: PluginInfo = {
+			const notInListInfo: PluginInfo = {
 				name: manifests[key]?.name,
 				id: manifests[key]?.id,
 				desc: manifests[key]?.description,
@@ -75,9 +78,9 @@ export default class QuickPluginSwitcher extends Plugin {
 				switched: 0
 			};
 
-			installedPlugins.push(pluginObject);
+			stillInstalled.push(notInListInfo);
 		}
-		this.settings.allPluginsList = installedPlugins;
+		this.settings.allPluginsList = stillInstalled;
 		await this.saveSettings()
 	}
 
@@ -91,83 +94,109 @@ export default class QuickPluginSwitcher extends Plugin {
 }
 
 class QuickPluginSwitcherModal extends Modal {
+	headBar: HTMLElement
+	items: HTMLElement
+	search: HTMLElement
+	listItems: PluginInfo[] = []
+	allPluginsList = this.plugin.settings.allPluginsList
+
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
 		this.plugin = plugin;
 	}
-	qpsItems: HTMLElement
-	listItems: PluginInfo[] = []
 
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
-		this.addFirstline(contentEl)
-		contentEl.createEl("br")
-		this.addSearch(contentEl)
-		contentEl.createEl("br")
-		const allPluginsList = this.plugin.settings.allPluginsList
-		this.addItems(contentEl, allPluginsList)
+		this.container(contentEl)
+		this.addFirstline(this.headBar)
+		this.addSearch(this.search)
+		this.addItems(this.items, this.allPluginsList)
 	}
 
-	addFirstline(contentEl: HTMLElement): void {
-		const headBar = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-headbar"] })
+	container(contentEl: HTMLElement) {
+		this.headBar = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-headbar"] })
+		this.search = contentEl.createEl("div", { cls: ["qps-search"] });
+		this.items = contentEl.createEl("div", { cls: ["qps-items"] });
+	}
 
-		new DropdownComponent(headBar).addOptions({
-			all: `All(${this.plugin.lengthAll})`,
-			enabled: `Enabled(${this.plugin.lengthEnabled})`,
-			disabled: `Disabled(${this.plugin.lengthDisabled})`,
+	addFirstline = (contentEl: HTMLElement): void => {
+		const { plugin } = this
+		const { settings } = plugin
+
+		new DropdownComponent(contentEl).addOptions({
+			all: `All(${plugin.lengthAll})`,
+			enabled: `Enabled(${plugin.lengthEnabled})`,
+			disabled: `Disabled(${plugin.lengthDisabled})`,
 			mostSwitched: "Most Switched"
 
 		})
-			.setValue(this.plugin.settings.filters)
-			.onChange(async (value: "all" | "enabled" | "disabled" | "mostSwitched") => {
-				this.plugin.settings.filters = value;
-				this.plugin.setLength()
-				this.onOpen()
-				await this.plugin.saveSettings();
+			.setValue(settings.filters)
+			.onChange(async (value: QuickPluginSwitcherSettings['filters']) => {
+				settings.filters = value;
+				plugin.setLength()
+				this.open()
+				await plugin.saveSettings();
 			})
 
-		if (this.plugin.settings.filters === "mostSwitched") {
-			new ExtraButtonComponent(headBar).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
-				this.plugin.settings.allPluginsList = []
-				this.plugin.getPluginsInfo()
-				this.plugin.reset = true
-				this.onOpen()
-				await this.plugin.saveSettings();
+		if (settings.filters === "mostSwitched") {
+			new ExtraButtonComponent(contentEl).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
+				plugin.reset = true
+				this.search.empty()
+				this.addSearch(this.search)
+				this.items.empty()
+				this.addItems(this.items, this.allPluginsList)
+				await plugin.saveSettings();
 			})
 
-			headBar.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
+			contentEl.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
 		}
 	}
 
 	addSearch(contentEl: HTMLElement): void {
+		const { plugin } = this
+		const { settings } = plugin
+
 		new Setting(contentEl)
 			.setName("Search Plugin")
 			.setDesc("")
 			.addSearch(async (search: SearchComponent) => {
 				search
-					.setValue(this.plugin.settings.search)
+					.setValue(settings.search)
 					.setPlaceholder("Search")
 					.onChange(async (value: string) => {
 						const listItems = []
-						for (const plugin of this.plugin.settings.allPluginsList)
-							if (plugin.name.toLowerCase().includes(value)) {
-								listItems.push(plugin)
+						// search proces
+						for (const i of settings.allPluginsList) {
+							if (i.name.toLowerCase().includes(value.toLowerCase()) || value.length > 1 && value[value.length - 1] == " " && i.name.toLowerCase().startsWith(value.trim().toLowerCase())) {
+								listItems.push(i)
 							}
-						this.qpsItems.empty()
+						}
+						this.items.empty()
 						this.addItems(contentEl, listItems)
 					});
 			});
 	}
 
-	addItems(contentEl: HTMLElement, listItems: PluginInfo[]): void {
-		this.qpsItems = contentEl.createEl("div", { cls: ["qps-items"] });
-		// mostSwitched at start of the list
+	async addItems(contentEl: HTMLElement, listItems: PluginInfo[]) {
+		const { plugin } = this
+		const { settings } = plugin
+		
+		// sort mostSwitched/other modes
 		if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {
 			listItems.sort((a, b) => b.switched - a.switched)
 		} else {
 			listItems.sort((a, b) => a.name.localeCompare(b.name))
-			if (this.plugin.reset) this.plugin.reset = false
+			if (plugin.reset) {
+				const allPluginsList = settings.allPluginsList
+				this.plugin.getPluginsInfo()
+				// reset mostSwitched
+				allPluginsList.forEach(i => {
+					i.switched = 0
+				})
+				this.plugin.reset = false
+				await this.plugin.saveSettings()
+			}
 		}
 
 		for (const plugin of listItems) {
@@ -178,13 +207,12 @@ class QuickPluginSwitcherModal extends Modal {
 				continue;
 			}
 
-			const itemContainer = this.qpsItems.createEl("div");
+			const itemContainer = this.items.createEl("div");
 
 			new ToggleComponent(itemContainer)
 				.setValue(plugin.enabled)
 				.onChange(async (value) => {
 					plugin.enabled = value;
-					// this.plugin.getPluginsInfo()
 					this.plugin.setLength()
 					value
 						? await (this.app as any).plugins.enablePlugin(plugin.id)
@@ -198,6 +226,7 @@ class QuickPluginSwitcherModal extends Modal {
 				.setValue(plugin.name)
 				.setDisabled(true);
 		}
+
 	}
 
 	onClose() {
@@ -205,3 +234,4 @@ class QuickPluginSwitcherModal extends Modal {
 		contentEl.empty();
 	}
 }
+

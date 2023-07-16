@@ -13,4 +13,6 @@ This plugin simplifies the process of managing your plugins, making it easy to e
   
 ![filter&search](filter&search.jpg)  
    
-tip: in search if you had a space at the end of your search, will search plugin starting with this value, instead of plugin including this value  
+tips: 
+- in search if you had a space at the end of your search, will search plugin starting with this value, instead of plugin including this value  
+- you can click text instead of buttons

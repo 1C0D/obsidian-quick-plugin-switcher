@@ -3,10 +3,9 @@
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 15px;
-  }
+}
 
-.qps-headbar .dropdown
-{
+.qps-headbar .dropdown {
   margin-left: 20px;
 }
 
@@ -37,6 +36,15 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-      margin-left: 15px;
+    margin-left: 15px;
   }
+}
+
+.qps-item-line .checkbox-container {
+  margin-right: 2px;
+}
+
+.qps-item-line button {
+  background-color: rgba(255, 0, 157, 0.057);
+  width:2.8em;
 }

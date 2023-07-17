@@ -1,5 +1,5 @@
-import { Plugin} from 'obsidian';
-import { QuickPluginSwitcherModal } from './modal';
+import { Plugin } from 'obsidian';
+import QuickPluginSwitcherModal from './modal';
 import { debug } from './utils';
 
 export interface QuickPluginSwitcherSettings {
@@ -19,7 +19,8 @@ export interface PluginInfo {
     id: string;
     desc: string;
     enabled: boolean;
-    switched: number
+    switched: number;
+    dir: string;
 }
 
 export default class QuickPluginSwitcher extends Plugin {
@@ -36,7 +37,7 @@ export default class QuickPluginSwitcher extends Plugin {
             this.getPluginsInfo()
             this.getLength()
             new QuickPluginSwitcherModal(this.app, this).open();
-            // debug(this,"after QuickPluginSwitcherModal")
+            debug(this, "after QuickPluginSwitcherModal")
         });
     }
 
@@ -75,7 +76,8 @@ export default class QuickPluginSwitcher extends Plugin {
                     id: manifests[key]?.id,
                     desc: manifests[key]?.description,
                     enabled: this.isEnabled(manifests[key]?.id),
-                    switched: 0
+                    switched: 0,
+                    dir: manifests[key]?.dir,
                 };
                 stillInstalled.push(notInListInfo);
             }

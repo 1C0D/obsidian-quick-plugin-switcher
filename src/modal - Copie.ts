@@ -1,10 +1,5 @@
 import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Modal, SearchComponent, Setting, TextComponent, ToggleComponent } from "obsidian"
 import QuickPluginSwitcher, { PluginInfo, QuickPluginSwitcherSettings } from "./main"
-import { opendirSync } from "fs"
-import { opendir } from "fs/promises"
-import { app, shell } from 'electron';
-import * as path from 'path';
-// npm install electron --save-dev
 
 export class QuickPluginSwitcherModal extends Modal {
     headBar: HTMLElement
@@ -147,22 +142,11 @@ export class QuickPluginSwitcherModal extends Modal {
 
             new ButtonComponent(itemContainer)
                 .setIcon("folder-open")
-                .setTooltip("Open plugin directory")
+            // .setTooltip("Open")
                 .onClick(async () => {
-                    this.openDirectoryInFileManager(pluginItem)
+                    const filePath = (app as any).vault.adapter.getFullPath(pluginItem.dir);
+                    // const normalizedPath = normalizePath(filePath);
                 })
-        }
-    }
-
-    async openDirectoryInFileManager(pluginItem: PluginInfo) {
-        const filePath = (app as any).vault.adapter.getFullPath(pluginItem.dir);
-        const directoryPath = path.dirname(filePath);
-
-        try {
-            await shell.openPath(directoryPath);
-            console.debug('Directory opened in the file manager.');
-        } catch (err) {
-            console.error(`Error opening the directory: ${err.message}`);
         }
     }
 
@@ -171,8 +155,8 @@ export class QuickPluginSwitcherModal extends Modal {
         const { settings } = plugin
         pluginItem.enabled = !pluginItem.enabled;
         pluginItem.enabled
-            ? await (this.app as any).plugins.enablePluginAndSave(pluginItem.id)
-            : await (this.app as any).plugins.disablePluginAndSave(pluginItem.id);
+            ? await(this.app as any).plugins.enablePluginAndSave(pluginItem.id)
+            : await(this.app as any).plugins.disablePluginAndSave(pluginItem.id);
         pluginItem.switched++;
         settings.allPluginsList = listItems
         plugin.getLength()

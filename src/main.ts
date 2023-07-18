@@ -1,30 +1,25 @@
-import { Plugin } from 'obsidian';
-import QuickPluginSwitcherModal from './modal';
+// todo add condition to not run electron linked operations on mobiles
+// add a button reset all? in settings, if ever a problem. and a confirm
+import { Menu, Notice, Plugin } from 'obsidian';
+import { QPSModal } from './modal';
 import { debug } from './utils';
+import QPSSettingTab, { DEFAULT_SETTINGS, QPSSettings } from './settings';
 
-export interface QuickPluginSwitcherSettings {
-    allPluginsList: PluginInfo[]
-    filters: "all" | "enabled" | "disabled" | "mostSwitched",
-    search: string
-}
-
-export const DEFAULT_SETTINGS: QuickPluginSwitcherSettings = {
-    allPluginsList: [],
-    filters: "all",
-    search: ""
-}
 
 export interface PluginInfo {
     name: string;
     id: string;
     desc: string;
+    dir: string;
+    author: string;
+    authorUrl?: string;
+    version: string;
     enabled: boolean;
     switched: number;
-    dir: string;
 }
 
 export default class QuickPluginSwitcher extends Plugin {
-    settings: QuickPluginSwitcherSettings;
+    settings: QPSSettings;
     reset: boolean = false
     lengthAll: number = 0
     lengthDisabled: number = 0
@@ -32,12 +27,14 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        this.addSettingTab(new QPSSettingTab(this.app, this));
+
         const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
             // this.settings.allPluginsList = []; console.log("reset allPluginsList ON !") //to reset All
             this.getPluginsInfo()
             this.getLength()
-            new QuickPluginSwitcherModal(this.app, this).open();
-            debug(this, "after QuickPluginSwitcherModal")
+            new QPSModal(this.app, this).open();
+            // debug(this, "ext-to-vault", "after QPSModal")
         });
     }
 
@@ -75,9 +72,12 @@ export default class QuickPluginSwitcher extends Plugin {
                     name: manifests[key]?.name,
                     id: manifests[key]?.id,
                     desc: manifests[key]?.description,
+                    dir: manifests[key]?.dir,
+                    version: manifests[key]?.version,
+                    author: manifests[key]?.author,
+                    authorUrl: manifests[key]?.authorUrl || "",
                     enabled: this.isEnabled(manifests[key]?.id),
                     switched: 0,
-                    dir: manifests[key]?.dir,
                 };
                 stillInstalled.push(notInListInfo);
             }

@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting } from "obsidian";
+import { Notice, PluginSettingTab, Setting } from "obsidian";
 import { PluginInfo } from "./main";
 
 export interface QPSSettings {
@@ -35,8 +35,24 @@ export default class QPSSettingTab extends PluginSettingTab {
                 this.plugin.settings.openPluginFolder = value;                
                 await this.plugin.saveSettings();
             });
-        });
-
+            });
+        
+        new Setting(containerEl)
+            .setName("In case of bug reset all values")
+            .setDesc("Should not be needed, but could be useful in case of bug. It's askings for confirmation")
+            .addButton(btn => {
+                btn
+                    .setIcon("alert-octagon")
+                    .setTooltip("Reset all values")
+                    .onClick(async () => {
+                        const confirmReset = window.confirm('Do you want to reset all values?');
+                        if (confirmReset) {
+                            this.plugin.settings.allPluginsList = []
+                            await this.plugin.saveSettings();
+                            new Notice("All values have been reset.");
+                        } else { new Notice("Operation cancelled."); }
+                    });
+            });
     }
 
 

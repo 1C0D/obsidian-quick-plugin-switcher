@@ -148,8 +148,10 @@ export class QPSModal extends Modal {
 
 
             let disable = false
+            // do nothing on this plugin
             if (pluginItem.id === "quick-plugin-switcher") disable = true
-            const toggle = new ToggleComponent(itemContainer)
+
+            new ToggleComponent(itemContainer)
                 .setValue(pluginItem.enabled)
                 .setDisabled(disable)
                 .onChange(async () => {
@@ -165,7 +167,8 @@ export class QPSModal extends Modal {
                 if (evt.button === 0) {
                     await this.togglePluginEnabled(pluginItem, listItems)
                 }
-                text.blur(); // make input impossible to modify
+                // make input impossible to modify
+                contentEl.blur(); //contentEl and not inputEl if not others input like search blocked too
             })
 
             if (settings.openPluginFolder) {
@@ -224,9 +227,13 @@ export class DescModal extends Modal {
         contentEl.empty();
         contentEl
             .createEl("p", { text: pluginItem.name + " - v" + pluginItem.version })
-            .createEl("p", { text: "author: " + pluginItem.author })
+            .createEl("p", {
+                text:
+                    "author: " + pluginItem.author +
+                    ", url: " + (pluginItem.authorUrl ? "" : "null")
+            })
             .createEl("a", {
-                text: "url: " + pluginItem.authorUrl,
+                text: pluginItem.authorUrl,
                 href: pluginItem.authorUrl,
             })
         contentEl.createEl("p", { text: pluginItem.desc })

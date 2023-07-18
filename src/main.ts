@@ -1,5 +1,5 @@
 // todo add condition to not run electron linked operations on mobiles
-// add a button reset all? in settings, if ever a problem. and a confirm
+// TODO filter by author?
 import { Menu, Notice, Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { debug } from './utils';

@@ -1,11 +1,11 @@
-.qps-headbar {
+.qps-header {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 15px;
 }
 
-.qps-headbar .dropdown {
+.qps-header .dropdown {
   margin-left: 20px;
 }
 
@@ -16,7 +16,7 @@
 }
 
 @media (max-width: 456px) {
-  .qps-headbar {
+  .qps-header {
     display: grid;
     grid-template-rows: auto auto;
     grid-template-columns: auto auto;

@@ -2,21 +2,35 @@
 
 This plugin simplifies the process of managing your plugins    
 
-Quickly switch your plugins directly from the ribbon bar.  
-Filterable and Searchable item list.  
-Most Switched filter is useful for most often switched plugins...     
-  
-To toggle each plugin you can the toggle button or the plugin name after  
-There is a context menu (right click) on the name part:  
-- open plugin directory  
-- plugin description  
-- 
+Quickly switch your plugins directly from the ribbon bar  
+![ribbon access](ribbon_access.jpg)
 
-![vid](demo.gif)  
-      
-![search](mostSwitched.jpg)  
+## Toggle pluggins
+
+![toggle plugin](toggle_plugin.jpg)
+    
+## Filterable item list  
+
+- Most Switched filter is useful for most often switched plugins...
+- Enabled First to have all enabled plugin on top     
+
+![filters](filters.jpg)
   
-![filter&search](filter&search.jpg)  
-   
-tips: 
-- in search if you add a space at the end of your search, it will modify search to "starting with" instead of "including"   
+## Search tool
+
+![search](search.jpg)
+tips: if you add a space at the end of your search, it will modify search to "starting with" instead of "including"
+![search_space](search_space.jpg)
+
+## Menus
+
+There is a context menu (right click) on each item:  
+![context_menu_item](context_menu_item.jpg)
+
+In this menu, you can disable and re-enable all plugins
+![disable_all](disable_all.jpg)
+
+## video
+
+temp
+![vid](demo.gif)  

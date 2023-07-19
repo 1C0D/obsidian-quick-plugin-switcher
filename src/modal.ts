@@ -1,11 +1,12 @@
 import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent, ToggleComponent } from "obsidian"
-import QuickPluginSwitcher, { PluginInfo } from "./main"
-// npm install electron --save-dev
-import { app, shell } from 'electron';
-import { QPSSettings } from "./settings";
+import { PluginInfo } from "./interfaces"
+import { QPSSettings } from "./interfaces";
+import { getLength } from "./utils";
+import QuickPluginSwitcher from "./main";
+import { doSearch, itemsContextMenu, openDirectoryInFileManager, reset, sortByName, sortSwitched } from "./modal_utils";
 
 export class QPSModal extends Modal {
-    headBar: HTMLElement
+    header: HTMLElement
     items: HTMLElement
     search: HTMLElement
     listItems: PluginInfo[] = []
@@ -20,50 +21,46 @@ export class QPSModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         this.container(contentEl)
-        this.addFirstline(this.headBar)
+        this.addHeader(this.header)
         this.addSearch(this.search)
         this.addItems(this.items, this.allPluginsList)
     }
 
+    // create header/search/items elts & class
     container(contentEl: HTMLElement) {
-        this.headBar = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-headbar"] })
+        this.header = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-header"] })
         this.search = contentEl.createEl("div", { cls: ["qps-search"] });
         this.items = contentEl.createEl("div", { cls: ["qps-items"] });
     }
 
-    addFirstline = (contentEl: HTMLElement): void => {
+    addHeader = (contentEl: HTMLElement): void => {
         const { plugin } = this
         const { settings } = plugin
 
+        //dropdown with filters
         new DropdownComponent(contentEl).addOptions({
             all: `All(${plugin.lengthAll})`,
             enabled: `Enabled(${plugin.lengthEnabled})`,
             disabled: `Disabled(${plugin.lengthDisabled})`,
+            enabledFirst: `Enabled First(${plugin.lengthAll})`,
             mostSwitched: `Most Switched(${plugin.lengthAll})`
-
         })
             .setValue(settings.filters)
             .onChange(async (value: QPSSettings['filters']) => {
                 settings.filters = value;
-                plugin.getLength()
+                getLength(plugin)
                 this.open()
                 await plugin.saveSettings();
             })
 
         if (settings.filters === "mostSwitched") {
-            const reset = () => {
-                plugin.reset = true
-                plugin.getLength()
-                this.onOpen()
-            }
-
             new ExtraButtonComponent(contentEl).setIcon("reset").setTooltip("Reset mostSwitched to 0").onClick(async () => {
-                reset()
+                reset(plugin, this)
             })
 
             const span = contentEl.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
             span.onclick = () => {
-                reset()
+                reset(plugin, this)
             }
         }
     }
@@ -80,40 +77,107 @@ export class QPSModal extends Modal {
                     .setValue(settings.search)
                     .setPlaceholder("Search")
                     .onChange(async (value: string) => {
-                        const listItems = []
-                        // search proces
-                        for (const i of settings.allPluginsList) {
-                            if (i.name.toLowerCase().includes(value.toLowerCase()) || value.length > 1 && value[value.length - 1] == " " && i.name.toLowerCase().startsWith(value.trim().toLowerCase())) {
-                                listItems.push(i)
-                            }
-                        }
+                        const listItems = doSearch(plugin, value)
                         this.items.empty()
                         this.addItems(contentEl, listItems)
-                        // save settings?
                     });
-            });
+
+            })
+            .addButton((btn) => {
+                btn
+                    .setIcon("more-vertical")
+                    .setCta()
+                    .setTooltip("settings").buttonEl
+                    .addEventListener("click", (evt: MouseEvent) => {
+                        const menu = new Menu();
+                        menu?.addItem((item) =>
+                            item
+                                .setTitle(settings.wasEnabled.length > 0 ? "Enable previous disabled plugins" : "Disable all plugins")
+                                .setIcon(settings.wasEnabled.length > 0 ? "power" : "power-off")
+                                .onClick(async () => {
+                                    // disable all except this plugin
+                                    if (plugin.lengthEnabled > 1) {
+                                        const confirmReset = window.confirm('Do you want to disable all plugins?');
+                                        if (confirmReset) {
+                                            for (const i of settings.allPluginsList) {
+                                                if (i.id === "quick-plugin-switcher") continue
+                                                if (i.enabled) settings.wasEnabled.push(i.id)
+                                                await (this.app as any).plugins.disablePluginAndSave(i.id)
+                                                i.enabled = false;
+                                            }
+                                            getLength(plugin)
+                                            this.onOpen();
+                                            new Notice("All plugins disabled.");
+                                        } else { new Notice("Operation cancelled."); }
+                                    }
+                                    else if (settings.wasEnabled.length > 0) {
+                                        for (const i of settings.wasEnabled) {
+                                            //check plugin not deleted between
+                                            const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
+                                            if (pluginToUpdate) {
+                                                await (this.app as any).plugins.enablePluginAndSave(i)
+                                                pluginToUpdate.enabled = true
+                                            }
+                                        }
+                                        getLength(plugin)
+                                        this.onOpen()
+                                        this.plugin.settings.wasEnabled = []
+                                        new Notice("All plugins re-enabled.")
+                                        await this.plugin.saveSettings()
+                                    }
+                                })
+                        )
+                        if (settings.wasEnabled.length > 0) {
+                            menu?.addItem((item) =>
+                                item
+                                    .setTitle("Skip re-enable")
+                                    .setIcon("reset")
+                                    .onClick(async () => {
+                                        const confirmReset = window.confirm('Delete data to re-enable plugins and return to disable state?');
+                                        if (confirmReset) {
+                                            // this.plugin.settings.allPluginsList = []
+                                            this.plugin.settings.wasEnabled = []
+                                            await this.plugin.saveSettings();
+                                            new Notice("All values have been reset.");
+                                        } else { new Notice("Operation cancelled."); }
+                                    })
+                            );
+                        }
+                        menu.showAtMouseEvent(evt);
+                    })
+            })
     }
 
     async addItems(contentEl: HTMLElement, listItems: PluginInfo[]) {
         const { plugin } = this
         const { settings } = plugin
 
-        // sort mostSwitched/other modes
+        // sort by mode
         if (this.plugin.settings.filters === "mostSwitched" && !this.plugin.reset) {
-            listItems.sort((a, b) => a.name.localeCompare(b.name))
-            listItems.sort((a, b) => b.switched - a.switched)
+            sortByName(listItems)
+            sortSwitched(listItems)
         } else {
-            listItems.sort((a, b) => a.name.localeCompare(b.name))
             if (plugin.reset) {
                 const allPluginsList = settings.allPluginsList
-                // reset mostSwitched
+                // reset switched
                 allPluginsList.forEach(i => {
-                    i.switched = 0
+                    i.switched = 0 // no need to save apparently. because of mutability? 
                 })
                 plugin.reset = false
             }
+            if (settings.filters === "enabledFirst") {
+                const enabledItems = listItems.filter(i => i.enabled)
+                const disabledItems = listItems.filter(i => !i.enabled)
+                sortByName(enabledItems)
+                sortByName(disabledItems)
+                listItems=[...enabledItems,...disabledItems]
+            }
+            else {
+                sortByName(listItems)                
+            }
         }
 
+        // toggle plugin
         for (const pluginItem of listItems) {
             if (
                 (this.plugin.settings.filters === "enabled" && !pluginItem.enabled) ||
@@ -122,30 +186,10 @@ export class QPSModal extends Modal {
                 continue;
             }
 
+            // create elts
             const itemContainer = this.items.createEl("div", { cls: ["qps-item-line"] });
-            // add context menu on item-line
-            itemContainer.addEventListener("contextmenu", (evt: MouseEvent) => {
-                evt.preventDefault();
-                const menu = new Menu();
-                menu?.addItem((item) =>
-                    item
-                        .setTitle("open plugin folder")
-                        .setIcon("folder-open")
-                        .onClick(() => {
-                            this.openDirectoryInFileManager(pluginItem)
-                        })
-                );
-                menu?.addItem((item) =>
-                    item
-                        .setTitle("plugin description")
-                        .setIcon("text")
-                        .onClick(() => {
-                            new DescModal(this.app, this.plugin, pluginItem).open();
-                        })
-                );
-                menu.showAtMouseEvent(evt);
-            })
-
+            // context menu on item-line
+            itemsContextMenu(plugin, itemContainer, pluginItem)
 
             let disable = false
             // do nothing on this plugin
@@ -162,13 +206,14 @@ export class QPSModal extends Modal {
                 .setValue(pluginItem.name)
                 .setDisabled(disable)
                 .inputEl
-
+            
+            // text can be clicked to toggle too
             text.onClickEvent(async (evt: MouseEvent) => {
                 if (evt.button === 0) {
                     await this.togglePluginEnabled(pluginItem, listItems)
                 }
-                // make input impossible to modify
-                contentEl.blur(); //contentEl and not inputEl if not others input like search blocked too
+                // input impossible to modify
+                contentEl.blur(); //not inputEl, if not applied on other input too
             })
 
             if (settings.openPluginFolder) {
@@ -176,34 +221,22 @@ export class QPSModal extends Modal {
                     .setIcon("folder-open")
                     .setTooltip("Open plugin directory")
                     .onClick(async () => {
-                        this.openDirectoryInFileManager(pluginItem)
+                        openDirectoryInFileManager(plugin, pluginItem)
                     })
             }
         }
     }
 
-    //desktop only. Add some conditions
-    async openDirectoryInFileManager(pluginItem: PluginInfo) {
-        const filePath = (this.app as any).vault.adapter.getFullPath(pluginItem.dir);
-        // const directoryPath = path.dirname(filePath);
-        try {
-            await shell.openPath(filePath);
-            console.debug('Directory opened in the file manager.');
-        } catch (err) {
-            console.error(`Error opening the directory: ${err.message}`);
-        }
-    }
 
     async togglePluginEnabled(pluginItem: PluginInfo, listItems: PluginInfo[]) {
         const { plugin } = this
-        const { settings } = plugin
+
         pluginItem.enabled = !pluginItem.enabled;
         pluginItem.enabled
-            ? await (this.app as any).plugins.enablePluginAndSave(pluginItem.id) //AndSave !!
+            ? await (this.app as any).plugins.enablePluginAndSave(pluginItem.id) //AndSave
             : await (this.app as any).plugins.disablePluginAndSave(pluginItem.id);
         pluginItem.switched++;
-        settings.allPluginsList = listItems
-        plugin.getLength()
+        getLength(plugin)
         this.onOpen();
         await plugin.saveSettings();
     }
@@ -214,33 +247,3 @@ export class QPSModal extends Modal {
     }
 }
 
-// for plugin description 
-export class DescModal extends Modal {
-    constructor(app: App, public plugin: QuickPluginSwitcher, public pluginItem: PluginInfo) {
-        super(app);
-        this.plugin = plugin;
-        this.pluginItem = pluginItem
-    }
-
-    onOpen() {
-        const { contentEl, pluginItem } = this;
-        contentEl.empty();
-        contentEl
-            .createEl("p", { text: pluginItem.name + " - v" + pluginItem.version })
-            .createEl("p", {
-                text:
-                    "author: " + pluginItem.author +
-                    ", url: " + (pluginItem.authorUrl ? "" : "null")
-            })
-            .createEl("a", {
-                text: pluginItem.authorUrl,
-                href: pluginItem.authorUrl,
-            })
-        contentEl.createEl("p", { text: pluginItem.desc })
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}

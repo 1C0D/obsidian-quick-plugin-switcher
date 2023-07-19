@@ -1,19 +1,4 @@
 import { Notice, PluginSettingTab, Setting } from "obsidian";
-import { PluginInfo } from "./main";
-
-export interface QPSSettings {
-    allPluginsList: PluginInfo[]
-    filters: "all" | "enabled" | "disabled" | "mostSwitched",
-    search: string,
-    openPluginFolder: boolean
-}
-
-export const DEFAULT_SETTINGS: QPSSettings = {
-    allPluginsList: [],
-    filters: "all",
-    search: "",
-    openPluginFolder: false
-}
 
 export default class QPSSettingTab extends PluginSettingTab {
     constructor(app: any, public plugin: any) {
@@ -30,13 +15,13 @@ export default class QPSSettingTab extends PluginSettingTab {
             .setName("Open Plugin Folder")
             .setDesc("Add a button to open the plugin folder")
             .addToggle((toggle) => {
-            toggle.setValue(this.plugin.settings.openPluginFolder);
-            toggle.onChange(async (value) => {
-                this.plugin.settings.openPluginFolder = value;                
-                await this.plugin.saveSettings();
+                toggle.setValue(this.plugin.settings.openPluginFolder);
+                toggle.onChange(async (value) => {
+                    this.plugin.settings.openPluginFolder = value;
+                    await this.plugin.saveSettings();
+                });
             });
-            });
-        
+
         new Setting(containerEl)
             .setName("In case of bug reset all values")
             .setDesc("Should not be needed, but could be useful in case of bug. It's askings for confirmation")
@@ -48,6 +33,7 @@ export default class QPSSettingTab extends PluginSettingTab {
                         const confirmReset = window.confirm('Do you want to reset all values?');
                         if (confirmReset) {
                             this.plugin.settings.allPluginsList = []
+                            this.plugin.settings.enabled = []
                             await this.plugin.saveSettings();
                             new Notice("All values have been reset.");
                         } else { new Notice("Operation cancelled."); }

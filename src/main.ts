@@ -28,7 +28,9 @@ export default class QuickPluginSwitcher extends Plugin {
     }
 
     async getPluginsInfo() {
-        const allPluginsList = this.settings.allPluginsList || [];
+        const { settings } = this
+
+        const allPluginsList = settings.allPluginsList || [];
         const manifests = (this.app as any).plugins.manifests || {};
 
         // plugin have been deleted from obsidian UI ?
@@ -60,7 +62,7 @@ export default class QuickPluginSwitcher extends Plugin {
                 stillInstalled.push(notInListInfo);
             }
         }
-        this.settings.allPluginsList = stillInstalled;
+        settings.allPluginsList = stillInstalled;
         await this.saveSettings()
         getLength(this);
     }

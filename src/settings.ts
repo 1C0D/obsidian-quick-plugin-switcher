@@ -1,5 +1,4 @@
 import { Notice, PluginSettingTab, Setting } from "obsidian";
-import { DEFAULT_SETTINGS } from "./interfaces";
 import QuickPluginSwitcher from "./main";
 
 export default class QPSSettingTab extends PluginSettingTab {
@@ -10,6 +9,9 @@ export default class QPSSettingTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
+        const {plugin} =this
+        const { settings } = plugin;
+
         containerEl.empty();
         containerEl.createEl("h2", { text: "Quick Plugin Switcher" });
 
@@ -17,10 +19,10 @@ export default class QPSSettingTab extends PluginSettingTab {
             .setName("Open Plugin Folder")
             .setDesc("Add a button to open the plugin folder")
             .addToggle((toggle) => {
-                toggle.setValue(this.plugin.settings.openPluginFolder);
+                toggle.setValue(settings.openPluginFolder);
                 toggle.onChange(async (value) => {
-                    this.plugin.settings.openPluginFolder = value;
-                    await this.plugin.saveSettings();
+                    settings.openPluginFolder = value;
+                    await plugin.saveSettings();
                 });
             });
 
@@ -34,52 +36,45 @@ export default class QPSSettingTab extends PluginSettingTab {
                     .onClick(async () => {
                         const confirmReset = window.confirm('Do you want to reset all values?');
                         if (confirmReset) {
-                            this.plugin.settings.allPluginsList = []
-                            // this.plugin.settings.wasEnabled = []
-                            await this.plugin.saveSettings();
+                            settings.allPluginsList = []
+                            // plugin.settings.wasEnabled = []
+                            await plugin.saveSettings();
                             new Notice("All values have been reset.");
                         } else { new Notice("Operation cancelled."); }
                     });
             });
+        
         let saveSettingsTimeout: ReturnType<typeof setTimeout>;
+        const { numberOfGroups } = settings;
         new Setting(containerEl)
             .setName("Number of plugins groups")
             .setDesc("To treat plugins by groups")
             .addSlider((slider) => {
                 slider
                     .setLimits(1, 7, 1)
-                    .setValue(this.plugin.settings.numberOfGroups)
+                    .setValue(numberOfGroups)
                     .setDynamicTooltip()
                     .onChange(async (value) => {
-                        if (value < this.plugin.settings.numberOfGroups) {
+                        if (value < numberOfGroups) {
                             clearTimeout(saveSettingsTimeout);
                             saveSettingsTimeout = setTimeout(async () => {
                                 const confirmReset = window.confirm(
                                     'reducing number of groups, higher groups info will be lost');
                                 if (confirmReset) {
-                                    this.plugin.settings.allPluginsList.forEach((plugin) => {
+                                    settings.allPluginsList.forEach((plugin) => {
                                         if (plugin.group > value) plugin.group = 0;
                                     });
-                                    this.plugin.settings.numberOfGroups = value;
-                                    await this.plugin.saveSettings();
-                                } else { slider.setValue(this.plugin.settings.numberOfGroups) }
-                            }, 550); // Définir un délai de 500 ms (ajustez selon vos besoins)
+                                    settings.numberOfGroups = value;
+                                    await plugin.saveSettings();
+                                } else { slider.setValue(numberOfGroups) }
+                            }, 700);
                         } else {
-                            this.plugin.settings.numberOfGroups = value;
-                            await this.plugin.saveSettings();
+                            clearTimeout(saveSettingsTimeout);
+                            settings.numberOfGroups = value;
+                            await plugin.saveSettings();
                         }
                     });
             })
-            .addExtraButton(btn => {
-                btn
-                    .setIcon("reset")
-                    .setTooltip("Reset to default")
-                    .onClick(async () => {
-                        this.plugin.settings.numberOfGroups = DEFAULT_SETTINGS.numberOfGroups;
-                        await this.plugin.saveSettings();
-                        this.display()
-                    });
-            });
     }
 
 

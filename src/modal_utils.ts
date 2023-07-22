@@ -14,14 +14,11 @@ try {
 import { DescriptionModal } from "./secondary_modals";
 
 
-export const reset = (plugin: Plugin, modal: QPSModal) => {
+export const reset = (modal: QPSModal,plugin: Plugin) => {
     plugin.reset = true //if true reset done in modals addItems()
     getLength(plugin)
     modal.onOpen()
 }
-
-// hum à revoir
-
 
 export const doSearch = (plugin: Plugin, value: string) => {
     const listItems = []
@@ -45,7 +42,6 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 }
 
 export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
-
     evt.preventDefault();
     const menu = new Menu();
     if (shell) {
@@ -139,9 +135,10 @@ export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer:
 
 
 function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal) {
+    const {settings} = plugin
     Object.keys(Groups).forEach((groupKey) => {
         const groupIndex = Object.keys(Groups).indexOf(groupKey);
-        const lengthGroup = plugin.settings.allPluginsList.
+        const lengthGroup = settings.allPluginsList.
             filter((i) => i.group === groupIndex).length
         if (groupKey !== "SelectGroup" && lengthGroup) {
             const groupValue = Groups[groupKey as keyof typeof Groups];
@@ -151,7 +148,7 @@ function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal)
                     .setTitle(`Clear ${groupValue}`)
                     .onClick(async () => {
                         let pluginsRemoved = false;
-                        for (const i of plugin.settings.allPluginsList) {
+                        for (const i of settings.allPluginsList) {
                             if (i.group === groupIndex) {
                                 i.group = 0;
                                 pluginsRemoved = true;

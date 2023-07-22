@@ -1,10 +1,10 @@
-export enum Filters {
-    All = "all",
-    Enabled = "enabled",
-    Disabled = "disabled",
-    EnabledFirst = "enabledFirst",
-    MostSwitched = "mostSwitched",
-    ByGroup = "byGroup",
+export const Filters: GroupData = {
+    All : "all",
+    Enabled : "enabled",
+    Disabled : "disabled",
+    EnabledFirst : "enabledFirst",
+    MostSwitched : "mostSwitched",
+    ByGroup : "byGroup",
 }
 
 interface GroupData {
@@ -30,7 +30,7 @@ export const defaultPluginGroup: PluginGroupInfo = {
 export interface QPSSettings {
     allPluginsList: PluginInfo[];
     wasEnabled: string[];
-    filters: Filters;
+    filters: keyof typeof Filters;
     groups: keyof typeof Groups;
     search: string;
     openPluginFolder: boolean;

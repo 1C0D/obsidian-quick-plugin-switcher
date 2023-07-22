@@ -16,12 +16,12 @@ export class QPSModal extends Modal {
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
         this.plugin = plugin;
-        getNumberOfGroupsSettings(this.plugin)
     }
-
+    
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
+        getNumberOfGroupsSettings(this.plugin)
         this.container(contentEl)
         this.addHeader(this.header)
         this.addSearch(this.search)
@@ -48,7 +48,7 @@ export class QPSModal extends Modal {
             mostSwitched: `Most Switched(${plugin.lengthAll})`,
             byGroup: `By Group`
         })
-            .setValue(settings.filters)
+            .setValue(settings.filters as string)
             .onChange(async (value: QPSSettings['filters']) => {
                 settings.filters = value;
                 getLength(plugin)
@@ -59,26 +59,25 @@ export class QPSModal extends Modal {
         // mostSwitched reset button
         if (settings.filters === Filters.MostSwitched) { // settings.filters === "mostSwitched"
             new ExtraButtonComponent(contentEl).setIcon("reset").onClick(async () => {
-                reset(plugin, this)
+                reset(this,plugin )
             })
 
             const span = contentEl.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
             span.onclick = () => {
-                reset(plugin, this)
+                reset(this, plugin)
             }
         }
 
-        // dropdown with groups
-        if (settings.filters === Filters.ByGroup) {
-            // Créer l'objet dropdownOptions à partir des groupes existants dans Groups
+        if (settings.filters === Filters.ByGroup) {            
             const dropdownOptions: { [key: string]: string } = {};
-
-            // Ajouter les groupes disponibles à dropdownOptions
+            // make appear options if group content
             for (const groupKey in Groups) {
-                dropdownOptions[groupKey] = Groups[groupKey];
+                const groupIndex = parseInt(groupKey.replace("Group", ""));
+                if (groupKey=== "SelectGroup" || settings.allPluginsList.filter((plugin) => plugin.group === groupIndex).length) { 
+                    dropdownOptions[groupKey] = Groups[groupKey];
+                }
             }
-
-            // Créer le menu déroulant avec les options
+            // filters dropdown
             new DropdownComponent(contentEl)
                 .addOptions(dropdownOptions)
                 .setValue(settings.groups as string)
@@ -88,11 +87,8 @@ export class QPSModal extends Modal {
                     this.onOpen();
                 });
         }
-
-
     }
 
-    // à revoir plus tard ?
     addSearch(contentEl: HTMLElement): void {
         const { plugin } = this
         const { settings } = plugin
@@ -251,7 +247,7 @@ export class QPSModal extends Modal {
         const { settings } = plugin
 
         // sort by mode
-        if (settings.filters === Filters.MostSwitched && !this.plugin.reset) {
+        if (settings.filters === Filters.MostSwitched && !plugin.reset) {
             sortByName(listItems)
             sortSwitched(listItems)
         } else {
@@ -273,7 +269,7 @@ export class QPSModal extends Modal {
                 listItems = [...enabledItems, ...disabledItems]
             }
             else if (settings.filters === Filters.ByGroup) {
-                const groupsIndex = Object.keys(Groups).indexOf(settings.groups);
+                const groupsIndex = Object.keys(Groups).indexOf(settings.groups as string);
                 if (groupsIndex !== 0) {
                     const groupedItems = listItems.filter(i => i.group === groupsIndex);
                     listItems = groupedItems;
@@ -288,8 +284,8 @@ export class QPSModal extends Modal {
         // toggle plugin
         for (const pluginItem of listItems) {
             if (
-                (this.plugin.settings.filters === "enabled" && !pluginItem.enabled) ||
-                (this.plugin.settings.filters === "disabled" && pluginItem.enabled)
+                (settings.filters === "enabled" && !pluginItem.enabled) ||
+                (settings.filters === "disabled" && pluginItem.enabled)
             ) {
                 continue;
             }
@@ -345,7 +341,6 @@ export class QPSModal extends Modal {
             }
         }
     }
-
 
     async togglePluginEnabled(pluginItem: PluginInfo, listItems: PluginInfo[]) {
         const { plugin } = this

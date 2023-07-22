@@ -21,10 +21,7 @@ export const reset = (plugin: Plugin, modal: QPSModal) => {
 }
 
 // hum à revoir
-export const getEmojiForGroup = (groupNumber: number): string => {
-    const emojis = ["🔴", "🟡", "🟢", "🔵", "🟣"];
-    return emojis[groupNumber % emojis.length];
-};
+
 
 export const doSearch = (plugin: Plugin, value: string) => {
     const listItems = []
@@ -49,73 +46,76 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 
 export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
 
-        evt.preventDefault();
-        const menu = new Menu();
-        if (shell) {
-            menu.addItem((item) =>
-                item
-                    .setTitle("open plugin folder")
-                    .setIcon("folder-open")
-                    .onClick(() => {
-                        openDirectoryInFileManager(plugin, pluginItem)
-                    })
-            );
-        }
+    evt.preventDefault();
+    const menu = new Menu();
+    if (shell) {
         menu.addItem((item) =>
             item
-                .setTitle("plugin description")
-                .setIcon("text")
+                .setTitle("Open plugin folder")
+                .setIcon("folder-open")
                 .onClick(() => {
-                    new DescriptionModal(plugin.app, plugin, pluginItem).open();
+                    openDirectoryInFileManager(plugin, pluginItem)
                 })
-        ).addSeparator();
-        // idea hoover and press numpad -> add color and () oh yes and 0 to delete group 
-        addMenuItemsForGroups(menu, pluginItem, modal);
-        menu.addSeparator()
-        menu.addItem((item) =>
-            item
-                .setTitle("remove from this group")
-                .setIcon("user-minus")
-                .onClick(() => {
-                    pluginItem.group = 0
-                    modal.onOpen()
-                })
-        )
-        menu.addItem((item) => {
-            item
-                .setTitle("remove groups")
-                .setIcon("user-minus")
+        );
+    }
+    menu.addItem((item) =>
+        item
+            .setTitle("Plugin description")
+            .setIcon("text")
+            .onClick(() => {
+                new DescriptionModal(plugin.app, plugin, pluginItem).open();
+            })
+    ).addSeparator()
+    menu.addItem((item) => {
+        item
+            .setTitle("Add to group")
+            .setIcon("user")
+        const submenu = (item as any).setSubmenu() as Menu;
+        addToGroupMenuItems(submenu, pluginItem, modal);
+    })
+    menu.addItem((item) =>
+        item
+            .setTitle("Remove from group")
+            .setIcon("user-minus")
+            .onClick(() => {
+                pluginItem.group = 0
+                modal.onOpen()
+            })
+    ).addSeparator();
+    menu.addItem((item) => {
+        item
+            .setTitle("Clear groups")
+            .setIcon("user-minus")
 
-            const submenu = (item as any).setSubmenu() as Menu;
-            submenu.addItem((subitem) => {
-                subitem
-                    .setTitle("Reset all groups")
-                    .onClick(async () => {
-                        const confirmReset = window.confirm('Do you want to reset all groups?');
-                        if (confirmReset) {
-                            for (const i of plugin.settings.allPluginsList) {
-                                i.group = 0;
-                            }
-                            modal.onOpen();
-                            new Notice("All groups have been reset.");
-                        } else { new Notice("Operation cancelled."); }
-                    });
-            });
-            addRemoveGroupMenuItems(submenu, plugin, modal);
+        const submenu = (item as any).setSubmenu() as Menu;
+        submenu.addItem((subitem) => {
+            subitem
+                .setTitle("All groups")
+                .onClick(async () => {
+                    const confirmReset = window.confirm('Do you want to reset all groups?');
+                    if (confirmReset) {
+                        for (const i of plugin.settings.allPluginsList) {
+                            i.group = 0;
+                        }
+                        modal.onOpen();
+                        new Notice("All groups have been reset.");
+                    } else { new Notice("Operation cancelled."); }
+                });
         });
-        menu.showAtMouseEvent(evt);
+        addRemoveGroupMenuItems(submenu, plugin, modal);
+    });
+    menu.showAtMouseEvent(evt);
 
 }
 
 export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
-    const keyToGroupMap: Record<string, number> = {
-        '1': 1,
-        '2': 2,
-        '3': 3,
-        '4': 4,
-        '0': 0,
-    };
+    const numberOfGroups = modal.plugin.settings.numberOfGroups;
+    const keyToGroupMap: Record<string, number> = {};
 
+    // Generate keyToGroupMap based on the number of groups available
+    for (let i = 0; i <= numberOfGroups; i++) {
+        keyToGroupMap[i.toString()] = i;
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
         event.stopPropagation();
         const keyPressed = event.key;
@@ -140,12 +140,15 @@ export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer:
 
 function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal) {
     Object.keys(Groups).forEach((groupKey) => {
-        if (groupKey !== "SelectGroup") {
+        const groupIndex = Object.keys(Groups).indexOf(groupKey);
+        const lengthGroup = plugin.settings.allPluginsList.
+            filter((i) => i.group === groupIndex).length
+        if (groupKey !== "SelectGroup" && lengthGroup) {
             const groupValue = Groups[groupKey as keyof typeof Groups];
             const groupIndex = Object.keys(Groups).indexOf(groupKey);
             submenu.addItem((subitem) => {
                 subitem
-                    .setTitle(`Reset ${groupValue}`)
+                    .setTitle(`Clear ${groupValue}`)
                     .onClick(async () => {
                         let pluginsRemoved = false;
                         for (const i of plugin.settings.allPluginsList) {
@@ -166,14 +169,13 @@ function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal)
     });
 }
 
-function addMenuItemsForGroups(menu: Menu, pluginItem: PluginInfo, modal: QPSModal) {
+function addToGroupMenuItems(submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) {
     Object.keys(Groups).forEach((groupKey) => {
         const groupValue = Groups[groupKey as keyof typeof Groups];
-        if (groupKey !== "SelectGroup") { // ajouter un tri par group 1 ,2, 3, 4 ?
-            menu.addItem((item) =>
+        if (groupKey !== "SelectGroup") {
+            submenu.addItem((item) =>
                 item
-                    .setTitle(`add to ${groupValue}`)
-                    .setIcon("users")
+                    .setTitle(groupValue)
                     .onClick(() => {
                         const groupIndex = Object.keys(Groups).indexOf(groupKey);
                         pluginItem.group = groupIndex;
@@ -184,10 +186,9 @@ function addMenuItemsForGroups(menu: Menu, pluginItem: PluginInfo, modal: QPSMod
     });
 }
 
-//desktop only. Add some conditions
-export const openDirectoryInFileManager = async (plugin: Plugin, pluginItem: PluginInfo) => {
+//desktop only
+export async function openDirectoryInFileManager(plugin: Plugin, pluginItem: PluginInfo) {
     const filePath = (plugin.app as any).vault.adapter.getFullPath(pluginItem.dir);
-    // const directoryPath = path.dirname(filePath);
     try {
         await shell.openExternal(filePath);
         console.debug('Directory opened in the file manager.');

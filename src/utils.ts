@@ -1,9 +1,33 @@
 // refactoring needed
+import { Groups } from "./interfaces";
 import Plugin from "./main";
 
 
 export function isEnabled(name: string): boolean {
     return (this.app as any).plugins.enabledPlugins.has(name)
+}
+
+export const getEmojiForGroup = (groupNumber: number): string => {
+    const emojis = ["🟡", "🟢", "🔵", "🟣", "🟤", "⚪️", "🔴"];
+    return emojis[groupNumber-1];
+    // return emojis[groupNumber % emojis.length];
+};
+
+export const getNumberOfGroupsSettings = (_this: Plugin) => {
+    const numberOfGroups = _this.settings.numberOfGroups;
+    const currentGroupKeys = Object.keys(Groups);
+    console.log("currentGroupKeys", currentGroupKeys)
+    // delete groups if new value < previous value
+    for (let i = 1; i < currentGroupKeys.length; i++) {
+        const key = currentGroupKeys[i];
+        delete Groups[key];
+    }
+
+    for (let i = 1; i <= numberOfGroups; i++) {
+        const groupKey = `Group${i}`;
+        const groupEmoji = getEmojiForGroup(i);
+        Groups[groupKey] = `${groupEmoji}${groupKey}`;
+    }
 }
 
 export const getLength = (_this: Plugin) => {    

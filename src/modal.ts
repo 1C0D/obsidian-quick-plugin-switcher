@@ -1,9 +1,10 @@
 import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent, ToggleComponent } from "obsidian"
 import { Filters, Groups, PluginGroupInfo, PluginInfo, defaultPluginGroup } from "./interfaces"
 import { QPSSettings } from "./interfaces";
-import { getLength } from "./utils";
+import { getEmojiForGroup, getLength, getNumberOfGroupsSettings } from "./utils";
 import QuickPluginSwitcher from "./main";
-import { doSearch, getEmojiForGroup, handleContextMenu, handleHotkeys, openDirectoryInFileManager, reset, sortByName, sortSwitched } from "./modal_utils";
+import { doSearch, handleContextMenu, handleHotkeys, reset, sortByName, sortSwitched } from "./modal_utils";
+import {openDirectoryInFileManager} from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -15,6 +16,7 @@ export class QPSModal extends Modal {
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
         this.plugin = plugin;
+        getNumberOfGroupsSettings(this.plugin)
     }
 
     onOpen() {
@@ -68,21 +70,25 @@ export class QPSModal extends Modal {
 
         // dropdown with groups
         if (settings.filters === Filters.ByGroup) {
-            const dropdownOptions = {
-                SelectGroup: Groups.SelectGroup,
-                Group1: Groups.Group1,
-                Group2: Groups.Group2,
-                Group3: Groups.Group3,
-                Group4: Groups.Group4,
-            };
-            new DropdownComponent(contentEl).addOptions(dropdownOptions)
-                .setValue(settings.groups)
+            // Créer l'objet dropdownOptions à partir des groupes existants dans Groups
+            const dropdownOptions: { [key: string]: string } = {};
+
+            // Ajouter les groupes disponibles à dropdownOptions
+            for (const groupKey in Groups) {
+                dropdownOptions[groupKey] = Groups[groupKey];
+            }
+
+            // Créer le menu déroulant avec les options
+            new DropdownComponent(contentEl)
+                .addOptions(dropdownOptions)
+                .setValue(settings.groups as string)
                 .onChange(async (value: QPSSettings['groups']) => {
                     settings.groups = value;
                     await plugin.saveSettings();
-                    this.onOpen()
-                })
+                    this.onOpen();
+                });
         }
+
 
     }
 
@@ -106,11 +112,11 @@ export class QPSModal extends Modal {
 
             })
 
-        const span = contentEl.createEl("span", { text: "Toggle plugins", cls: ["qps-toggle-plugins"] })
+        const span = contentEl.createEl("span", { cls: ["qps-toggle-plugins"] })
         new ButtonComponent(span)
-            .setIcon("more-vertical")
+            .setIcon("power")
             .setCta()
-            .setTooltip("settings").buttonEl
+            .setTooltip("toggle plugins options").buttonEl
             .addEventListener("click", (evt: MouseEvent) => {
                 const menu = new Menu();
                 menu.addItem((item) =>
@@ -167,14 +173,20 @@ export class QPSModal extends Modal {
                     );
                 }
                 menu.addSeparator()
+                menu.addItem((item) =>
+                    item
+                        .setTitle("Disable plugins by group")
+                )
                 Object.keys(Groups).forEach((groupKey) => {
                     const groupValue = Groups[groupKey as keyof typeof Groups]
                     const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                    if (groupKey !== "SelectGroup") {
+                    const lengthGroup =settings.allPluginsList.
+                        filter((plugin) => plugin.group === groupIndex).length
+                    if (groupKey !== "SelectGroup" && lengthGroup) { // && group length > 0
                         const previousPluginGroup = settings.pluginGroups[groupIndex - 1] || defaultPluginGroup;
                         menu.addItem((item) =>
                             item
-                                .setTitle(previousPluginGroup.wasEnabled?.length > 0 ? `Re-enable ${groupValue} Plugins` : `Disable ${groupValue} Plugins`)
+                                .setTitle(groupValue) // `Re-enable ${groupValue} Plugins` : `Disable all in ${groupValue}`)
                                 .setIcon(previousPluginGroup.wasEnabled?.length > 0 ? "power" : "power-off")// faux mais ok...
                                 .onClick(async () => {
                                     const pluginGroup: PluginGroupInfo = {

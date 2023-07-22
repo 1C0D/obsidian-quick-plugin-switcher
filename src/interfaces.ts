@@ -7,18 +7,12 @@ export enum Filters {
     ByGroup = "byGroup",
 }
 
-export const defaultPluginGroup: PluginGroupInfo = {
-    groupIndex: -1, 
-    // plugins: [],
-    wasEnabled: [], 
-};
+interface GroupData {
+    [key: string]: string;
+}
 
-export enum Groups {
-    SelectGroup = "Select Group",
-    Group1 = "🟡 Group1",
-    Group2 = "🟢 Group2",
-    Group3 = "🔵 Group3",
-    Group4 = "🟣 Group4",
+export const Groups: GroupData = {
+    SelectGroup : "Select Group",
 }
 
 export interface PluginGroupInfo {
@@ -26,6 +20,12 @@ export interface PluginGroupInfo {
     // plugins: PluginInfo[];
     wasEnabled: string[];
 }
+
+export const defaultPluginGroup: PluginGroupInfo = {
+    groupIndex: -1,
+    // plugins: [],
+    wasEnabled: [],
+};
 
 export interface QPSSettings {
     allPluginsList: PluginInfo[];
@@ -35,6 +35,7 @@ export interface QPSSettings {
     search: string;
     openPluginFolder: boolean;
     pluginGroups: PluginGroupInfo[]
+    numberOfGroups: number
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
@@ -44,7 +45,8 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     groups: "SelectGroup",
     search: "",
     openPluginFolder: false,
-    pluginGroups: []
+    pluginGroups: [],
+    numberOfGroups: 3
 };
 
 export interface PluginInfo {

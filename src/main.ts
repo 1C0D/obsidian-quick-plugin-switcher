@@ -55,6 +55,7 @@ export default class QuickPluginSwitcher extends Plugin {
                     authorUrl: manifests[key].authorUrl || "",
                     enabled: isEnabled(manifests[key].id) || false,
                     switched: 0,
+                    group: 0,
                 };
                 stillInstalled.push(notInListInfo);
             }

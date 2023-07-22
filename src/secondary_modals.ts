@@ -1,4 +1,4 @@
-import { App, Modal } from "obsidian";
+import { App, Menu, Modal } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginInfo } from "./interfaces"
 
@@ -25,6 +25,26 @@ export class DescriptionModal extends Modal {
                 href: pluginItem.authorUrl,
             })
         contentEl.createEl("p", { text: pluginItem.desc })
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+
+export class GroupSelectModal extends Modal {
+    constructor(app: App, public plugin: QuickPluginSwitcher, public pluginItem: PluginInfo) {
+        super(app);
+        this.plugin = plugin;
+        this.pluginItem = pluginItem
+    }
+
+    onOpen() {
+        const { contentEl, pluginItem } = this;
+        contentEl.empty();
+
     }
 
     onClose() {

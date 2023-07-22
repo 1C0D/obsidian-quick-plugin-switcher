@@ -1,6 +1,5 @@
 .qps-header {
   display: flex;
-  justify-content: flex-start;
   align-items: center;
   margin-bottom: 15px;
 }
@@ -11,8 +10,23 @@
 
 .qps-search {
   display: flex;
-  justify-content: flex-start;
   margin-bottom: 15px;
+}
+
+.qps-toggle-plugins {
+  margin-left: auto;
+}
+
+.qps-toggle-plugins button {
+  margin-left: 5px;
+}
+
+@media (max-width: 646px) {
+  .qps-search {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 456px) {
@@ -46,5 +60,5 @@
 
 .qps-item-line button {
   background-color: rgba(255, 0, 157, 0.057);
-  width:2.8em;
+  width: 2.8em;
 }

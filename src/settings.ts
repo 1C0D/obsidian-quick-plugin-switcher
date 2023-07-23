@@ -37,7 +37,6 @@ export default class QPSSettingTab extends PluginSettingTab {
                         const confirmReset = window.confirm('Do you want to reset all values?');
                         if (confirmReset) {
                             settings.allPluginsList = []
-                            // plugin.settings.wasEnabled = []
                             await plugin.saveSettings();
                             new Notice("All values have been reset.");
                         } else { new Notice("Operation cancelled."); }

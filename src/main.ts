@@ -1,6 +1,3 @@
-// todo add condition to not run electron linked operations on mobiles
-// TODO filter by author?
-//most switched filter. not saved
 import { Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { debug, getLength, isEnabled } from './utils';

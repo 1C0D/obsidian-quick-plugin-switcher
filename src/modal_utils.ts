@@ -105,6 +105,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
 }
 
 export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
+    if (pluginItem.id === "quick-plugin-switcher") return
     const numberOfGroups = modal.plugin.settings.numberOfGroups;
     const keyToGroupMap: Record<string, number> = {};
 

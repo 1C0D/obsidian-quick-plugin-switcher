@@ -15,8 +15,8 @@ export default class QuickPluginSwitcher extends Plugin {
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new QPSSettingTab(this.app, this));
-
-        const ribbonIconEl = this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
+        
+        this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
             this.getPluginsInfo()
             getLength(this)
             new QPSModal(this.app, this).open();
@@ -26,7 +26,6 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async getPluginsInfo() {
         const { settings } = this
-
         const allPluginsList = settings.allPluginsList || [];
         const manifests = (this.app as any).plugins.manifests || {};
 
@@ -54,7 +53,10 @@ export default class QuickPluginSwitcher extends Plugin {
                     authorUrl: manifests[key].authorUrl || "",
                     enabled: isEnabled(manifests[key].id) || false,
                     switched: 0,
-                    group: 0,
+                    groupInfo: {
+                        groupIndex: 0,
+                        wasEnabled: false,
+                    },
                 };
                 stillInstalled.push(notInListInfo);
             }

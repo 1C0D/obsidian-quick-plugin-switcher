@@ -61,7 +61,7 @@ export default class QPSSettingTab extends PluginSettingTab {
                                     'reducing number of groups, higher groups info will be lost');
                                 if (confirmReset) {
                                     settings.allPluginsList.forEach((plugin) => {
-                                        if (plugin.group > value) plugin.group = 0;
+                                        if (plugin.groupInfo.groupIndex > value) plugin.groupInfo.groupIndex = 0;
                                     });
                                     settings.numberOfGroups = value;
                                     await plugin.saveSettings();

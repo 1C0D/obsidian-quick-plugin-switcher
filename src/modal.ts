@@ -1,9 +1,9 @@
 import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent, ToggleComponent } from "obsidian"
-import { Filters, Groups, PluginGroupInfo, PluginInfo, defaultPluginGroup } from "./interfaces"
+import { Filters, Groups, PluginInfo } from "./interfaces"
 import { QPSSettings } from "./interfaces";
-import { getEmojiForGroup, getLength, getNumberOfGroupsSettings } from "./utils";
+import { getEmojiForGroup, getLength, getGroupTitle } from "./utils";
 import QuickPluginSwitcher from "./main";
-import { doSearch, handleContextMenu, handleHotkeys, reset, sortByName, sortSwitched } from "./modal_utils";
+import { doSearch, handleContextMenu, handleHotkeys, modeSort, reset, togglePluginButton } from "./modal_utils";
 import { openDirectoryInFileManager } from "./modal_utils";
 
 export class QPSModal extends Modal {
@@ -21,11 +21,11 @@ export class QPSModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        getNumberOfGroupsSettings(this.plugin)
+        getGroupTitle(this.plugin)
         this.container(contentEl)
         this.addHeader(this.header)
         this.addSearch(this.search)
-        this.addItems(this.items, this.allPluginsList)
+        this.addItems(this.allPluginsList)
     }
 
     // create header/search/items elts & class
@@ -57,32 +57,36 @@ export class QPSModal extends Modal {
             })
 
         // mostSwitched reset button
-        if (settings.filters === Filters.MostSwitched) { // settings.filters === "mostSwitched"
-            new ExtraButtonComponent(contentEl).setIcon("reset").onClick(async () => {
-                reset(this, plugin)
-            })
-
-            const span = contentEl.createEl("span", { text: "Reset mostSwitched values", cls: ["reset-desc"] })
-            span.onclick = () => {
-                reset(this, plugin)
-            }
+        if (settings.filters === Filters.MostSwitched) {
+            new ExtraButtonComponent(contentEl).setIcon("reset").setTooltip("Reset mostSwitched values")
+                .onClick(async () => {
+                    reset(this, plugin)
+                })
         }
-
+        // byGroup
         if (settings.filters === Filters.ByGroup) {
             const dropdownOptions: { [key: string]: string } = {};
-            // make appear options if group content
+            // set dropdownOptions
             for (const groupKey in Groups) {
-                const groupIndex = parseInt(groupKey.replace("Group", ""));
-                if (groupKey === "SelectGroup" || settings.allPluginsList.filter((plugin) => plugin.group === groupIndex).length) {
+                const groupIndex = parseInt(groupKey.replace("Group", ""));// NaN, 1, 2...
+                if (groupKey === "SelectGroup" ||
+                    settings.allPluginsList.some(
+                        plugin => plugin.groupInfo.groupIndex === groupIndex)
+                ) {
                     dropdownOptions[groupKey] = Groups[groupKey];
                 }
             }
-            // filters dropdown
+
+            // if a group is empty get back dropdown to SelectGroup
+            const notEmpty = (settings.selectedGroup === "SelectGroup" || settings.allPluginsList.some(
+                plugin => plugin.groupInfo.groupIndex ===
+                    parseInt((settings.selectedGroup as string).replace("Group", ""))))
             new DropdownComponent(contentEl)
                 .addOptions(dropdownOptions)
-                .setValue(settings.groups as string)
-                .onChange(async (value: QPSSettings['groups']) => {
-                    settings.groups = value;
+                .setValue(notEmpty ? settings.selectedGroup as string : "SelectGroup")
+                // .setValue(settings.groups as string)
+                .onChange(async (value: QPSSettings['selectedGroup']) => {
+                    settings.selectedGroup = value;
                     await plugin.saveSettings();
                     this.onOpen();
                 });
@@ -103,7 +107,7 @@ export class QPSModal extends Modal {
                     .onChange(async (value: string) => {
                         const listItems = doSearch(plugin, value)
                         this.items.empty()
-                        this.addItems(contentEl, listItems)
+                        this.addItems(listItems)
                     });
 
             })
@@ -115,178 +119,151 @@ export class QPSModal extends Modal {
             .setTooltip("toggle plugins options").buttonEl
             .addEventListener("click", (evt: MouseEvent) => {
                 const menu = new Menu();
-                menu.addItem((item) =>
-                    item
-                        .setTitle(settings.wasEnabled.length > 0 ? "Enable previous disabled plugins" : "Disable all plugins")
-                        .setIcon(settings.wasEnabled.length > 0 ? "power" : "power-off")
-                        .onClick(async () => {
-                            // disable all except this plugin
-                            if (plugin.lengthEnabled > 1) {
-                                const confirmReset = window.confirm('Do you want to disable all plugins?');
-                                if (confirmReset) {
-                                    for (const i of settings.allPluginsList) {
-                                        if (i.id === "quick-plugin-switcher") continue
-                                        if (i.enabled) settings.wasEnabled.push(i.id)
-                                        await (this.app as any).plugins.disablePluginAndSave(i.id)
-                                        i.enabled = false;
-                                    }
-                                    getLength(plugin)
-                                    this.onOpen();
-                                    new Notice("All plugins disabled.");
-                                } else { new Notice("Operation cancelled."); }
-                            }
-                            else if (settings.wasEnabled.length > 0) {
-                                for (const i of settings.wasEnabled) {
-                                    //check plugin not deleted between
-                                    const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
-                                    if (pluginToUpdate) {
-                                        await (this.app as any).plugins.enablePluginAndSave(i)
-                                        pluginToUpdate.enabled = true
-                                    }
-                                }
-                                getLength(plugin)
-                                this.onOpen()
-                                settings.wasEnabled = []
-                                new Notice("All plugins re-enabled.")
-                                await this.plugin.saveSettings()
-                            }
-                        })
-                )
-                if (settings.wasEnabled.length > 0) {
+                if (plugin.lengthEnabled === 1 && settings.wasEnabled.length === 0) {
                     menu.addItem((item) =>
                         item
-                            .setTitle("Skip re-enable")
-                            .setIcon("reset")
-                            .onClick(async () => {
-                                const confirmReset = window.confirm('Delete data to re-enable plugins and return to disable state?');
-                                if (confirmReset) {
-                                    settings.wasEnabled = []
-                                    await this.plugin.saveSettings();
-                                    new Notice("All values have been reset.");
-                                } else { new Notice("Operation cancelled."); }
-                            })
-                    );
-                }
-                menu.addSeparator()
-                menu.addItem((item) =>
-                    item
-                        .setTitle("Disable plugins by group")
-                )
-                if (true) { // plugin.lengthEnabled > 1 à revoir ! si no plugin enable devrait être désactivé
-                    Object.keys(Groups).forEach((groupKey) => {
-                        if (groupKey === "SelectGroup") return
-                        const groupValue = Groups[groupKey as keyof typeof Groups]
-                        const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                        const lengthGroup = settings.allPluginsList.
-                            filter((plugin) => plugin.group === groupIndex).length
-                        // show group
-                        if (lengthGroup) {
-                            let previousWasEnabled = settings.pluginGroups[groupIndex - 1]?.wasEnabled || [];
-                            menu.addItem((item) =>
-                                item
-                                    .setTitle(groupValue)
-                                    .setIcon(previousWasEnabled.length > 0 ? "power" : "power-off")
-                                    .onClick(async () => {
-                                        console.debug("previousWasEnabled", previousWasEnabled)
-                                        if (previousWasEnabled.length === 0) {
-                                            const wasEnabled = settings.allPluginsList
-                                                .filter(
-                                                    (i) =>
-                                                        i.group === groupIndex &&
-                                                        i.enabled
-                                                )
-                                                .map((i) => i.id);
-                                            console.debug("wasEnabled", wasEnabled)
-
-                                            const pluginGroup: PluginGroupInfo = {
-                                                groupIndex,
-                                                wasEnabled: wasEnabled,
-                                            };
-                                            console.debug("pluginGroup", pluginGroup)
-
-                                            settings.pluginGroups.push(pluginGroup);
-
-                                            if (wasEnabled) { //toujours remplie 
-                                                for (const i of wasEnabled) {
-                                                    await (this.app as any).plugins.disablePluginAndSave(i)
-                                                    for (const j of settings.allPluginsList) {
-                                                        if (j.id === i) {
-                                                            j.enabled = false
-                                                        };
-                                                    }
-                                                }
-                                                getLength(plugin)
-                                                this.onOpen();
-                                                new Notice("All plugins disabled.");//from group...  
-                                            }
-                                        }
-                                        else {
-                                            for (const i of previousWasEnabled) {
-                                                await (this.app as any).plugins.enablePluginAndSave(i)
-                                                for (const j of settings.allPluginsList) {
-                                                    if (j.id === i) {
-                                                        j.enabled = true
-                                                    };
-                                                }
-                                            }
-                                            getLength(plugin)
-                                            this.onOpen();
-                                            new Notice("All plugins re-enabled.");
-                                            settings.pluginGroups.splice(groupIndex - 1, 1);
-                                        }
-
-                                            await this.plugin.saveSettings()
-                                    }))
-                        }
-                    }
+                            .setTitle("No enabled plugins")
                     )
                 }
-                console.debug("pluginGroups", settings.pluginGroups)
+                else {
+                    menu.addItem((item) =>
+                        item
+                            .setTitle(settings.wasEnabled.length > 0 ? "Enable previous disabled plugins" : "Disable all plugins")
+                            .setIcon(settings.wasEnabled.length > 0 ? "power" : "power-off")
+                            .onClick(async () => {
+                                // disable all except this plugin
+                                if (plugin.lengthEnabled > 1) {
+                                    const confirmReset = window.confirm('Do you want to disable all plugins?');
+                                    if (confirmReset) {
+                                        for (const i of settings.allPluginsList) {
+                                            if (i.id === "quick-plugin-switcher") continue
+                                            if (i.enabled) settings.wasEnabled.push(i.id)
+                                            await (this.app as any).plugins.disablePluginAndSave(i.id)
+                                            i.enabled = false;
+                                        }
+                                        getLength(plugin)
+                                        this.onOpen();
+                                        await plugin.saveSettings()
+                                        new Notice("All plugins disabled.");
+                                    } else { new Notice("Operation cancelled."); }
+                                }
+                                else if (settings.wasEnabled.length > 0) {
+                                    for (const i of settings.wasEnabled) {
+                                        //check plugin not deleted between
+                                        const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
+                                        if (pluginToUpdate) {
+                                            await (this.app as any).plugins.enablePluginAndSave(i)
+                                            pluginToUpdate.enabled = true
+                                        }
+                                    }
+                                    getLength(plugin)
+                                    this.onOpen()
+                                    settings.wasEnabled = []
+                                    new Notice("All plugins re-enabled.")
+                                    await this.plugin.saveSettings()
+                                }
+                            })
+                    )
+                    if (settings.wasEnabled.length > 0) {
+                        menu.addItem((item) =>
+                            item
+                                .setTitle("Skip re-enable")
+                                .setIcon("reset")
+                                .onClick(async () => {
+                                    const confirmReset = window.confirm('Delete data to re-enable plugins and return to disable state?');
+                                    if (confirmReset) {
+                                        settings.wasEnabled = []
+                                        await this.plugin.saveSettings();
+                                        new Notice("All values have been reset.");
+                                    } else { new Notice("Operation cancelled."); }
+                                })
+                        );
+                    }
+                }
+                if (plugin.lengthEnabled > 1) {
+                    menu.addSeparator()
+                    menu.addItem((item) =>
+                        item
+                            .setTitle("Disable plugins by group")
+                            .setDisabled(true)
+                    )
+                }
+                Object.keys(Groups).forEach((groupKey) => {
+                    if (groupKey === "SelectGroup") return
+                    const groupValue = Groups[groupKey as keyof typeof Groups]
+                    const groupIndex = Object.keys(Groups).indexOf(groupKey);
+                    const inGroup = settings.allPluginsList.
+                        filter((plugin) => plugin.groupInfo.groupIndex === groupIndex)
+                    // show group
+                    let previousWasEnabled = inGroup.filter(
+                        (i) => i.groupInfo.wasEnabled === true
+                    )
 
-
+                    if (inGroup.length > 0 && (inGroup.some(i => i.enabled === true) || previousWasEnabled.length > 0)) {
+                        menu.addItem((item) =>
+                            item
+                                .setTitle(previousWasEnabled.length > 0 ? `re-enable ${groupValue}` : groupValue)
+                                .setIcon(previousWasEnabled.length > 0 ? "power" : "power-off")
+                                .onClick(async () => {
+                                    if (previousWasEnabled.length === 0) {
+                                        const toDisable = inGroup.filter(i => i.enabled === true).map(async (i) => {
+                                            i.groupInfo.wasEnabled = true
+                                            await (this.app as any).plugins.disablePluginAndSave(i.id)
+                                            i.enabled = false
+                                        })
+                                        await Promise.all(toDisable);
+                                        if (toDisable) {
+                                            getLength(plugin)
+                                            this.onOpen();
+                                            new Notice("All plugins disabled.");
+                                            await this.plugin.saveSettings()
+                                        }
+                                    }
+                                    else {
+                                        for (const i of previousWasEnabled) {
+                                            await (this.app as any).plugins.enablePluginAndSave(i)
+                                            i.enabled = true
+                                        }
+                                        previousWasEnabled.map(plugin => {
+                                            plugin.groupInfo.wasEnabled = false
+                                        })
+                                        getLength(plugin)
+                                        this.onOpen();
+                                        new Notice("All plugins re-enabled.");
+                                    }
+                                }
+                                ))
+                        if (previousWasEnabled.length > 0) {
+                            menu.addItem((item) =>
+                                item
+                                    .setTitle("Skip re-enable")
+                                    .setIcon("reset")
+                                    .onClick(async () => {
+                                        const confirmReset = window.confirm('skip re-enable ?');
+                                        if (confirmReset) {
+                                            previousWasEnabled.map(plugin => {
+                                                plugin.groupInfo.wasEnabled = false
+                                            })
+                                            await this.plugin.saveSettings();
+                                            new Notice("All values have been reset.");
+                                        } else { new Notice("Operation cancelled."); }
+                                    })
+                            );
+                        }
+                    }
+                }
+                )
                 menu.showAtMouseEvent(evt);
             })
 
     }
 
-    async addItems(contentEl: HTMLElement, listItems: PluginInfo[]) {
+    async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
         const { settings } = plugin
 
-        // sort by mode
-        if (settings.filters === Filters.MostSwitched && !plugin.reset) {
-            sortByName(listItems)
-            sortSwitched(listItems)
-        } else {
-            // reset switched
-            if (plugin.reset) {
-                const allPluginsList = settings.allPluginsList
-                allPluginsList.forEach(i => {
-                    i.switched = 0 // no need to save apparently. because of mutability? 
-                })
-                plugin.reset = false
-            }
-
-            // filter values
-            if (settings.filters === Filters.EnabledFirst) {
-                const enabledItems = listItems.filter(i => i.enabled)
-                const disabledItems = listItems.filter(i => !i.enabled)
-                sortByName(enabledItems)
-                sortByName(disabledItems)
-                listItems = [...enabledItems, ...disabledItems]
-            }
-            else if (settings.filters === Filters.ByGroup) {
-                const groupsIndex = Object.keys(Groups).indexOf(settings.groups as string);
-                if (groupsIndex !== 0) {
-                    const groupedItems = listItems.filter(i => i.group === groupsIndex);
-                    listItems = groupedItems;
-                    sortByName(listItems);
-                }
-            }
-            else {
-                sortByName(listItems)
-            }
-        }
+        // Sort for chosen mode
+        listItems = modeSort(plugin, listItems)
 
         // toggle plugin
         for (const pluginItem of listItems) {
@@ -298,44 +275,36 @@ export class QPSModal extends Modal {
             }
 
             // create items
-            const itemContainer = this.items.createEl("div", { cls: ["qps-item-line"] });
+            const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
+            if (pluginItem.id === "quick-plugin-switcher") {
+                itemContainer.toggleClass("qps-quick-plugin-switcher", true);
+            }
+            if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) { // && !plugin.reset
+                itemContainer.toggleClass("qps-most-switched", true);
+            }
             // context menu on item-line
-            plugin.registerDomEvent(
-                itemContainer,
-                "contextmenu",
-                (evt) => handleContextMenu(evt, this, plugin, itemContainer, pluginItem)
-            )
-            plugin.registerDomEvent(
-                itemContainer,
-                "mouseover",// mouseover  mouseenter
-                (evt) => handleHotkeys(evt, this, itemContainer, pluginItem)
-            )
+            itemContainer.addEventListener("contextmenu", (evt) => {
+                if (pluginItem.id === "quick-plugin-switcher") return
+                handleContextMenu(evt, this, plugin, itemContainer, pluginItem)
+            })
+            // hot keys to add remove groups
+            itemContainer.addEventListener("mouseover", (evt) => {
+                if (pluginItem.id === "quick-plugin-switcher") return
+                handleHotkeys(evt, this, itemContainer, pluginItem)
+            })
 
-            let disable = false
-            // do nothing on this plugin
-            if (pluginItem.id === "quick-plugin-switcher") disable = true
+            togglePluginButton(this, pluginItem, itemContainer, listItems)
 
-            new ToggleComponent(itemContainer)
-                .setValue(pluginItem.enabled)
-                .setDisabled(disable)
-                .onChange(async () => {
-                    await this.togglePluginEnabled(pluginItem, listItems)
-                })
-
-            const prefix = pluginItem.group === 0 ? "" : getEmojiForGroup(pluginItem.group);
+            const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
             const customValue = `${prefix} ${pluginItem.name}`;
             const text = new TextComponent(itemContainer)
                 .setValue(customValue)
-                .setDisabled(disable)
                 .inputEl
-
-            // text can be clicked to toggle too
+            // click on text to toggle plugin
             text.onClickEvent(async (evt: MouseEvent) => {
-                if (evt.button === 0) {
-                    await this.togglePluginEnabled(pluginItem, listItems)
+                if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
+                    await this.togglePluginAndSave(pluginItem, listItems)
                 }
-                // disable input modifs
-                contentEl.blur(); //not inputEl, if not applied on other input too
             })
 
             if (settings.openPluginFolder) {
@@ -349,7 +318,7 @@ export class QPSModal extends Modal {
         }
     }
 
-    async togglePluginEnabled(pluginItem: PluginInfo, listItems: PluginInfo[]) {
+    async togglePluginAndSave(pluginItem: PluginInfo, listItems: PluginInfo[]) {
         const { plugin } = this
 
         pluginItem.enabled = !pluginItem.enabled;

@@ -62,11 +62,3 @@
   background-color: rgba(255, 0, 157, 0.057);
   width: 2.8em;
 }
-
-.qps-most-switched input  {
-  color: rgba(186, 129, 75, 0.999);
-}
-
-.qps-quick-plugin-switcher input{
-  color: rgb(106, 101, 140);
-}

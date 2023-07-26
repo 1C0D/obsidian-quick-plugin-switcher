@@ -12,29 +12,26 @@ interface GroupData {
 }
 
 export const Groups: GroupData = {
-    SelectGroup : "Select Group",
+    SelectGroup : "All groups",
 }
 
 export interface PluginGroupInfo {
     groupIndex: number;
-    // plugins: PluginInfo[];
-    wasEnabled: string[];
+    wasEnabled: boolean;
 }
 
-export const defaultPluginGroup: PluginGroupInfo = {
-    groupIndex: -1,
-    // plugins: [],
-    wasEnabled: [],
+export interface PluginGroupInfo {
+    groupIndex: number,
+    wasEnabled: boolean,
 };
 
 export interface QPSSettings {
     allPluginsList: PluginInfo[];
     wasEnabled: string[];
     filters: keyof typeof Filters;
-    groups: keyof typeof Groups;
+    selectedGroup: keyof typeof Groups;
     search: string;
     openPluginFolder: boolean;
-    pluginGroups: PluginGroupInfo[]
     numberOfGroups: number
 }
 
@@ -42,10 +39,9 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     allPluginsList: [],
     wasEnabled: [],
     filters: Filters.All,
-    groups: "SelectGroup",
+    selectedGroup: "SelectGroup",
     search: "",
     openPluginFolder: false,
-    pluginGroups: [],
     numberOfGroups: 3
 };
 
@@ -59,5 +55,5 @@ export interface PluginInfo {
     version: string;
     enabled: boolean;
     switched: number;
-    group: number;
+    groupInfo: PluginGroupInfo;
 }

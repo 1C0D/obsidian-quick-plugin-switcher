@@ -1,8 +1,8 @@
-import { Groups, PluginInfo } from "./interfaces";
+import { Filters, Groups, PluginInfo } from "./interfaces";
 import Plugin from "./main";
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
-import { Menu, Notice } from "obsidian"
+import { Menu, Notice, ToggleComponent } from "obsidian"
 // import { shell } from 'electron';    
 let shell: any = null;
 try {
@@ -14,10 +14,15 @@ try {
 import { DescriptionModal } from "./secondary_modals";
 
 
-export const reset = (modal: QPSModal,plugin: Plugin) => {
-    plugin.reset = true //if true reset done in modals addItems()
-    getLength(plugin)
-    modal.onOpen()
+export const reset = (modal: QPSModal, plugin: Plugin) => {
+    const confirm = window.confirm("Reset most switched values?");
+    if (confirm) {
+        plugin.reset = true //if true reset done in modals addItems()
+        getLength(plugin)
+        modal.onOpen()
+    } else {
+        new Notice("operation cancelled")
+    }
 }
 
 export const doSearch = (plugin: Plugin, value: string) => {
@@ -41,6 +46,49 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
     listItems.sort((a, b) => b.switched - a.switched)
 }
 
+export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
+    const { settings } = plugin
+    // after reset MostSwitched
+    if (plugin.reset) {
+        const allPluginsList = settings.allPluginsList
+        allPluginsList.forEach(i => {
+            i.switched = 0
+        })
+        plugin.reset = false
+    }
+    // EnabledFirst
+    if (settings.filters === Filters.EnabledFirst) {
+        const enabledItems = listItems.filter(i => i.enabled)
+        const disabledItems = listItems.filter(i => !i.enabled)
+        sortByName(enabledItems)
+        sortByName(disabledItems)
+        listItems = [...enabledItems, ...disabledItems]
+    }
+    // ByGroup
+    else if (settings.filters === Filters.ByGroup) {
+        const groupsIndex = Object.keys(Groups).indexOf(settings.selectedGroup as string);
+        if (groupsIndex !== 0) {
+            const groupedItems = listItems.filter(i => i.groupInfo.groupIndex === groupsIndex);
+            listItems = groupedItems;
+            sortByName(listItems);
+        }
+    }
+    // MostSwitched
+    else if (settings.filters === Filters.MostSwitched) { // && !plugin.reset
+        sortByName(listItems)
+        sortSwitched(listItems)
+        
+    }
+    // All
+    else {
+        sortByName(listItems)
+    }
+
+    return listItems
+}
+
+
+// un param inutilisé
 export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
     evt.preventDefault();
     const menu = new Menu();
@@ -74,7 +122,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
             .setTitle("Remove from group")
             .setIcon("user-minus")
             .onClick(() => {
-                pluginItem.group = 0
+                pluginItem.groupInfo.groupIndex = 0
                 modal.onOpen()
             })
     ).addSeparator();
@@ -91,14 +139,14 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                     const confirmReset = window.confirm('Do you want to reset all groups?');
                     if (confirmReset) {
                         for (const i of plugin.settings.allPluginsList) {
-                            i.group = 0;
+                            i.groupInfo.groupIndex = 0;
                         }
                         modal.onOpen();
                         new Notice("All groups have been reset.");
                     } else { new Notice("Operation cancelled."); }
                 });
         });
-        addRemoveGroupMenuItems(submenu, plugin, modal);
+        addRemoveGroupMenuItems(modal, submenu, plugin);
     });
     menu.showAtMouseEvent(evt);
 
@@ -117,9 +165,9 @@ export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer:
         event.stopPropagation();
         const keyPressed = event.key;
         if (keyPressed in keyToGroupMap) {
-            pluginItem.group = parseInt(keyPressed);
+            pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
         } else if (keyPressed === "Delete" || keyPressed === "Backspace") {
-            pluginItem.group = 0;
+            pluginItem.groupInfo.groupIndex = 0;
         }
         document.removeEventListener('keydown', handleKeyDown);
         modal.onOpen();
@@ -134,13 +182,23 @@ export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer:
     itemContainer.addEventListener('mouseleave', handleMouseLeave);
 };
 
+export const togglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement, listItems: PluginInfo[]) => {
+    let disable = (pluginItem.id === "quick-plugin-switcher")
+    new ToggleComponent(itemContainer)
+        .setValue(pluginItem.enabled)
+        .setDisabled(disable) //quick-plugin-switcher disabled
+        .onChange(async () => {
+            await modal.togglePluginAndSave(pluginItem, listItems)
+        })
+}
 
-function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal) {
-    const {settings} = plugin
+
+function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin) {
+    const { settings } = plugin
     Object.keys(Groups).forEach((groupKey) => {
         const groupIndex = Object.keys(Groups).indexOf(groupKey);
         const lengthGroup = settings.allPluginsList.
-            filter((i) => i.group === groupIndex).length
+            filter((i) => i.groupInfo.groupIndex === groupIndex).length
         if (groupKey !== "SelectGroup" && lengthGroup) {
             const groupValue = Groups[groupKey as keyof typeof Groups];
             const groupIndex = Object.keys(Groups).indexOf(groupKey);
@@ -150,8 +208,8 @@ function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal)
                     .onClick(async () => {
                         let pluginsRemoved = false;
                         for (const i of settings.allPluginsList) {
-                            if (i.group === groupIndex) {
-                                i.group = 0;
+                            if (i.groupInfo.groupIndex === groupIndex) {
+                                i.groupInfo.groupIndex = 0;
                                 pluginsRemoved = true;
                             }
                         }
@@ -167,16 +225,15 @@ function addRemoveGroupMenuItems(submenu: Menu, plugin: Plugin, modal: QPSModal)
     });
 }
 
-function addToGroupMenuItems(submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) {
-    Object.keys(Groups).forEach((groupKey) => {
-        const groupValue = Groups[groupKey as keyof typeof Groups];
-        if (groupKey !== "SelectGroup") {
+const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) => {
+    Object.entries(Groups).forEach(([key, value]) => {
+        if (key !== "SelectGroup") {
             submenu.addItem((item) =>
                 item
-                    .setTitle(groupValue)
-                    .onClick(() => {
-                        const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                        pluginItem.group = groupIndex;
+                    .setTitle(value)
+                    .onClick((event) => {
+                        const groupIndex = Object.keys(Groups).indexOf(key);
+                        pluginItem.groupInfo.groupIndex = groupIndex;
                         modal.onOpen();
                     })
             );
@@ -189,7 +246,6 @@ export async function openDirectoryInFileManager(plugin: Plugin, pluginItem: Plu
     const filePath = (plugin.app as any).vault.adapter.getFullPath(pluginItem.dir);
     try {
         await shell.openExternal(filePath);
-        console.debug('Directory opened in the file manager.');
     } catch (err) {
         console.error(`Error opening the directory: ${err.message}`);
     }

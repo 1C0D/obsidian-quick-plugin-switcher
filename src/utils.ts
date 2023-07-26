@@ -12,12 +12,12 @@ export const getEmojiForGroup = (groupNumber: number): string => {
     // return emojis[groupNumber % emojis.length]
 };
 
-// if (_this.settings.allPluginsList.filter((plugin) => plugin.group === i).length) {
-export const getNumberOfGroupsSettings = (_this: Plugin) => {
+// 🟡Group1....
+export const getGroupTitle = (_this: Plugin) => {
     const numberOfGroups = _this.settings.numberOfGroups;
     const currentGroupKeys = Object.keys(Groups);
 
-    // delete groups if new value < previous value
+    // delete groups if new value < previous value (when moving slider in prefs)
     for (let i = 1; i < currentGroupKeys.length; i++) {
         const key = currentGroupKeys[i];
         delete Groups[key];
@@ -43,8 +43,8 @@ export const getLength = (_this: Plugin) => {
 // used for debug
 export const debug = (_this: Plugin, pluginName = "", where = "") => {
     const manifestsKeys = Object.keys((_this.app as any).plugins.manifests);
-    // const manifestsValues = Object.values(_this.app.plugins.manifests);
-    // if (manifestsValues) console.log("manifestsValues", manifestsValues);
+    const manifestsValues = Object.values((_this.app as any).plugins.manifests);
+    if (manifestsValues) console.log("manifestsValues", manifestsValues);
     if (manifestsKeys) {
         console.log("manifestsKeys", manifestsKeys);
         if (pluginName) {

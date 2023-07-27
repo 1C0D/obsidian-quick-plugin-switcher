@@ -169,7 +169,7 @@ export const handleHotkeys = (event: MouseEvent, modal: QPSModal, itemContainer:
         const keyPressed = event.key;
         if (keyPressed in keyToGroupMap) {
             pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
-        } else if (keyPressed === "Delete" || keyPressed === "Backspace") {
+        } else if (keyPressed === "Delete" || keyPressed === "Backspace" || keyPressed === "0") {
             pluginItem.groupInfo.groupIndex = 0;
         }
         document.removeEventListener('keydown', handleKeyDown);

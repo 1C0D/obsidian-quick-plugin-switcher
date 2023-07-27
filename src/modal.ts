@@ -284,13 +284,7 @@ export class QPSModal extends Modal {
             }
             // context menu on item-line
             itemContainer.addEventListener("contextmenu", (evt) => {
-                if (pluginItem.id === "quick-plugin-switcher") return
-                handleContextMenu(evt, this, plugin, itemContainer, pluginItem)
-            })
-            // hot keys to add remove groups
-            itemContainer.addEventListener("mouseover", (evt) => {
-                if (pluginItem.id === "quick-plugin-switcher") return
-                handleHotkeys(evt, this, itemContainer, pluginItem)
+                handleContextMenu(evt, this, plugin, pluginItem)
             })
 
             togglePluginButton(this, pluginItem, itemContainer, listItems)
@@ -300,6 +294,11 @@ export class QPSModal extends Modal {
             const text = new TextComponent(itemContainer)
                 .setValue(customValue)
                 .inputEl
+            
+            text.addEventListener("mouseover", (evt) => {
+                if (pluginItem.id === "quick-plugin-switcher") return
+                handleHotkeys(evt, this, itemContainer, pluginItem)
+            })      
             // click on text to toggle plugin
             text.onClickEvent(async (evt: MouseEvent) => {
                 if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {

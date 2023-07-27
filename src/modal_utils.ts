@@ -77,7 +77,7 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
     else if (settings.filters === Filters.MostSwitched) { // && !plugin.reset
         sortByName(listItems)
         sortSwitched(listItems)
-        
+
     }
     // All
     else {
@@ -89,7 +89,7 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 
 
 // un param inutilisé
-export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, itemContainer: HTMLDivElement, pluginItem: PluginInfo) => {
+export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, pluginItem: PluginInfo) => {
     evt.preventDefault();
     const menu = new Menu();
     if (shell) {
@@ -109,45 +109,48 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
             .onClick(() => {
                 new DescriptionModal(plugin.app, plugin, pluginItem).open();
             })
-    ).addSeparator()
-    menu.addItem((item) => {
-        item
-            .setTitle("Add to group")
-            .setIcon("user")
-        const submenu = (item as any).setSubmenu() as Menu;
-        addToGroupMenuItems(submenu, pluginItem, modal);
-    })
-    menu.addItem((item) =>
-        item
-            .setTitle("Remove from group")
-            .setIcon("user-minus")
-            .onClick(() => {
-                pluginItem.groupInfo.groupIndex = 0
-                modal.onOpen()
-            })
-    ).addSeparator();
-    menu.addItem((item) => {
-        item
-            .setTitle("Clear groups")
-            .setIcon("user-minus")
+    )
+    if (pluginItem.id !== "quick-plugin-switcher") {
+        menu.addSeparator()
+        menu.addItem((item) => {
+            item
+                .setTitle("Add to group")
+                .setIcon("user")
+            const submenu = (item as any).setSubmenu() as Menu;
+            addToGroupMenuItems(submenu, pluginItem, modal);
+        })
+        menu.addItem((item) =>
+            item
+                .setTitle("Remove from group")
+                .setIcon("user-minus")
+                .onClick(() => {
+                    pluginItem.groupInfo.groupIndex = 0
+                    modal.onOpen()
+                })
+        ).addSeparator();
+        menu.addItem((item) => {
+            item
+                .setTitle("Clear groups")
+                .setIcon("user-minus")
 
-        const submenu = (item as any).setSubmenu() as Menu;
-        submenu.addItem((subitem) => {
-            subitem
-                .setTitle("All groups")
-                .onClick(async () => {
-                    const confirmReset = window.confirm('Do you want to reset all groups?');
-                    if (confirmReset) {
-                        for (const i of plugin.settings.allPluginsList) {
-                            i.groupInfo.groupIndex = 0;
-                        }
-                        modal.onOpen();
-                        new Notice("All groups have been reset.");
-                    } else { new Notice("Operation cancelled."); }
-                });
-        });
-        addRemoveGroupMenuItems(modal, submenu, plugin);
-    });
+            const submenu = (item as any).setSubmenu() as Menu;
+            submenu.addItem((subitem) => {
+                subitem
+                    .setTitle("All groups")
+                    .onClick(async () => {
+                        const confirmReset = window.confirm('Do you want to reset all groups?');
+                        if (confirmReset) {
+                            for (const i of plugin.settings.allPluginsList) {
+                                i.groupInfo.groupIndex = 0;
+                            }
+                            modal.onOpen();
+                            new Notice("All groups have been reset.");
+                        } else { new Notice("Operation cancelled."); }
+                    });
+            });
+            addRemoveGroupMenuItems(modal, submenu, plugin);
+        })
+    }
     menu.showAtMouseEvent(evt);
 
 }
@@ -231,7 +234,7 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
             submenu.addItem((item) =>
                 item
                     .setTitle(value)
-                    .onClick((event) => {
+                    .onClick(() => {
                         const groupIndex = Object.keys(Groups).indexOf(key);
                         pluginItem.groupInfo.groupIndex = groupIndex;
                         modal.onOpen();

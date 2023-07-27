@@ -223,6 +223,8 @@ export class QPSModal extends Modal {
                                         for (const i of previousWasEnabled) {
                                             await (this.app as any).plugins.enablePluginAndSave(i)
                                             i.enabled = true
+                                            i.switched++
+                                            
                                         }
                                         previousWasEnabled.map(plugin => {
                                             plugin.groupInfo.wasEnabled = false

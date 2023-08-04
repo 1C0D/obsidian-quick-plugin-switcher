@@ -2,7 +2,9 @@ import { Filters, Groups, PluginInfo, QPSSettings } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./modal";
 import { ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Notice, ToggleComponent } from "obsidian"
-// import { shell } from 'electron';    
+import { DescriptionModal } from "./secondary_modals";
+import { openDirectoryInFileManager, reset, sortByName, sortSwitched, togglePluginAndSave } from "./modal_utils";
+import { getLength } from "./utils";
 let shell: any = null;
 try {
     const electron = require("electron");
@@ -10,10 +12,6 @@ try {
 } catch {
     console.debug("electron not found");
 }
-import { DescriptionModal } from "./secondary_modals";
-import { reset, sortByName, sortSwitched } from "./modal_utils";
-import { getLength } from "./utils";
-
 
 //addHeader /////////////////////////////////
 
@@ -80,7 +78,7 @@ export const doSearch = (_this: Plugin, value: string) => {
 }
 
 
-export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => { 
+export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
     const { plugin } = modal
     const { settings } = plugin
     new ButtonComponent(el)
@@ -271,7 +269,15 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
 
     return listItems
 }
-
+export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement ) => {
+    const { settings } = modal.plugin
+    if (pluginItem.id === "quick-plugin-switcher") {
+        itemContainer.toggleClass("qps-quick-plugin-switcher", true);
+    }
+    if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) {
+        itemContainer.toggleClass("qps-most-switched", true);
+    }
+}
 
 // un param inutilisé
 export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, pluginItem: PluginInfo) => {
@@ -340,14 +346,26 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
 
 }
 
-export const togglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
+export const pluginsToggleButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
     let disable = (pluginItem.id === "quick-plugin-switcher")
     new ToggleComponent(itemContainer)
         .setValue(pluginItem.enabled)
         .setDisabled(disable) //quick-plugin-switcher disabled
         .onChange(async () => {
-            await modal.togglePluginAndSave(pluginItem)
+            await togglePluginAndSave(modal, pluginItem)
         })
+}
+
+export const folderOpenButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
+    const { settings } = modal.plugin
+    if (settings.openPluginFolder) {
+        new ButtonComponent(itemContainer)
+            .setIcon("folder-open")
+            .setTooltip("Open plugin directory")
+            .onClick(async () => {
+                openDirectoryInFileManager(modal.plugin, pluginItem)
+            })
+    }
 }
 
 function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin) {
@@ -396,14 +414,4 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
             );
         }
     });
-}
-
-//desktop only
-export async function openDirectoryInFileManager(plugin: Plugin, pluginItem: PluginInfo) {
-    const filePath = (plugin.app as any).vault.adapter.getFullPath(pluginItem.dir);
-    try {
-        await shell.openExternal(filePath);
-    } catch (err) {
-        console.error(`Error opening the directory: ${err.message}`);
-    }
 }

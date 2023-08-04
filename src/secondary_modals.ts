@@ -1,4 +1,4 @@
-import { App, Menu, Modal } from "obsidian";
+import { App, Modal } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginInfo } from "./types"
 

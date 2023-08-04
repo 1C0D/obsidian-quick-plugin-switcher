@@ -1,4 +1,3 @@
-import { Groups } from "./types";
 import Plugin from "./main"
 
 export const getLength = (_this: Plugin) => {

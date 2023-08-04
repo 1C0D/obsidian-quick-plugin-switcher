@@ -1,9 +1,9 @@
-import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent } from "obsidian"
-import { Filters, Groups, PluginInfo, QPSSettings } from "./types"
+import { App, DropdownComponent, Modal, SearchComponent, Setting, TextComponent } from "obsidian"
+import { PluginInfo, QPSSettings } from "./types"
 import { getLength } from "./utils";
 import QuickPluginSwitcher from "./main";
-import { doSearch, handleContextMenu, modeSort, togglePluginButton, openDirectoryInFileManager, mostSwitchedResetButton, filterByGroup, powerButton } from "./modal_components";
-import { getEmojiForGroup, getGroupTitle } from "./modal_utils";
+import { doSearch, handleContextMenu, modeSort, mostSwitchedResetButton, filterByGroup, powerButton, pluginsToggleButton, folderOpenButton, itemToggleClass } from "./modal_components";
+import { getEmojiForGroup, getGroupTitle, togglePluginAndSave } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -83,7 +83,7 @@ export class QPSModal extends Modal {
 
         // toggle plugin options
         const span = contentEl.createEl("span", { cls: ["qps-toggle-plugins"] })
-        powerButton (this, span)
+        powerButton(this, span)
     }
 
     async addItems(listItems: PluginInfo[]) {
@@ -104,18 +104,13 @@ export class QPSModal extends Modal {
 
             // create items
             const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
-            if (pluginItem.id === "quick-plugin-switcher") {
-                itemContainer.toggleClass("qps-quick-plugin-switcher", true);
-            }
-            if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) { // && !plugin.reset
-                itemContainer.toggleClass("qps-most-switched", true);
-            }
+            itemToggleClass (this, pluginItem, itemContainer)
             // context menu on item-line
             itemContainer.addEventListener("contextmenu", (evt) => {
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
 
-            togglePluginButton(this, pluginItem, itemContainer)
+            pluginsToggleButton(this, pluginItem, itemContainer)
 
             const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
             const customValue = `${prefix} ${pluginItem.name}`;
@@ -127,18 +122,11 @@ export class QPSModal extends Modal {
             // click on text to toggle plugin
             text.onClickEvent(async (evt: MouseEvent) => {
                 if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
-                    await this.togglePluginAndSave(pluginItem)
+                    await togglePluginAndSave(this, pluginItem)
                 }
             })
 
-            if (settings.openPluginFolder) {
-                new ButtonComponent(itemContainer)
-                    .setIcon("folder-open")
-                    .setTooltip("Open plugin directory")
-                    .onClick(async () => {
-                        openDirectoryInFileManager(plugin, pluginItem)
-                    })
-            }
+            folderOpenButton(this, pluginItem, itemContainer)
         }
     }
 
@@ -175,19 +163,6 @@ export class QPSModal extends Modal {
         document.addEventListener('keydown', handleKeyDown);
         itemContainer.addEventListener('mouseleave', handleMouseLeave);
         await this.plugin.saveSettings()
-    }
-
-    async togglePluginAndSave(pluginItem: PluginInfo) {
-        const { plugin } = this
-
-        pluginItem.enabled = !pluginItem.enabled;
-        pluginItem.enabled
-            ? await (this.app as any).plugins.enablePluginAndSave(pluginItem.id) //AndSave
-            : await (this.app as any).plugins.disablePluginAndSave(pluginItem.id);
-        pluginItem.switched++;
-        getLength(plugin)
-        this.onOpen();
-        await plugin.saveSettings();
     }
 
     onClose() {

@@ -1,10 +1,9 @@
-import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent, ToggleComponent } from "obsidian"
-import { Filters, Groups, PluginInfo } from "./interfaces"
-import { QPSSettings } from "./interfaces";
-import { getEmojiForGroup, getLength, getGroupTitle } from "./utils";
+import { App, ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Modal, Notice, SearchComponent, Setting, TextComponent } from "obsidian"
+import { Filters, Groups, PluginInfo, QPSSettings } from "./types"
+import { getLength } from "./utils";
 import QuickPluginSwitcher from "./main";
-import { doSearch, handleContextMenu, handleHotkeys, modeSort, reset, togglePluginButton } from "./modal_utils";
-import { openDirectoryInFileManager } from "./modal_utils";
+import { doSearch, handleContextMenu, modeSort, togglePluginButton, openDirectoryInFileManager } from "./modal_components";
+import { getEmojiForGroup, getGroupTitle } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -52,15 +51,19 @@ export class QPSModal extends Modal {
             .onChange(async (value: QPSSettings['filters']) => {
                 settings.filters = value;
                 getLength(plugin)
-                this.open()
+                this.onOpen()
                 await plugin.saveSettings();
             })
 
         // mostSwitched reset button
-        if (settings.filters === Filters.MostSwitched) {
+        if (settings.filters === Filters.MostSwitched &&
+            settings.allPluginsList.some(
+                plugin => plugin.switched !== 0)
+            ) {
             new ExtraButtonComponent(contentEl).setIcon("reset").setTooltip("Reset mostSwitched values")
                 .onClick(async () => {
-                    reset(this, plugin)
+                    this.reset()
+                    this.onOpen()
                 })
         }
         // byGroup
@@ -93,6 +96,18 @@ export class QPSModal extends Modal {
         }
     }
 
+    reset = () => {
+        const { plugin } = this
+        const confirm = window.confirm("Reset most switched values?");
+        if (confirm) {
+            plugin.reset = true //if true reset done in modals addItems()
+            getLength(plugin)
+            this.onOpen()
+        } else {
+            new Notice("operation cancelled")
+        }
+    }
+
     addSearch(contentEl: HTMLElement): void {
         const { plugin } = this
         const { settings } = plugin
@@ -112,6 +127,7 @@ export class QPSModal extends Modal {
 
             })
 
+        // toggle plugin options
         const span = contentEl.createEl("span", { cls: ["qps-toggle-plugins"] })
         new ButtonComponent(span)
             .setIcon("power")
@@ -224,7 +240,7 @@ export class QPSModal extends Modal {
                                             await (this.app as any).plugins.enablePluginAndSave(i)
                                             i.enabled = true
                                             i.switched++
-                                            
+
                                         }
                                         previousWasEnabled.map(plugin => {
                                             plugin.groupInfo.wasEnabled = false
@@ -289,22 +305,19 @@ export class QPSModal extends Modal {
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
 
-            togglePluginButton(this, pluginItem, itemContainer, listItems)
+            togglePluginButton(this, pluginItem, itemContainer)
 
             const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
             const customValue = `${prefix} ${pluginItem.name}`;
             const text = new TextComponent(itemContainer)
                 .setValue(customValue)
                 .inputEl
-            
-            text.addEventListener("mouseover", (evt) => {
-                if (pluginItem.id === "quick-plugin-switcher") return
-                handleHotkeys(evt, this, itemContainer, pluginItem)
-            })      
+            //add hotkeys
+            text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, itemContainer))
             // click on text to toggle plugin
             text.onClickEvent(async (evt: MouseEvent) => {
                 if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
-                    await this.togglePluginAndSave(pluginItem, listItems)
+                    await this.togglePluginAndSave(pluginItem)
                 }
             })
 
@@ -319,7 +332,42 @@ export class QPSModal extends Modal {
         }
     }
 
-    async togglePluginAndSave(pluginItem: PluginInfo, listItems: PluginInfo[]) {
+    handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
+        console.log("itemContainer", itemContainer)
+        const target = evt.currentTarget as HTMLElement;
+        console.log("target", target)
+        console.log("target.textContent", target.innerText)
+        if (pluginItem.id === "quick-plugin-switcher") return
+        const numberOfGroups = this.plugin.settings.numberOfGroups;
+        const keyToGroupMap: Record<string, number> = {};
+
+        // Generate keyToGroupMap based on the number of groups available
+        for (let i = 0; i <= numberOfGroups; i++) {
+            keyToGroupMap[i.toString()] = i;
+        }
+        const handleKeyDown = (event: KeyboardEvent) => {
+            event.stopPropagation();
+            const keyPressed = event.key;
+            if (keyPressed in keyToGroupMap) {
+                pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
+            } else if (keyPressed === "Delete" || keyPressed === "Backspace" || keyPressed === "0") {
+                pluginItem.groupInfo.groupIndex = 0;
+            }
+            document.removeEventListener('keydown', handleKeyDown);
+            this.onOpen();
+        }
+
+        const handleMouseLeave = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            itemContainer.removeEventListener('mouseleave', handleMouseLeave);
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        itemContainer.addEventListener('mouseleave', handleMouseLeave);
+        await this.plugin.saveSettings()
+    }
+
+    async togglePluginAndSave(pluginItem: PluginInfo) {
         const { plugin } = this
 
         pluginItem.enabled = !pluginItem.enabled;

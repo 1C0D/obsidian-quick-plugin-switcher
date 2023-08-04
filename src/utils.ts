@@ -1,46 +1,20 @@
-import { Groups } from "./interfaces";
-import Plugin from "./main";
-
-
-export function isEnabled(name: string): boolean {
-    return (this.app as any).plugins.enabledPlugins.has(name)
-}
-
-export const getEmojiForGroup = (groupNumber: number): string => {
-    const emojis = ["🟡", "🟢", "🔵", "🟣", "🟤", "⚪️", "🔴"];
-    return emojis[groupNumber - 1];
-    // return emojis[groupNumber % emojis.length]
-};
-
-// 🟡Group1....
-export const getGroupTitle = (_this: Plugin) => {
-    const numberOfGroups = _this.settings.numberOfGroups;
-    const currentGroupKeys = Object.keys(Groups);
-
-    // delete groups if new value < previous value (when moving slider in prefs)
-    for (let i = 1; i < currentGroupKeys.length; i++) {
-        const key = currentGroupKeys[i];
-        delete Groups[key];
-    }
-
-    for (let i = 1; i <= numberOfGroups; i++) {
-        const groupKey = `Group${i}`;
-        const groupEmoji = getEmojiForGroup(i);
-        Groups[groupKey] = `${groupEmoji}${groupKey}`;
-    }
-}
+import { Groups } from "./types";
+import Plugin from "./main"
 
 export const getLength = (_this: Plugin) => {
     const { settings } = _this
     const allPluginsList = settings.allPluginsList || [];
     _this.lengthAll = allPluginsList.length
     _this.lengthEnabled = settings.allPluginsList.
-        filter((plugin) => plugin.enabled).length
+    filter((plugin) => plugin.enabled).length
     _this.lengthDisabled = settings.allPluginsList.
-        filter((plugin) => !plugin.enabled).length
+    filter((plugin) => !plugin.enabled).length
 }
 
-// used for debug
+export function isEnabled(name: string): boolean {
+    return (this.app as any).plugins.enabledPlugins.has(name)
+}
+
 export const debug = (_this: Plugin, pluginName = "", where = "") => {
     const manifestsKeys = Object.keys((_this.app as any).plugins.manifests);
     const manifestsValues = Object.values((_this.app as any).plugins.manifests);

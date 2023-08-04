@@ -1,6 +1,6 @@
 import { App, Menu, Modal } from "obsidian";
 import QuickPluginSwitcher from "./main";
-import { PluginInfo } from "./interfaces"
+import { PluginInfo } from "./types"
 
 // for plugin description 
 export class DescriptionModal extends Modal {

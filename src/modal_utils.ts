@@ -1,6 +1,21 @@
 import { Groups, PluginInfo } from "./types"
 import Plugin from "./main"
+import { QPSModal } from "./modal";
+import { getLength } from "./utils";
+import { Notice } from "obsidian";
 
+
+export const reset = (modal: QPSModal) => {
+    const { plugin } = modal
+    const confirm = window.confirm("Reset most switched values?");
+    if (confirm) {
+        plugin.reset = true //if true reset done in modals addItems()
+        getLength(plugin)
+        modal.onOpen()
+    } else {
+        new Notice("operation cancelled")
+    }
+}
 
 export const sortByName = (listItems: PluginInfo[]) => {
     listItems.sort((a, b) => a.name.localeCompare(b.name))

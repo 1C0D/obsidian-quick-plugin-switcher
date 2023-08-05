@@ -1,9 +1,15 @@
 import { Filters, Groups, PluginInfo, QPSSettings } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./modal";
-import { ButtonComponent, DropdownComponent, ExtraButtonComponent, Menu, Notice, ToggleComponent } from "obsidian"
+import {
+    ButtonComponent, DropdownComponent, ExtraButtonComponent,
+    Menu, Notice, TextComponent, ToggleComponent
+} from "obsidian"
 import { DescriptionModal } from "./secondary_modals";
-import { openDirectoryInFileManager, reset, sortByName, sortSwitched, togglePluginAndSave } from "./modal_utils";
+import {
+    getEmojiForGroup, openDirectoryInFileManager,
+    reset, sortByName, sortSwitched, togglePluginAndSave
+} from "./modal_utils";
 import { getLength } from "./utils";
 let shell: any = null;
 try {
@@ -289,7 +295,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                 .setTitle("Open plugin folder")
                 .setIcon("folder-open")
                 .onClick(() => {
-                    openDirectoryInFileManager(plugin, pluginItem)
+                    openDirectoryInFileManager(shell, plugin, pluginItem)
                 })
         );
     }
@@ -346,7 +352,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
 
 }
 
-export const pluginsToggleButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
+export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
     let disable = (pluginItem.id === "quick-plugin-switcher")
     new ToggleComponent(itemContainer)
         .setValue(pluginItem.enabled)
@@ -354,6 +360,15 @@ export const pluginsToggleButton = (modal: QPSModal, pluginItem: PluginInfo, ite
         .onChange(async () => {
             await togglePluginAndSave(modal, pluginItem)
         })
+}
+
+export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDivElement) => { 
+    const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
+    const customValue = `${prefix} ${pluginItem.name}`;
+    const text = new TextComponent(itemContainer)
+        .setValue(customValue)
+        .inputEl
+    return text
 }
 
 export const folderOpenButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {

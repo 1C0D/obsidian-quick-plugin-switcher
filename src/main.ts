@@ -1,4 +1,3 @@
-// 1 TODO
 import { Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { debug, getLength, isEnabled } from './utils';
@@ -23,6 +22,16 @@ export default class QuickPluginSwitcher extends Plugin {
             getLength(this)
             new QPSModal(this.app, this).open();
             // debug(this, "ext-to-vault", "after QPSModal")
+        });
+
+        this.addCommand({
+            id: 'quick-plugin-switcher-modal',
+            name: 'open modal',
+            callback: () => {
+                this.getPluginsInfo()
+                getLength(this)
+                new QPSModal(this.app, this).open();
+            }
         });
     }
 

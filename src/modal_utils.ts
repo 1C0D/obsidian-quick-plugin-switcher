@@ -3,13 +3,6 @@ import Plugin from "./main"
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
 import { Notice } from "obsidian";   
-let shell: any = null;
-try {
-    const electron = require("electron");
-    shell = electron.shell;
-} catch {
-    console.debug("electron not found");
-}
 
 
 export const reset = (modal: QPSModal) => {
@@ -65,12 +58,12 @@ export const togglePluginAndSave = async (modal: QPSModal,pluginItem: PluginInfo
         : await (modal.app as any).plugins.disablePluginAndSave(pluginItem.id);
     pluginItem.switched++;
     getLength(plugin)
-    modal.onOpen();
     await plugin.saveSettings();
+    modal.onOpen();
 }
 
 //desktop only
-export async function openDirectoryInFileManager(plugin: Plugin, pluginItem: PluginInfo) {
+export async function openDirectoryInFileManager(shell:any, plugin: Plugin, pluginItem: PluginInfo) {
     const filePath = (plugin.app as any).vault.adapter.getFullPath(pluginItem.dir);
     try {
         await shell.openExternal(filePath);

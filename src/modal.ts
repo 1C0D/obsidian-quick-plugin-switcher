@@ -1,9 +1,15 @@
-import { App, DropdownComponent, Modal, SearchComponent, Setting, TextComponent } from "obsidian"
+import { App, DropdownComponent, Modal, SearchComponent, Setting } from "obsidian"
 import { PluginInfo, QPSSettings } from "./types"
 import { getLength } from "./utils";
 import QuickPluginSwitcher from "./main";
-import { doSearch, handleContextMenu, modeSort, mostSwitchedResetButton, filterByGroup, powerButton, pluginsToggleButton, folderOpenButton, itemToggleClass } from "./modal_components";
-import { getEmojiForGroup, getGroupTitle, togglePluginAndSave } from "./modal_utils";
+import {
+    doSearch, handleContextMenu, modeSort,
+    mostSwitchedResetButton, filterByGroup,
+    powerButton, itemTogglePluginButton,
+    folderOpenButton, itemToggleClass,
+    itemTextComponent
+} from "./modal_components";
+import { getGroupTitle, togglePluginAndSave } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -11,6 +17,7 @@ export class QPSModal extends Modal {
     search: HTMLElement
     listItems: PluginInfo[] = []
     allPluginsList = this.plugin.settings.allPluginsList
+    actualValue: string
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
@@ -104,37 +111,30 @@ export class QPSModal extends Modal {
 
             // create items
             const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
-            itemToggleClass (this, pluginItem, itemContainer)
+            itemToggleClass(this, pluginItem, itemContainer)
             // context menu on item-line
             itemContainer.addEventListener("contextmenu", (evt) => {
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
 
-            pluginsToggleButton(this, pluginItem, itemContainer)
+            itemTogglePluginButton(this, pluginItem, itemContainer)
 
-            const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
-            const customValue = `${prefix} ${pluginItem.name}`;
-            const text = new TextComponent(itemContainer)
-                .setValue(customValue)
-                .inputEl
+            const text = itemTextComponent(pluginItem, itemContainer)
             //add hotkeys
-            text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, itemContainer))
+            text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, text))
             // click on text to toggle plugin
-            text.onClickEvent(async (evt: MouseEvent) => {
+            text.addEventListener("click", async (evt: MouseEvent) => {
                 if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
-                    await togglePluginAndSave(this, pluginItem)
+                    evt.stopPropagation
+                    text.blur()
                 }
-            })
+            },)
 
-            folderOpenButton(this, pluginItem, itemContainer)
+            folderOpenButton(this, pluginItem, text)
         }
     }
 
-    handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
-        console.log("itemContainer", itemContainer)
-        const target = evt.currentTarget as HTMLElement;
-        console.log("target", target)
-        console.log("target.textContent", target.innerText)
+    handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
         if (pluginItem.id === "quick-plugin-switcher") return
         const numberOfGroups = this.plugin.settings.numberOfGroups;
         const keyToGroupMap: Record<string, number> = {};
@@ -143,26 +143,30 @@ export class QPSModal extends Modal {
         for (let i = 0; i <= numberOfGroups; i++) {
             keyToGroupMap[i.toString()] = i;
         }
-        const handleKeyDown = (event: KeyboardEvent) => {
-            event.stopPropagation();
-            const keyPressed = event.key;
-            if (keyPressed in keyToGroupMap) {
-                pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
-            } else if (keyPressed === "Delete" || keyPressed === "Backspace" || keyPressed === "0") {
-                pluginItem.groupInfo.groupIndex = 0;
-            }
-            document.removeEventListener('keydown', handleKeyDown);
-            this.onOpen();
-        }
 
         const handleMouseLeave = () => {
             document.removeEventListener('keydown', handleKeyDown);
             itemContainer.removeEventListener('mouseleave', handleMouseLeave);
         }
-
-        document.addEventListener('keydown', handleKeyDown);
         itemContainer.addEventListener('mouseleave', handleMouseLeave);
-        await this.plugin.saveSettings()
+
+        const handleKeyDown = async (event: KeyboardEvent) => {
+            const keyPressed = event.key;
+            if (keyPressed in keyToGroupMap) {
+                pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
+            } else if (keyPressed === "Delete" || keyPressed === "Backspace" || keyPressed === "0") {
+                pluginItem.groupInfo.groupIndex = 0;
+            } else {
+                document.removeEventListener('keydown', handleKeyDown);
+                itemContainer.removeEventListener('mouseleave', handleMouseLeave);
+                return
+            }
+
+            await this.plugin.saveSettings()
+            document.removeEventListener('keydown', handleKeyDown);
+            this.onOpen();
+        }
+        document.addEventListener('keydown', handleKeyDown)
     }
 
     onClose() {

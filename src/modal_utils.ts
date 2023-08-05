@@ -63,8 +63,8 @@ export const togglePluginAndSave = async (modal: QPSModal,pluginItem: PluginInfo
 }
 
 //desktop only
-export async function openDirectoryInFileManager(shell:any, plugin: Plugin, pluginItem: PluginInfo) {
-    const filePath = (plugin.app as any).vault.adapter.getFullPath(pluginItem.dir);
+export async function openDirectoryInFileManager(shell: any, modal: QPSModal, pluginItem: PluginInfo) {
+    const filePath = (modal.app as any).vault.adapter.getFullPath(pluginItem.dir);
     try {
         await shell.openExternal(filePath);
     } catch (err) {

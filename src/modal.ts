@@ -9,7 +9,7 @@ import {
     folderOpenButton, itemToggleClass,
     itemTextComponent
 } from "./modal_components";
-import { getGroupTitle, togglePluginAndSave } from "./modal_utils";
+import { getGroupTitle } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -112,10 +112,6 @@ export class QPSModal extends Modal {
             // create items
             const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
             itemToggleClass(this, pluginItem, itemContainer)
-            // context menu on item-line
-            itemContainer.addEventListener("contextmenu", (evt) => {
-                handleContextMenu(evt, this, plugin, pluginItem)
-            })
 
             itemTogglePluginButton(this, pluginItem, itemContainer)
 
@@ -123,12 +119,19 @@ export class QPSModal extends Modal {
             //add hotkeys
             text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, text))
             // click on text to toggle plugin
+            let isClickActionDone = false;
             text.addEventListener("click", async (evt: MouseEvent) => {
                 if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
-                    evt.stopPropagation
-                    text.blur()
+                    if (!isClickActionDone) {
+                        text.blur()
+                    }
                 }
             },)
+            // context menu on item-line
+            text.addEventListener("contextmenu", (evt) => {
+                text.blur()
+                handleContextMenu(evt, this, plugin, pluginItem)
+            })
 
             folderOpenButton(this, pluginItem, text)
         }

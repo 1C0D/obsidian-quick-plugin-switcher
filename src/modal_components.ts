@@ -295,7 +295,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                 .setTitle("Open plugin folder")
                 .setIcon("folder-open")
                 .onClick(() => {
-                    openDirectoryInFileManager(shell, plugin, pluginItem)
+                    openDirectoryInFileManager(shell, modal, pluginItem)
                 })
         );
     }
@@ -378,7 +378,7 @@ export const folderOpenButton = (modal: QPSModal, pluginItem: PluginInfo, itemCo
             .setIcon("folder-open")
             .setTooltip("Open plugin directory")
             .onClick(async () => {
-                openDirectoryInFileManager(modal.plugin, pluginItem)
+                openDirectoryInFileManager(shell, modal, pluginItem)
             })
     }
 }

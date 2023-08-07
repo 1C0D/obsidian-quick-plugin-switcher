@@ -377,30 +377,22 @@ export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDiv
     let customValue = pluginItem.name;
     if (isGrouped) {
         // Build the prefix string with emojis for each group index
-        const emojiPrefixes: string[] = [];
-        for (const groupIndex of pluginItem.groupInfo.groupIndices) {
-            emojiPrefixes.push(getEmojiForGroup(groupIndex));
-        };
-        const prefix = emojiPrefixes.join('');
-        customValue = `${prefix} ${pluginItem.name}`;
+        // const emojiPrefixes: string[] = [];
+        // for (const groupIndex of pluginItem.groupInfo.groupIndices) {
+        //     const { emoji } = getEmojiForGroup(groupIndex) 
+        //     emojiPrefixes.push(emoji);
+        // };
+        // const prefix = emojiPrefixes.join('');
+        // customValue = `${prefix} ${pluginItem.name}`;
+        customValue = `${pluginItem.name}`;
     }
 
     const text = new TextComponent(itemContainer)
         .setValue(customValue)
         .inputEl
+    
+    
     return text
-}
-
-export const folderOpenButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
-    const { settings } = modal.plugin
-    if (settings.openPluginFolder) {
-        new ButtonComponent(itemContainer)
-            .setIcon("folder-open")
-            .setTooltip("Open plugin directory")
-            .onClick(async () => {
-                openDirectoryInFileManager(shell, modal, pluginItem)
-            })
-    }
 }
 
 function addRemoveItemGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin, pluginItem: PluginInfo) {
@@ -472,6 +464,7 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
                 item
                     .setTitle(value)
                     .onClick(() => {
+                        if (pluginItem.groupInfo.groupIndices.length === 4) return
                         const groupIndex = Object.keys(Groups).indexOf(key);
                         pluginItem.groupInfo.groupIndices?.push(groupIndex);
                         modal.onOpen();
@@ -480,3 +473,4 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
         }
     });
 }
+

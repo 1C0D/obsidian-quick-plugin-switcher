@@ -37,15 +37,16 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
 
     for (let i = 1; i <= numberOfGroups; i++) {
         const groupKey = `Group${i}`;
-        const groupEmoji = getEmojiForGroup(i);
+        const { emoji } = getEmojiForGroup(i);
+        const groupEmoji = emoji;
         Groups[groupKey] = `${groupEmoji}${groupKey}`;
     }
 }
 
-export const getEmojiForGroup = (groupNumber: number): string => {
-    const emojis = ["🟡", "🟢", "🔵", "🟣", "🟤", "⚪️", "🔴"];
-    return emojis[groupNumber - 1];
-    // return emojis[groupNumber % emojis.length]
+export const getEmojiForGroup = (groupNumber: number) => {
+    const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟤", "🟢", "🟣"];
+    const colors = ["#FFD700", "#0000FF", "#FF0000", "#FFFFFF", "#A52A2A", "#00FF00", "#800080"];
+    return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1]};
 };
 
 

@@ -1,15 +1,15 @@
 import { App, DropdownComponent, Modal, SearchComponent, Setting } from "obsidian"
 import { PluginInfo, QPSSettings } from "./types"
-import { getLength, removeItem } from "./utils";
+import { getLength } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
     doSearch, handleContextMenu, modeSort,
     mostSwitchedResetButton, filterByGroup,
     powerButton, itemTogglePluginButton,
-    folderOpenButton, itemToggleClass,
-    itemTextComponent
+    itemToggleClass, itemTextComponent,
+
 } from "./modal_components";
-import { getGroupTitle } from "./modal_utils";
+import { getEmojiForGroup, getGroupTitle } from "./modal_utils";
 import { RemoveFromGroupModal } from "./secondary_modals";
 
 export class QPSModal extends Modal {
@@ -116,6 +116,23 @@ export class QPSModal extends Modal {
             itemTogglePluginButton(this, pluginItem, itemContainer)
 
             const text = itemTextComponent(pluginItem, itemContainer)
+            const indices = pluginItem.groupInfo.groupIndices
+            const len = indices.length
+            if (indices.length) {
+                const content = this.getContent(pluginItem, indices);
+                text.insertAdjacentHTML("afterend", content);
+
+                if (indices.length >= 3) {
+                    const [valeur0, valeur1, ...part2] = indices;
+                    const part1 = [valeur0, valeur1];
+
+                    const content1 = this.getContent(pluginItem, part1);
+                    text.insertAdjacentHTML("afterend", content1);
+
+                    const content2 = this.getContent(pluginItem, part2);
+                    text.insertAdjacentHTML("afterend", content2);
+                }
+            }
             //add hotkeys
             text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, text))
             // click on text to toggle plugin
@@ -132,9 +149,30 @@ export class QPSModal extends Modal {
                 text.blur()
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
-
-            folderOpenButton(this, pluginItem, text)
         }
+    }
+
+    getContent(pluginItem: PluginInfo, indices:number[] ) {
+        const len = indices.length
+        let background = "";
+        if (len === 1) {
+            const { color } = getEmojiForGroup(indices[len - 1]);
+            background = `background: ${color};`;
+        } else if (len === 2) {
+            const { color: color1 } = getEmojiForGroup(indices[len - 2]);
+            const { color: color2 } = getEmojiForGroup(indices[len - 1]);
+            background = `background: linear-gradient(90deg, ${color1} 50%, ${color2} 50%);`;
+        }
+
+        // style="background: linear-gradient(90deg, red 50%, yellow 50%);"
+        const content = `<div
+            style="${background}"
+            class="qps-item-line-group"
+            >
+            &nbsp;
+            </div>
+            `
+        return content
     }
 
     handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
@@ -157,9 +195,13 @@ export class QPSModal extends Modal {
             const keyPressed = event.key;
             if (keyPressed in keyToGroupMap) {
                 const groupIndex = parseInt(keyPressed);
+                if (pluginItem.groupInfo.groupIndices.length === 4) return
                 const index = pluginItem.groupInfo.groupIndices.indexOf(groupIndex);
                 if (index === -1) {
                     pluginItem.groupInfo.groupIndices?.push(groupIndex);
+                    await this.plugin.saveSettings()
+                    // document.removeEventListener('keydown', handleKeyDown);
+                    this.onOpen();
                 }
             } else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
                 keyPressed === "0") {

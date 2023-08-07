@@ -16,17 +16,6 @@ export default class QPSSettingTab extends PluginSettingTab {
         containerEl.createEl("h2", { text: "Quick Plugin Switcher" });
 
         new Setting(containerEl)
-            .setName("Open Plugin Folder")
-            .setDesc("Add a button to open the plugin folder")
-            .addToggle((toggle) => {
-                toggle.setValue(settings.openPluginFolder);
-                toggle.onChange(async (value) => {
-                    settings.openPluginFolder = value;
-                    await plugin.saveSettings();
-                });
-            });
-
-        new Setting(containerEl)
             .setName("In case of bug reset all values")
             .setDesc("Should not be needed, but could be useful in case of bug. It's askings for confirmation")
             .addButton(btn => {

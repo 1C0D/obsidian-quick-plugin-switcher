@@ -26,7 +26,6 @@ export interface QPSSettings {
     filters: keyof typeof Filters;
     selectedGroup: keyof typeof Groups;
     search: string;
-    openPluginFolder: boolean;
     numberOfGroups: number
 }
 
@@ -36,7 +35,6 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     filters: Filters.All,
     selectedGroup: "SelectGroup",
     search: "",
-    openPluginFolder: false,
     numberOfGroups: 3
 };
 

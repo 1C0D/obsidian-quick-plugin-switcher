@@ -2,7 +2,7 @@ import { Groups, PluginInfo } from "./types"
 import Plugin from "./main"
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
-import { Notice } from "obsidian";   
+import { Notice } from "obsidian";
 
 
 export const reset = (modal: QPSModal) => {
@@ -49,7 +49,7 @@ export const getEmojiForGroup = (groupNumber: number): string => {
 };
 
 
-export const togglePluginAndSave = async (modal: QPSModal,pluginItem: PluginInfo) =>{
+export const togglePluginAndSave = async (modal: QPSModal, pluginItem: PluginInfo) => {
     const { plugin } = modal
 
     pluginItem.enabled = !pluginItem.enabled;

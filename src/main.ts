@@ -65,7 +65,7 @@ export default class QuickPluginSwitcher extends Plugin {
                     enabled: isEnabled(manifests[key].id) || false,
                     switched: 0,
                     groupInfo: {
-                        groupIndex: 0,
+                        groupIndices: [],
                         wasEnabled: false,
                     },
                 };

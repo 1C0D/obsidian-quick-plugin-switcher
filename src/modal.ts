@@ -1,6 +1,6 @@
 import { App, DropdownComponent, Modal, SearchComponent, Setting } from "obsidian"
 import { PluginInfo, QPSSettings } from "./types"
-import { getLength } from "./utils";
+import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
     doSearch, handleContextMenu, modeSort,
@@ -10,14 +10,14 @@ import {
     itemTextComponent
 } from "./modal_components";
 import { getGroupTitle } from "./modal_utils";
+import { RemoveFromGroupModal } from "./secondary_modals";
 
 export class QPSModal extends Modal {
     header: HTMLElement
     items: HTMLElement
     search: HTMLElement
-    listItems: PluginInfo[] = []
+    // listItems: PluginInfo[] = []
     allPluginsList = this.plugin.settings.allPluginsList
-    actualValue: string
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
@@ -143,7 +143,7 @@ export class QPSModal extends Modal {
         const keyToGroupMap: Record<string, number> = {};
 
         // Generate keyToGroupMap based on the number of groups available
-        for (let i = 0; i <= numberOfGroups; i++) {
+        for (let i = 1; i <= numberOfGroups; i++) {
             keyToGroupMap[i.toString()] = i;
         }
 
@@ -156,9 +156,18 @@ export class QPSModal extends Modal {
         const handleKeyDown = async (event: KeyboardEvent) => {
             const keyPressed = event.key;
             if (keyPressed in keyToGroupMap) {
-                pluginItem.groupInfo.groupIndex = parseInt(keyPressed);
-            } else if (keyPressed === "Delete" || keyPressed === "Backspace" || keyPressed === "0") {
-                pluginItem.groupInfo.groupIndex = 0;
+                const groupIndex = parseInt(keyPressed);
+                const index = pluginItem.groupInfo.groupIndices.indexOf(groupIndex);
+                if (index === -1) {
+                    pluginItem.groupInfo.groupIndices?.push(groupIndex);
+                }
+            } else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
+                keyPressed === "0") {
+                if (!pluginItem.groupInfo.groupIndices.length) return
+                if (pluginItem.groupInfo.groupIndices.length === 1) {
+                    pluginItem.groupInfo.groupIndices = [];
+                    this.onOpen();
+                } else new RemoveFromGroupModal(this.app, pluginItem, this).open()
             } else {
                 document.removeEventListener('keydown', handleKeyDown);
                 itemContainer.removeEventListener('mouseleave', handleMouseLeave);

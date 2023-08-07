@@ -10,7 +10,7 @@ import {
     getEmojiForGroup, openDirectoryInFileManager,
     reset, sortByName, sortSwitched, togglePluginAndSave
 } from "./modal_utils";
-import { getLength } from "./utils";
+import { getLength, removeItem } from "./utils";
 let shell: any = null;
 try {
     const electron = require("electron");
@@ -34,7 +34,6 @@ export const mostSwitchedResetButton = (modal: QPSModal, contentEl: HTMLElement)
     }
 }
 
-
 export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
     const { plugin } = modal
     const { settings } = plugin
@@ -42,23 +41,23 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
         const dropdownOptions: { [key: string]: string } = {};
         // set dropdownOptions
         for (const groupKey in Groups) {
-            const groupIndex = parseInt(groupKey.replace("Group", ""));// NaN, 1, 2...
+            const groupIndex = parseInt(groupKey.replace("Group", ""));
             if (groupKey === "SelectGroup" ||
-                settings.allPluginsList.some(
-                    plugin => plugin.groupInfo.groupIndex === groupIndex)
+                settings.allPluginsList.some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)
             ) {
                 dropdownOptions[groupKey] = Groups[groupKey];
             }
         }
-
         // if a group is empty get back dropdown to SelectGroup
-        const notEmpty = (settings.selectedGroup === "SelectGroup" || settings.allPluginsList.some(
-            plugin => plugin.groupInfo.groupIndex ===
-                parseInt((settings.selectedGroup as string).replace("Group", ""))))
+        const notEmpty = (settings.selectedGroup === "SelectGroup" ||
+            settings.allPluginsList.some(plugin => {
+                const groupIndex = parseInt((settings.selectedGroup as string).replace("Group", ""));
+                return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+            })
+        );
         new DropdownComponent(contentEl)
             .addOptions(dropdownOptions)
             .setValue(notEmpty ? settings.selectedGroup as string : "SelectGroup")
-            // .setValue(settings.groups as string)
             .onChange(async (value: QPSSettings['selectedGroup']) => {
                 settings.selectedGroup = value;
                 await plugin.saveSettings();
@@ -67,22 +66,20 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
     }
 }
 
-
 //addSearch /////////////////////////////////
 
 export const doSearch = (_this: Plugin, value: string) => {
-    const listItems = []
+    const listItems: PluginInfo[] = []
     // search process
     for (const i of _this.settings.allPluginsList) {
         if (i.name.toLowerCase().includes(value.toLowerCase()) ||
-            value.length > 1 && value[value.length - 1] == " " &&
+            value.length > 1 && value[value.length - 1] === " " &&
             i.name.toLowerCase().startsWith(value.trim().toLowerCase())) {
             listItems.push(i)
         }
     }
     return listItems
 }
-
 
 export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
     const { plugin } = modal
@@ -166,9 +163,9 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                 if (groupKey === "SelectGroup") return
                 const groupValue = Groups[groupKey as keyof typeof Groups]
                 const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                const inGroup = settings.allPluginsList.
-                    filter((plugin) => plugin.groupInfo.groupIndex === groupIndex)
-                // show group
+                const inGroup = settings.allPluginsList.filter((plugin) => {
+                    return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+                });
                 let previousWasEnabled = inGroup.filter(
                     (i) => i.groupInfo.wasEnabled === true
                 )
@@ -234,7 +231,6 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 
 }
 
-
 export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
     const { settings } = _this
     // after reset MostSwitched
@@ -255,9 +251,11 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
     }
     // ByGroup
     else if (settings.filters === Filters.ByGroup) {
-        const groupsIndex = Object.keys(Groups).indexOf(settings.selectedGroup as string);
-        if (groupsIndex !== 0) {
-            const groupedItems = listItems.filter(i => i.groupInfo.groupIndex === groupsIndex);
+        const groupIndex = Object.keys(Groups).indexOf(settings.selectedGroup as string);
+        if (groupIndex !== 0) {
+            const groupedItems = listItems.filter(i => {
+                return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+            });
             listItems = groupedItems;
             sortByName(listItems);
         }
@@ -275,7 +273,7 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
 
     return listItems
 }
-export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement ) => {
+export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
     const { settings } = modal.plugin
     if (pluginItem.id === "quick-plugin-switcher") {
         itemContainer.toggleClass("qps-quick-plugin-switcher", true);
@@ -316,15 +314,26 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
             const submenu = (item as any).setSubmenu() as Menu;
             addToGroupMenuItems(submenu, pluginItem, modal);
         })
-        menu.addItem((item) =>
+        menu.addItem((item) => {
             item
                 .setTitle("Remove from group")
-                .setIcon("user-minus")
-                .onClick(() => {
-                    pluginItem.groupInfo.groupIndex = 0
-                    modal.onOpen()
-                })
-        ).addSeparator();
+                .setIcon("user-minus");
+            const submenu = (item as any).setSubmenu() as Menu;
+            submenu.addItem((subitem) => {
+                subitem
+                    .setTitle("All groups")
+                    .onClick(async () => {
+                        const confirmReset = window.confirm('Detach all groups?');
+                        if (confirmReset) {
+                            pluginItem.groupInfo.groupIndices = [];
+                            modal.onOpen();
+                            // new Notice("No group on this plugin.");
+                        } else { new Notice("Operation cancelled."); }
+                    });
+            });
+            addRemoveItemGroupMenuItems(modal, submenu, plugin, pluginItem);
+        })
+            .addSeparator();
         menu.addItem((item) => {
             item
                 .setTitle("Clear groups")
@@ -338,7 +347,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                         const confirmReset = window.confirm('Do you want to reset all groups?');
                         if (confirmReset) {
                             for (const i of plugin.settings.allPluginsList) {
-                                i.groupInfo.groupIndex = 0;
+                                i.groupInfo.groupIndices = [];
                             }
                             modal.onOpen();
                             new Notice("All groups have been reset.");
@@ -362,9 +371,20 @@ export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, 
         })
 }
 
-export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDivElement) => { 
-    const prefix = pluginItem.groupInfo.groupIndex === 0 ? "" : getEmojiForGroup(pluginItem.groupInfo.groupIndex);
-    const customValue = `${prefix} ${pluginItem.name}`;
+
+export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
+    const isGrouped = pluginItem.groupInfo.groupIndices?.length;
+    let customValue = pluginItem.name;
+    if (isGrouped) {
+        // Build the prefix string with emojis for each group index
+        const emojiPrefixes: string[] = [];
+        for (const groupIndex of pluginItem.groupInfo.groupIndices) {
+            emojiPrefixes.push(getEmojiForGroup(groupIndex));
+        };
+        const prefix = emojiPrefixes.join('');
+        customValue = `${prefix} ${pluginItem.name}`;
+    }
+
     const text = new TextComponent(itemContainer)
         .setValue(customValue)
         .inputEl
@@ -383,23 +403,53 @@ export const folderOpenButton = (modal: QPSModal, pluginItem: PluginInfo, itemCo
     }
 }
 
+function addRemoveItemGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin, pluginItem: PluginInfo) {
+    const { settings } = plugin;
+    Object.keys(Groups).forEach((groupKey) => {
+        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settings, groupKey)
+        const getGroup = pluginItem.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+        if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
+            submenu.addItem((subitem) => {
+                subitem
+                    .setTitle(`${groupValue}`)
+                    .onClick(async () => {
+                        for (const index of pluginItem.groupInfo.groupIndices) {
+                            if (index === groupIndex) {
+                                removeItem(pluginItem.groupInfo.groupIndices, index);
+                                break;
+                            }
+                        }
+                        modal.onOpen();
+                    });
+            });
+        }
+    });
+}
+
+const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
+    const groupIndex = Object.keys(Groups).indexOf(groupKey);
+    const lengthGroup = settings.allPluginsList.filter((i) =>
+        i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+    ).length;
+    const groupValue = Groups[groupKey as keyof typeof Groups];
+
+    return { groupIndex, lengthGroup, groupValue };
+}
+
 function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin) {
     const { settings } = plugin
     Object.keys(Groups).forEach((groupKey) => {
-        const groupIndex = Object.keys(Groups).indexOf(groupKey);
-        const lengthGroup = settings.allPluginsList.
-            filter((i) => i.groupInfo.groupIndex === groupIndex).length
+        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settings, groupKey)
         if (groupKey !== "SelectGroup" && lengthGroup) {
-            const groupValue = Groups[groupKey as keyof typeof Groups];
-            const groupIndex = Object.keys(Groups).indexOf(groupKey);
             submenu.addItem((subitem) => {
                 subitem
-                    .setTitle(`Clear ${groupValue}`)
+                    .setTitle(`${groupValue}`)
                     .onClick(async () => {
                         let pluginsRemoved = false;
                         for (const i of settings.allPluginsList) {
-                            if (i.groupInfo.groupIndex === groupIndex) {
-                                i.groupInfo.groupIndex = 0;
+                            const index = i.groupInfo.groupIndices?.indexOf(groupIndex);
+                            if (index !== -1) {
+                                i.groupInfo.groupIndices?.splice(index, 1);
                                 pluginsRemoved = true;
                             }
                         }
@@ -423,7 +473,7 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
                     .setTitle(value)
                     .onClick(() => {
                         const groupIndex = Object.keys(Groups).indexOf(key);
-                        pluginItem.groupInfo.groupIndex = groupIndex;
+                        pluginItem.groupInfo.groupIndices?.push(groupIndex);
                         modal.onOpen();
                     })
             );

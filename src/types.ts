@@ -16,14 +16,9 @@ export const Groups: GroupData = {
 }
 
 export interface PluginGroupInfo {
-    groupIndex: number;
+    groupIndices: number[];
     wasEnabled: boolean;
 }
-
-export interface PluginGroupInfo {
-    groupIndex: number,
-    wasEnabled: boolean,
-};
 
 export interface QPSSettings {
     allPluginsList: PluginInfo[];

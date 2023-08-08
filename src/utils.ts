@@ -5,9 +5,9 @@ export const getLength = (_this: Plugin) => {
     const allPluginsList = settings.allPluginsList || [];
     _this.lengthAll = allPluginsList.length
     _this.lengthEnabled = settings.allPluginsList.
-    filter((plugin) => plugin.enabled).length
+        filter((plugin) => plugin.enabled).length
     _this.lengthDisabled = settings.allPluginsList.
-    filter((plugin) => !plugin.enabled).length
+        filter((plugin) => !plugin.enabled).length
 }
 
 export function isEnabled(name: string): boolean {

@@ -1,9 +1,6 @@
-import { App, ButtonComponent, ExtraButtonComponent, Modal, TextComponent } from "obsidian";
+import { App, Modal } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginInfo } from "./types"
-import { QPSModal } from "./modal";
-import { removeItem } from "./utils";
-import { getEmojiForGroup } from "./modal_utils";
 
 // for plugin description 
 export class DescriptionModal extends Modal {
@@ -28,47 +25,6 @@ export class DescriptionModal extends Modal {
                 href: pluginItem.authorUrl,
             })
         contentEl.createEl("p", { text: pluginItem.desc })
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}
-
-
-export class RemoveFromGroupModal extends Modal {
-    constructor(app: App, public pluginItem: PluginInfo, public modal: QPSModal) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl, pluginItem } = this;
-        contentEl.empty();
-
-        contentEl.createEl("h6", { text: "Remove Item Group(s)" })
-
-        const all = contentEl.createEl("div", { cls: "remove-item-groups" })
-        // button to delete all groups
-        new ButtonComponent(all)
-            .setButtonText("All")
-            .onClick(() => {
-                pluginItem.groupInfo.groupIndices = [];
-                this.close();
-                this.modal.onOpen()
-            });
-
-        // button to delete group
-        for (const groupIndex of pluginItem.groupInfo.groupIndices) {
-            const { emoji } = getEmojiForGroup(groupIndex)
-            new ButtonComponent(all)
-                .setButtonText(`${emoji} group ${groupIndex}`)
-                .onClick(() => {
-                    pluginItem.groupInfo.groupIndices = removeItem(pluginItem.groupInfo.groupIndices, groupIndex);
-                    this.close();
-                    this.modal.onOpen();
-                });
-        }
     }
 
     onClose() {

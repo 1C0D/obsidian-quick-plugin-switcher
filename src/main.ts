@@ -15,7 +15,7 @@ export default class QuickPluginSwitcher extends Plugin {
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new QPSSettingTab(this.app, this));
-        
+
         // TODO: create a command and a setting to add ribbon
         this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
             this.getPluginsInfo()
@@ -85,6 +85,3 @@ export default class QuickPluginSwitcher extends Plugin {
         await this.saveData(this.settings);
     }
 }
-
-
-

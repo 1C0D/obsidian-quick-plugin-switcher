@@ -7,7 +7,7 @@ import {
 } from "obsidian"
 import { DescriptionModal } from "./secondary_modals";
 import {
-    getEmojiForGroup, openDirectoryInFileManager,
+    openDirectoryInFileManager,
     reset, sortByName, sortSwitched, togglePluginAndSave
 } from "./modal_utils";
 import { getLength, removeItem } from "./utils";
@@ -150,82 +150,82 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                             })
                     );
                 }
-            }
-            if (plugin.lengthEnabled > 1) {
-                menu.addSeparator()
-                menu.addItem((item) =>
-                    item
-                        .setTitle("Disable plugins by group")
-                        .setDisabled(true)
-                )
-            }
-            Object.keys(Groups).forEach((groupKey) => {
-                if (groupKey === "SelectGroup") return
-                const groupValue = Groups[groupKey as keyof typeof Groups]
-                const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                const inGroup = settings.allPluginsList.filter((plugin) => {
-                    return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
-                });
-                let previousWasEnabled = inGroup.filter(
-                    (i) => i.groupInfo.wasEnabled === true
-                )
-
-                if (inGroup.length > 0 && (inGroup.some(i => i.enabled === true) || previousWasEnabled.length > 0)) {
+                if (plugin.lengthEnabled > 1) {
+                    menu.addSeparator()
                     menu.addItem((item) =>
                         item
-                            .setTitle(previousWasEnabled.length > 0 ? `re-enable ${groupValue}` : groupValue)
-                            .setIcon(previousWasEnabled.length > 0 ? "power" : "power-off")
-                            .onClick(async () => {
-                                if (previousWasEnabled.length === 0) {
-                                    const toDisable = inGroup.filter(i => i.enabled === true).map(async (i) => {
-                                        i.groupInfo.wasEnabled = true
-                                        await (modal.app as any).plugins.disablePluginAndSave(i.id)
-                                        i.enabled = false
-                                    })
-                                    await Promise.all(toDisable);
-                                    if (toDisable) {
-                                        getLength(plugin)
-                                        modal.onOpen();
-                                        new Notice("All plugins disabled.");
-                                        await modal.plugin.saveSettings()
-                                    }
-                                }
-                                else {
-                                    for (const i of previousWasEnabled) {
-                                        await (modal.app as any).plugins.enablePluginAndSave(i)
-                                        i.enabled = true
-                                        i.switched++
+                            .setTitle("Disable plugins by group")
+                            .setDisabled(true)
+                    )
+                }
+                Object.keys(Groups).forEach((groupKey) => {
+                    if (groupKey === "SelectGroup") return
+                    const groupValue = Groups[groupKey as keyof typeof Groups]
+                    const groupIndex = Object.keys(Groups).indexOf(groupKey);
+                    const inGroup = settings.allPluginsList.filter((plugin) => {
+                        return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+                    });
+                    let previousWasEnabled = inGroup.filter(
+                        (i) => i.groupInfo.wasEnabled === true
+                    )
 
-                                    }
-                                    previousWasEnabled.map(plugin => {
-                                        plugin.groupInfo.wasEnabled = false
-                                    })
-                                    getLength(plugin)
-                                    modal.onOpen();
-                                    new Notice("All plugins re-enabled.");
-                                }
-                            }
-                            ))
-                    if (previousWasEnabled.length > 0) {
+                    if (inGroup.length > 0 && (inGroup.some(i => i.enabled === true) || previousWasEnabled.length > 0)) {
                         menu.addItem((item) =>
                             item
-                                .setTitle("Skip re-enable")
-                                .setIcon("reset")
+                                .setTitle(previousWasEnabled.length > 0 ? `re-enable ${groupValue}` : groupValue)
+                                .setIcon(previousWasEnabled.length > 0 ? "power" : "power-off")
                                 .onClick(async () => {
-                                    const confirmReset = window.confirm('skip re-enable ?');
-                                    if (confirmReset) {
+                                    if (previousWasEnabled.length === 0) {
+                                        const toDisable = inGroup.filter(i => i.enabled === true).map(async (i) => {
+                                            i.groupInfo.wasEnabled = true
+                                            await (modal.app as any).plugins.disablePluginAndSave(i.id)
+                                            i.enabled = false
+                                        })
+                                        await Promise.all(toDisable);
+                                        if (toDisable) {
+                                            getLength(plugin)
+                                            modal.onOpen();
+                                            new Notice("All plugins disabled.");
+                                            await modal.plugin.saveSettings()
+                                        }
+                                    }
+                                    else {
+                                        for (const i of previousWasEnabled) {
+                                            await (modal.app as any).plugins.enablePluginAndSave(i)
+                                            i.enabled = true
+                                            i.switched++
+
+                                        }
                                         previousWasEnabled.map(plugin => {
                                             plugin.groupInfo.wasEnabled = false
                                         })
-                                        await modal.plugin.saveSettings();
-                                        new Notice("All values have been reset.");
-                                    } else { new Notice("Operation cancelled."); }
-                                })
-                        );
+                                        getLength(plugin)
+                                        modal.onOpen();
+                                        new Notice("All plugins re-enabled.");
+                                    }
+                                }
+                                ))
+                        if (previousWasEnabled.length > 0) {
+                            menu.addItem((item) =>
+                                item
+                                    .setTitle("Skip re-enable")
+                                    .setIcon("reset")
+                                    .onClick(async () => {
+                                        const confirmReset = window.confirm('skip re-enable ?');
+                                        if (confirmReset) {
+                                            previousWasEnabled.map(plugin => {
+                                                plugin.groupInfo.wasEnabled = false
+                                            })
+                                            await modal.plugin.saveSettings();
+                                            new Notice("All values have been reset.");
+                                        } else { new Notice("Operation cancelled."); }
+                                    })
+                            );
+                        }
                     }
                 }
+                )
             }
-            )
             menu.showAtMouseEvent(evt);
         })
 
@@ -376,22 +376,14 @@ export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDiv
     const isGrouped = pluginItem.groupInfo.groupIndices?.length;
     let customValue = pluginItem.name;
     if (isGrouped) {
-        // Build the prefix string with emojis for each group index
-        // const emojiPrefixes: string[] = [];
-        // for (const groupIndex of pluginItem.groupInfo.groupIndices) {
-        //     const { emoji } = getEmojiForGroup(groupIndex) 
-        //     emojiPrefixes.push(emoji);
-        // };
-        // const prefix = emojiPrefixes.join('');
-        // customValue = `${prefix} ${pluginItem.name}`;
         customValue = `${pluginItem.name}`;
     }
 
     const text = new TextComponent(itemContainer)
         .setValue(customValue)
         .inputEl
-    
-    
+
+
     return text
 }
 

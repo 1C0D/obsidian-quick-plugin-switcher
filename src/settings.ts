@@ -9,7 +9,7 @@ export default class QPSSettingTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
-        const {plugin} =this
+        const { plugin } = this
         const { settings } = plugin;
 
         containerEl.empty();
@@ -31,7 +31,7 @@ export default class QPSSettingTab extends PluginSettingTab {
                         } else { new Notice("Operation cancelled."); }
                     });
             });
-        
+
         let saveSettingsTimeout: ReturnType<typeof setTimeout>;
         const { numberOfGroups } = settings;
         new Setting(containerEl)

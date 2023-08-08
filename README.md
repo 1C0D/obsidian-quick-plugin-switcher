@@ -18,13 +18,17 @@ Most Switched filter is useful for most often switched plugins...(you can reset 
 
 As you can see above, you can add groups to your plugins ( 7 colors )
 
-you can then toggle plugins by group  
+you can then toggle plugins by group   
 
 1 - Add group
   - using shortcut <kbd>1 to 7</kbd> and <kbd>0/del/suppr</kbd>, over each item
   - using context menu
 ![filters](item_context_menu.jpg)  
 you can see other the possible operations  
+
+- you can add several groups(4 max) by plugin item  
+  and then delete them <kbd>0/del/suppr</kbd>
+![filters](several_groups.jpg) 
 
 2 - you can then toggle plugins  
   

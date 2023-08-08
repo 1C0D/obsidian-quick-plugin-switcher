@@ -1,6 +1,6 @@
-import { App, DropdownComponent, Modal, SearchComponent, Setting } from "obsidian"
+import { App, DropdownComponent, Menu, Modal, SearchComponent, Setting } from "obsidian"
 import { PluginInfo, QPSSettings } from "./types"
-import { getLength } from "./utils";
+import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
     doSearch, handleContextMenu, modeSort,
@@ -10,7 +10,6 @@ import {
 
 } from "./modal_components";
 import { getEmojiForGroup, getGroupTitle } from "./modal_utils";
-import { RemoveFromGroupModal } from "./secondary_modals";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -152,7 +151,7 @@ export class QPSModal extends Modal {
         }
     }
 
-    getContent(pluginItem: PluginInfo, indices:number[] ) {
+    getContent(pluginItem: PluginInfo, indices: number[]) {
         const len = indices.length
         let background = "";
         if (len === 1) {
@@ -209,7 +208,32 @@ export class QPSModal extends Modal {
                 if (pluginItem.groupInfo.groupIndices.length === 1) {
                     pluginItem.groupInfo.groupIndices = [];
                     this.onOpen();
-                } else new RemoveFromGroupModal(this.app, pluginItem, this).open()
+                } else {
+                    const menu = new Menu();
+                    menu.addItem((item) =>
+                        item
+                            .setTitle("Remove item group(s)")
+                    )
+                    menu.addItem((item) =>
+                        item
+                            .setTitle("All")
+                            .onClick(() => {
+                                pluginItem.groupInfo.groupIndices = [];
+                                this.onOpen()
+                            }))
+                    for (const groupIndex of pluginItem.groupInfo.groupIndices) {
+                        const { emoji } = getEmojiForGroup(groupIndex)
+                        menu.addItem((item) =>
+                            item
+                                .setTitle(`${emoji} group ${groupIndex}`)
+                                .onClick(() => {
+                                    pluginItem.groupInfo.groupIndices = removeItem(pluginItem.groupInfo.groupIndices, groupIndex);
+                                    this.onOpen();
+                                }))
+                    }
+
+                    menu.showAtMouseEvent(evt);
+                }
             } else {
                 document.removeEventListener('keydown', handleKeyDown);
                 itemContainer.removeEventListener('mouseleave', handleMouseLeave);

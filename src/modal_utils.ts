@@ -46,7 +46,7 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
 export const getEmojiForGroup = (groupNumber: number) => {
     const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟤", "🟢", "🟣"];
     const colors = ["#FFD700", "#0000FF", "#FF0000", "#FFFFFF", "#A52A2A", "#00FF00", "#800080"];
-    return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1]};
+    return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
 };
 
 

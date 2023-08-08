@@ -21,6 +21,7 @@ export interface PluginGroupInfo {
 }
 
 export interface QPSSettings {
+    savedVersion: string;
     allPluginsList: PluginInfo[];
     wasEnabled: string[];
     filters: keyof typeof Filters;
@@ -30,6 +31,7 @@ export interface QPSSettings {
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
+    savedVersion: "0.0.0",
     allPluginsList: [],
     wasEnabled: [],
     filters: Filters.All,

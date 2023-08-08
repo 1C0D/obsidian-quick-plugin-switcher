@@ -253,3 +253,25 @@ export class QPSModal extends Modal {
     }
 }
 
+export class NewVersion extends Modal {
+    constructor(app: App, public plugin: QuickPluginSwitcher) {
+        super(app);
+        this.plugin = plugin;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
+        contentEl.createEl("h4", { text: "Warning about this version:" });
+        contentEl.createDiv({ text: "to make this new version work, a reset is needed. you will loose your previous added groups" });
+    }
+
+    async onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+        this.plugin.settings.savedVersion = this.plugin.manifest.version;
+        this.plugin.settings.allPluginsList = []
+        await this.plugin.saveSettings();
+    }
+}

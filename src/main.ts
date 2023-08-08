@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { QPSModal } from './modal';
+import { NewVersion, QPSModal } from './modal';
 import { debug, getLength, isEnabled } from './utils';
 import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
 import QPSSettingTab from './settings';
@@ -15,6 +15,7 @@ export default class QuickPluginSwitcher extends Plugin {
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new QPSSettingTab(this.app, this));
+        this.updateInfo()
 
         // TODO: create a command and a setting to add ribbon
         this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
@@ -75,6 +76,14 @@ export default class QuickPluginSwitcher extends Plugin {
         settings.allPluginsList = stillInstalled;
         await this.saveSettings()
         getLength(this);
+    }
+
+    async updateInfo() {
+        if (
+            this.settings.savedVersion === "0.0.0"
+        ) {
+            new NewVersion(this.app, this).open();
+        }
     }
 
     async loadSettings() {

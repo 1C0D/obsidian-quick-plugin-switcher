@@ -28,18 +28,19 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
     const numberOfGroups = _this.settings.numberOfGroups;
     const currentGroupKeys = Object.keys(Groups);
-
+    
     // delete groups if new value < previous value (when moving slider in prefs)
     for (let i = 1; i < currentGroupKeys.length; i++) {
         const key = currentGroupKeys[i];
         delete Groups[key];
     }
-
+    
     for (let i = 1; i <= numberOfGroups; i++) {
-        const groupKey = `Group${i}`;
+        const groupKey = (_this.settings.groupsNames[i] !== undefined) ?
+        _this.settings.groupsNames[i]: `Group${i}`;
         const { emoji } = getEmojiForGroup(i);
         const groupEmoji = emoji;
-        Groups[groupKey] = `${groupEmoji}${groupKey}`;
+        Groups[`Group${i}`] = `${groupEmoji}${groupKey}`;
     }
 }
 

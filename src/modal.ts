@@ -1,5 +1,5 @@
 import { App, DropdownComponent, Menu, Modal, SearchComponent, Setting } from "obsidian"
-import { PluginInfo, QPSSettings } from "./types"
+import { Groups, PluginInfo, QPSSettings } from "./types"
 import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
@@ -15,7 +15,7 @@ export class QPSModal extends Modal {
     header: HTMLElement
     items: HTMLElement
     search: HTMLElement
-    // listItems: PluginInfo[] = []
+    groups: HTMLElement
     allPluginsList = this.plugin.settings.allPluginsList
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
@@ -30,6 +30,7 @@ export class QPSModal extends Modal {
         this.container(contentEl)
         this.addHeader(this.header)
         this.addSearch(this.search)
+        this.addGroups(this.groups)
         this.addItems(this.allPluginsList)
     }
 
@@ -37,6 +38,7 @@ export class QPSModal extends Modal {
     container(contentEl: HTMLElement) {
         this.header = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-header"] })
         this.search = contentEl.createEl("div", { cls: ["qps-search"] });
+        this.groups = contentEl.createEl("div", { cls: ["qps-groups"] });
         this.items = contentEl.createEl("div", { cls: ["qps-items"] });
     }
 
@@ -92,6 +94,47 @@ export class QPSModal extends Modal {
         powerButton(this, span)
     }
 
+    addGroups(contentEl: HTMLElement): void {
+        const { plugin } = this;
+        const { settings } = plugin;
+        const groups = Object.values(Groups);
+
+        for (let i = 1; i < groups.length; i++) {
+            const groupKey = groups[i];
+            const span = contentEl.createEl("span", { cls: ["qps-groups-item"] })
+            span.textContent = `${groupKey}`;
+            span.addEventListener("dblclick", () => this.editGroupName(span, i, groupKey));
+        }
+    }
+
+    editGroupName = (span: HTMLSpanElement, groupNumber: number, emoji: string) => {
+        const { plugin } = this
+        const { settings } = plugin
+        const currentValue = settings.groupsNames[groupNumber] || "";
+        span.innerHTML = `<input type="text" value="${currentValue}" />`;
+
+        const input = span.querySelector("input");
+        input?.focus();
+
+        input?.addEventListener("blur", () => {
+            setTimeout(() => {
+                input.value ? settings.groupsNames[groupNumber] = input.value :
+                    settings.groupsNames[groupNumber] = Groups[groupNumber];
+                span.textContent = `${emoji}${input.value}`;
+                this.onOpen();
+            }, 100);
+        });
+
+        input?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                input.value ? settings.groupsNames[groupNumber] = input.value :
+                    settings.groupsNames[groupNumber] = Groups[groupNumber];
+                span.textContent = `${emoji}${input.value}`
+                this.onOpen()
+            }
+        });
+    };
+
     async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
         const { settings } = plugin
@@ -115,6 +158,7 @@ export class QPSModal extends Modal {
             itemTogglePluginButton(this, pluginItem, itemContainer)
 
             const text = itemTextComponent(pluginItem, itemContainer)
+            text.readOnly = true
             const indices = pluginItem.groupInfo.groupIndices
             const len = indices.length
             if (indices.length) {
@@ -132,20 +176,10 @@ export class QPSModal extends Modal {
                     text.insertAdjacentHTML("afterend", content2);
                 }
             }
-            //add hotkeys
-            text.addEventListener("mouseover", (evt) => this.handleHotkeys(evt, pluginItem, text))
-            // click on text to toggle plugin
-            let isClickActionDone = false;
-            text.addEventListener("click", async (evt: MouseEvent) => {
-                if (evt.button === 0 && pluginItem.id !== "quick-plugin-switcher") {
-                    if (!isClickActionDone) {
-                        text.blur()
-                    }
-                }
-            },)
-            // context menu on item-line
+            text.addEventListener("click", (evt) => {
+                this.handleHotkeys(evt, pluginItem, text)
+            })
             text.addEventListener("contextmenu", (evt) => {
-                text.blur()
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
         }
@@ -184,12 +218,6 @@ export class QPSModal extends Modal {
             keyToGroupMap[i.toString()] = i;
         }
 
-        const handleMouseLeave = () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            itemContainer.removeEventListener('mouseleave', handleMouseLeave);
-        }
-        itemContainer.addEventListener('mouseleave', handleMouseLeave);
-
         const handleKeyDown = async (event: KeyboardEvent) => {
             const keyPressed = event.key;
             if (keyPressed in keyToGroupMap) {
@@ -199,7 +227,6 @@ export class QPSModal extends Modal {
                 if (index === -1) {
                     pluginItem.groupInfo.groupIndices?.push(groupIndex);
                     await this.plugin.saveSettings()
-                    // document.removeEventListener('keydown', handleKeyDown);
                     this.onOpen();
                 }
             } else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
@@ -234,17 +261,13 @@ export class QPSModal extends Modal {
 
                     menu.showAtMouseEvent(evt);
                 }
-            } else {
-                document.removeEventListener('keydown', handleKeyDown);
-                itemContainer.removeEventListener('mouseleave', handleMouseLeave);
-                return
             }
 
             await this.plugin.saveSettings()
-            document.removeEventListener('keydown', handleKeyDown);
+            this.items.removeEventListener('keydown', handleKeyDown);
             this.onOpen();
         }
-        document.addEventListener('keydown', handleKeyDown)
+        this.items.addEventListener('keydown', handleKeyDown)
     }
 
     onClose() {
@@ -263,8 +286,18 @@ export class NewVersion extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
-        contentEl.createEl("h4", { text: "Warning about this version:" });
-        contentEl.createDiv({ text: "to make this new version work, a reset is needed. you will loose your previous added groups" });
+        const content = `
+        <b>Warning:</b> to make this new version work, a reset is needed.
+        you will loose previous added groups. Sorry for the inconvenience. <br><br>
+        <b>Important:</b> you have to click plugin items now before to use shortcuts.<br>
+        you can click several plugins then a shortcut. <br><br>
+        <b>New feature:</b> you can now change groups name by double cliking them, 
+        and reset value to default just entering nothing and validating (with return or clicking on the modal UI).
+        I will add a gif in the github help
+        `
+        contentEl.createDiv("", (el: HTMLDivElement) => {
+            el.innerHTML = content;
+        });
     }
 
     async onClose() {

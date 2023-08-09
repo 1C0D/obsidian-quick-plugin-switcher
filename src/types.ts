@@ -27,7 +27,8 @@ export interface QPSSettings {
     filters: keyof typeof Filters;
     selectedGroup: keyof typeof Groups;
     search: string;
-    numberOfGroups: number
+    numberOfGroups: number;
+    groupsNames: Record<number, string>
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
@@ -37,7 +38,8 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     filters: Filters.All,
     selectedGroup: "SelectGroup",
     search: "",
-    numberOfGroups: 3
+    numberOfGroups: 3,
+    groupsNames: {}
 };
 
 export interface PluginInfo {

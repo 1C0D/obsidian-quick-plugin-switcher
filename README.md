@@ -29,6 +29,7 @@ you can see other the possible operations
 - you can add several groups(4 max) by plugin item  
   and then delete them <kbd>0/del/suppr</kbd>
 ![filters](several_groups.jpg) 
+- you can now rename groups
 
 2 - you can then toggle plugins  
   
@@ -46,7 +47,6 @@ you can skip re-enable and reset the toggle, without re-enabling
 if you add a space at the end of your search, it will modify search to "starting with" (instead of "including")
 ![search_space](search_space.jpg)
 
-## video
-
-temp
+## videos
+![Newvid](multi-group-rename.gif)
 ![vid](demo.gif)  

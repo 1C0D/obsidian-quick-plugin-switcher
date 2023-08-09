@@ -10,7 +10,12 @@
 
 .qps-search {
   display: flex;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
+}
+
+.qps-groups {
+  display: flex;
+  margin-bottom: 10px;
 }
 
 .qps-toggle-plugins {

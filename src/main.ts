@@ -80,7 +80,7 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async updateInfo() {
         if (
-            this.settings.savedVersion === "0.0.0"
+            this.settings.savedVersion < "1.8.0"
         ) {
             new NewVersion(this.app, this).open();
         }

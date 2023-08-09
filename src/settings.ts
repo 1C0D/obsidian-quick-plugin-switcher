@@ -15,11 +15,9 @@ export default class QPSSettingTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl("h2", { text: "Quick Plugin Switcher" });
         const content = `
-        <b>Warning:</b> to make this new version work, a reset is needed.
-        you will loose previous added groups. Sorry for the inconvenience. <br><br>
-        <b>Important:</b> you have to click plugin items now before to use shortcuts.<br>
+        <b>Important:</b> you have to click plugin items now, before to use shortcuts.<br>
         you can click several plugins then a shortcut. <br><br>
-        <b>New feature:</b> you can now change groups name by double cliking them,
+        <b>New feature:</b> you can now rename groups by double cliking them,
         and reset value to default just entering nothing and validating (with return or clicking on the modal UI).
         I will add a gif in the github help
         <br><br>`

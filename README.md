@@ -30,6 +30,7 @@ you can see other the possible operations
   and then delete them <kbd>0/del/suppr</kbd>
 ![filters](several_groups.jpg) 
 - you can now rename groups
+![filters](rename.jpg)
 
 2 - you can then toggle plugins  
   

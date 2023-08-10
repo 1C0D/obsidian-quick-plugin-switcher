@@ -61,7 +61,7 @@
 }
 
 /* .qps-item-line{
-  margin: 3px 0 3px 0  
+  margin: 3px 0 
 } */
 
 .qps-item-line .checkbox-container {
@@ -71,7 +71,7 @@
 .qps-item-line input {
   width: 59%;
   padding: 1.25em 0 1.25em 0.5em !important;
-  margin: 2px 0 2px 0
+  margin: 2px 0
 }
 
 /* .qps-item-line button {
@@ -87,8 +87,8 @@
   color: rgb(106, 101, 140);
 }
 
-.qps-item-line-group {
-  
+/* circles */
+.qps-item-line-group {  
   display: inline-block;
   width: 1.2rem;
   height: 1.3rem;

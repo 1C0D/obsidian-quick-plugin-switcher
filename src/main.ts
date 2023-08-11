@@ -14,6 +14,14 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        this.app.workspace.onLayoutReady(() => {
+            for (const pluginItem of this.settings.delayedPlugins) {
+                const time = pluginItem.time * 1000 || 0
+                if (pluginItem.enabled) {
+                    setTimeout(async () => await (this.app as any).plugins.enablePlugin(pluginItem.id), time)
+                }
+            }
+        })
         this.updateInfo()
         this.addSettingTab(new QPSSettingTab(this.app, this));
 
@@ -50,7 +58,9 @@ export default class QuickPluginSwitcher extends Plugin {
             // plugin has been toggled from obsidian UI ?
             const pluginInList = stillInstalled.find(plugin => plugin.id === manifests[key].id);
             if (pluginInList) {
-                if (isEnabled(manifests[key].id) !== pluginInList.enabled) {
+                if (
+                    !pluginInList.delayed &&
+                    isEnabled(manifests[key].id) !== pluginInList.enabled) {
                     pluginInList.enabled = !pluginInList.enabled;
                 }
                 continue
@@ -69,6 +79,8 @@ export default class QuickPluginSwitcher extends Plugin {
                         groupIndices: [],
                         wasEnabled: false,
                     },
+                    delayed: false,
+                    time: 0
                 };
                 stillInstalled.push(notInListInfo);
             }

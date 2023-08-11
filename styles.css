@@ -68,6 +68,7 @@
   margin-right: 2px;
 }
 
+
 .qps-item-line input {
   width: 59%;
   padding: 1.25em 0 1.25em 0.5em !important;
@@ -83,12 +84,26 @@
   color: rgba(186, 129, 75, 0.999);
 }
 
+.toggle-bullet-color .checkbox-container::after{
+  background-color: rgb(44, 181, 154);
+  content: var(--bullet-content, "5");
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-align: center;
+  color:rgb(3, 3, 3)
+}
+
+.bullet-content-input {
+  display: none;
+  width: 40px;
+}
+
 .qps-quick-plugin-switcher input {
   color: rgb(106, 101, 140);
 }
 
 /* circles */
-.qps-item-line-group {  
+.qps-item-line-group {
   display: inline-block;
   width: 1.2rem;
   height: 1.3rem;

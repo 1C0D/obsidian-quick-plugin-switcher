@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Menu, Modal, SearchComponent, Setting } from "obsidian"
+import { App, DropdownComponent, Menu, Modal, Notice, SearchComponent, Setting } from "obsidian"
 import { Groups, PluginInfo, QPSSettings } from "./types"
 import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
@@ -17,6 +17,7 @@ export class QPSModal extends Modal {
     search: HTMLElement
     groups: HTMLElement
     allPluginsList = this.plugin.settings.allPluginsList
+    isDblClick = false
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
@@ -103,7 +104,10 @@ export class QPSModal extends Modal {
             const groupKey = groups[i];
             const span = contentEl.createEl("span", { cls: ["qps-groups-item"] })
             span.textContent = `${groupKey}`;
-            span.addEventListener("dblclick", () => this.editGroupName(span, i, groupKey));
+            span.addEventListener("dblclick", () => {
+                if (this.isDblClick) return
+                this.editGroupName(span, i, groupKey)
+            });
         }
     }
 
@@ -118,6 +122,7 @@ export class QPSModal extends Modal {
 
         input?.addEventListener("blur", () => {
             setTimeout(() => {
+                if (this.isDblClick) return
                 input.value ? settings.groupsNames[groupNumber] = input.value :
                     settings.groupsNames[groupNumber] = Groups[groupNumber];
                 span.textContent = `${emoji}${input.value}`;
@@ -127,6 +132,7 @@ export class QPSModal extends Modal {
 
         input?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
+                if (this.isDblClick) return
                 input.value ? settings.groupsNames[groupNumber] = input.value :
                     settings.groupsNames[groupNumber] = Groups[groupNumber];
                 span.textContent = `${emoji}${input.value}`
@@ -152,15 +158,12 @@ export class QPSModal extends Modal {
             }
 
             // create items
-            const itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
+            let itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
             itemToggleClass(this, pluginItem, itemContainer)
-
             itemTogglePluginButton(this, pluginItem, itemContainer)
-
             const text = itemTextComponent(pluginItem, itemContainer)
             text.readOnly = true
             const indices = pluginItem.groupInfo.groupIndices
-            const len = indices.length
             if (indices.length) {
                 const content = this.getContent(pluginItem, indices);
                 text.insertAdjacentHTML("afterend", content);
@@ -176,13 +179,71 @@ export class QPSModal extends Modal {
                     text.insertAdjacentHTML("afterend", content2);
                 }
             }
+            itemContainer.addEventListener("dblclick", async (evt) => {
+                const { plugin } = this
+                const {settings} = plugin
+                const currentValue = pluginItem.time
+                const container = itemContainer
+                itemContainer.innerHTML = `<input type="text" value="${currentValue}" />`;
+                this.isDblClick = true
+
+                const input = itemContainer.querySelector("input");
+                input?.focus();
+                if (!pluginItem.delayed) {
+                    input?.addEventListener("keydown", async (event) => {//remove keydown
+                        if (event.key === "Enter") {
+                            this.addDelay(pluginItem, input, itemContainer, container)
+                            this.isDblClick = false
+                        }
+                    });
+                    input?.addEventListener("blur", () => {
+                        setTimeout(async () => {
+                            this.addDelay(pluginItem, input, itemContainer, container)
+                            this.isDblClick = false
+                        }, 100);
+                    });
+                } else {
+                    pluginItem.delayed = false
+                    await (this.app as any).plugins.disablePluginAndSave(pluginItem.id)
+                    await (this.app as any).plugins.enablePluginAndSave(pluginItem.id)
+                    removeItem(settings.delayedPlugins, pluginItem)
+                    this.isDblClick = false
+                    await plugin.saveSettings();
+                    itemContainer = container
+                    this.onOpen();
+                }
+
+            })
+
             text.addEventListener("click", (evt) => {
+                if (this.isDblClick) return
                 this.handleHotkeys(evt, pluginItem, text)
             })
             text.addEventListener("contextmenu", (evt) => {
+                if (this.isDblClick) return
                 handleContextMenu(evt, this, plugin, pluginItem)
             })
         }
+    }
+
+    addDelay = async (pluginItem: PluginInfo, input: HTMLInputElement,
+        itemContainer: HTMLDivElement, container: HTMLDivElement) => {
+        pluginItem.delayed = true
+        pluginItem.time = parseInt(input.value) || 0
+
+        if (pluginItem.enabled) {
+            await (this.app as any).plugins.disablePluginAndSave(pluginItem.id)
+            await (this.app as any).plugins.enablePlugin(pluginItem.id)
+            // this.onOpen()
+            if (!this.plugin.settings.delayedPlugins.some((plugin) => plugin.id === pluginItem.id))
+                this.plugin.settings.delayedPlugins.push(pluginItem)
+        }
+        if (pluginItem.time === 0) {
+            pluginItem.delayed = false
+        }
+        await this.plugin.saveSettings();
+        itemContainer = container
+        this.onOpen();
     }
 
     getContent(pluginItem: PluginInfo, indices: number[]) {
@@ -219,6 +280,7 @@ export class QPSModal extends Modal {
         }
 
         const handleKeyDown = async (event: KeyboardEvent) => {
+            if(this.isDblClick) return
             const keyPressed = event.key;
             if (keyPressed in keyToGroupMap) {
                 const groupIndex = parseInt(keyPressed);
@@ -262,13 +324,13 @@ export class QPSModal extends Modal {
                     menu.showAtMouseEvent(evt);
                 }
             }
-
             await this.plugin.saveSettings()
             this.items.removeEventListener('keydown', handleKeyDown);
-            this.onOpen();
+            // this.onOpen();
         }
         this.items.addEventListener('keydown', handleKeyDown)
     }
+
 
     onClose() {
         const { contentEl } = this;

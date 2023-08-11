@@ -281,6 +281,11 @@ export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemCon
     if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) {
         itemContainer.toggleClass("qps-most-switched", true);
     }
+    if (pluginItem.delayed) {
+        itemContainer.toggleClass("toggle-bullet-color", true);
+        itemContainer.style.setProperty("--bullet-content", `"${pluginItem.time}"`);
+    }
+
 }
 
 // un param inutilisé
@@ -363,7 +368,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
 
 export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
     let disable = (pluginItem.id === "quick-plugin-switcher")
-    new ToggleComponent(itemContainer)
+    const toggleButton = new ToggleComponent(itemContainer)
         .setValue(pluginItem.enabled)
         .setDisabled(disable) //quick-plugin-switcher disabled
         .onChange(async () => {

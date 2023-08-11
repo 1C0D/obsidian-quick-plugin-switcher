@@ -28,7 +28,8 @@ export interface QPSSettings {
     selectedGroup: keyof typeof Groups;
     search: string;
     numberOfGroups: number;
-    groupsNames: Record<number, string>
+    groupsNames: Record<number, string>;
+    delayedPlugins: PluginInfo[]
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
@@ -39,7 +40,8 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     selectedGroup: "SelectGroup",
     search: "",
     numberOfGroups: 3,
-    groupsNames: {}
+    groupsNames: {},
+    delayedPlugins :[] 
 };
 
 export interface PluginInfo {
@@ -53,4 +55,6 @@ export interface PluginInfo {
     enabled: boolean;
     switched: number;
     groupInfo: PluginGroupInfo;
+    delayed: boolean; // Nouvelle propriété 'delayed'
+    time: number; // Nouvelle propriété 'time'
 }

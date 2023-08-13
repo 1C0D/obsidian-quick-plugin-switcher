@@ -1,4 +1,4 @@
-import { App, DropdownComponent, Menu, Modal, Notice, SearchComponent, Setting } from "obsidian"
+import { App, DropdownComponent, Menu, Modal, SearchComponent, Setting } from "obsidian"
 import { Groups, PluginInfo, QPSSettings } from "./types"
 import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
@@ -6,17 +6,15 @@ import {
     doSearch, handleContextMenu, modeSort,
     mostSwitchedResetButton, filterByGroup,
     powerButton, itemTogglePluginButton,
-    itemToggleClass, itemTextComponent,
-
+    itemToggleClass, itemTextComponent
 } from "./modal_components";
-import { getEmojiForGroup, getGroupTitle } from "./modal_utils";
+import { delayedReEnable, getEmojiForGroup, getGroupTitle } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
     items: HTMLElement
     search: HTMLElement
     groups: HTMLElement
-    allPluginsList = this.plugin.settings.allPluginsList
     isDblClick = false
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
@@ -32,7 +30,7 @@ export class QPSModal extends Modal {
         this.addHeader(this.header)
         this.addSearch(this.search)
         this.addGroups(this.groups)
-        this.addItems(this.allPluginsList)
+        this.addItems(this.plugin.settings.allPluginsList)
     }
 
     // create header/search/items elts & class
@@ -163,12 +161,13 @@ export class QPSModal extends Modal {
             itemTogglePluginButton(this, pluginItem, itemContainer)
             const text = itemTextComponent(pluginItem, itemContainer)
             text.readOnly = true
+            // create groups circles
             const indices = pluginItem.groupInfo.groupIndices
             if (indices.length) {
                 const content = this.getContent(pluginItem, indices);
                 text.insertAdjacentHTML("afterend", content);
 
-                if (indices.length >= 3) {
+                if (indices.length >= 3) { // 2 circles
                     const [valeur0, valeur1, ...part2] = indices;
                     const part1 = [valeur0, valeur1];
 
@@ -179,9 +178,10 @@ export class QPSModal extends Modal {
                     text.insertAdjacentHTML("afterend", content2);
                 }
             }
+
+            // create temp input in input to modify delayed entering time
             itemContainer.addEventListener("dblclick", async (evt) => {
                 const { plugin } = this
-                const {settings} = plugin
                 const currentValue = pluginItem.time
                 const container = itemContainer
                 itemContainer.innerHTML = `<input type="text" value="${currentValue}" />`;
@@ -189,6 +189,10 @@ export class QPSModal extends Modal {
 
                 const input = itemContainer.querySelector("input");
                 input?.focus();
+                //select value
+                input?.setSelectionRange(0, input?.value.length);
+
+
                 if (!pluginItem.delayed) {
                     input?.addEventListener("keydown", async (event) => {//remove keydown
                         if (event.key === "Enter") {
@@ -204,9 +208,7 @@ export class QPSModal extends Modal {
                     });
                 } else {
                     pluginItem.delayed = false
-                    await (this.app as any).plugins.disablePluginAndSave(pluginItem.id)
                     await (this.app as any).plugins.enablePluginAndSave(pluginItem.id)
-                    removeItem(settings.delayedPlugins, pluginItem)
                     this.isDblClick = false
                     await plugin.saveSettings();
                     itemContainer = container
@@ -217,7 +219,7 @@ export class QPSModal extends Modal {
 
             text.addEventListener("click", (evt) => {
                 if (this.isDblClick) return
-                this.handleHotkeys(evt, pluginItem, text)
+                this.handleHotkeys(evt, pluginItem, text) // modifier encore (sans clic avant)???
             })
             text.addEventListener("contextmenu", (evt) => {
                 if (this.isDblClick) return
@@ -231,13 +233,7 @@ export class QPSModal extends Modal {
         pluginItem.delayed = true
         pluginItem.time = parseInt(input.value) || 0
 
-        if (pluginItem.enabled) {
-            await (this.app as any).plugins.disablePluginAndSave(pluginItem.id)
-            await (this.app as any).plugins.enablePlugin(pluginItem.id)
-            // this.onOpen()
-            if (!this.plugin.settings.delayedPlugins.some((plugin) => plugin.id === pluginItem.id))
-                this.plugin.settings.delayedPlugins.push(pluginItem)
-        }
+        delayedReEnable(this, pluginItem)
         if (pluginItem.time === 0) {
             pluginItem.delayed = false
         }
@@ -258,7 +254,6 @@ export class QPSModal extends Modal {
             background = `background: linear-gradient(90deg, ${color1} 50%, ${color2} 50%);`;
         }
 
-        // style="background: linear-gradient(90deg, red 50%, yellow 50%);"
         const content = `<div
             style="${background}"
             class="qps-item-line-group"
@@ -279,8 +274,9 @@ export class QPSModal extends Modal {
             keyToGroupMap[i.toString()] = i;
         }
 
+        // handle groups shortcuts
         const handleKeyDown = async (event: KeyboardEvent) => {
-            if(this.isDblClick) return
+            if (this.isDblClick) return
             const keyPressed = event.key;
             if (keyPressed in keyToGroupMap) {
                 const groupIndex = parseInt(keyPressed);

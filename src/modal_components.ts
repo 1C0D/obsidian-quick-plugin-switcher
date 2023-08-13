@@ -7,8 +7,9 @@ import {
 } from "obsidian"
 import { DescriptionModal } from "./secondary_modals";
 import {
+    conditionalEnable,
     openDirectoryInFileManager,
-    reset, sortByName, sortSwitched, togglePluginAndSave
+    reset, sortByName, sortSwitched, togglePlugin
 } from "./modal_utils";
 import { getLength, removeItem } from "./utils";
 let shell: any = null;
@@ -111,6 +112,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                         if (i.enabled) settings.wasEnabled.push(i.id)
                                         await (modal.app as any).plugins.disablePluginAndSave(i.id)
                                         i.enabled = false;
+                                        // updateDelayedPluginStatus à revoir !!!!!
                                     }
                                     getLength(plugin)
                                     modal.onOpen();
@@ -123,8 +125,10 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     //check plugin not deleted between
                                     const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
                                     if (pluginToUpdate) {
-                                        await (modal.app as any).plugins.enablePluginAndSave(i)
+                                        conditionalEnable(modal, pluginToUpdate)
+                                        // await (modal.app as any).plugins.enablePluginAndSave(i)
                                         pluginToUpdate.enabled = true
+                                        // updateDelayedPluginStatus à revoir !!!!!
                                     }
                                 }
                                 getLength(plugin)
@@ -166,7 +170,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                         return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
                     });
                     let previousWasEnabled = inGroup.filter(
-                        (i) => i.groupInfo.wasEnabled === true
+                        (i) => i.groupInfo.groupWasEnabled === true
                     )
 
                     if (inGroup.length > 0 && (inGroup.some(i => i.enabled === true) || previousWasEnabled.length > 0)) {
@@ -177,9 +181,10 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                 .onClick(async () => {
                                     if (previousWasEnabled.length === 0) {
                                         const toDisable = inGroup.filter(i => i.enabled === true).map(async (i) => {
-                                            i.groupInfo.wasEnabled = true
+                                            i.groupInfo.groupWasEnabled = true
                                             await (modal.app as any).plugins.disablePluginAndSave(i.id)
                                             i.enabled = false
+                                            // updateDelayedPluginStatus à revoir !!!!!
                                         })
                                         await Promise.all(toDisable);
                                         if (toDisable) {
@@ -191,13 +196,15 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     }
                                     else {
                                         for (const i of previousWasEnabled) {
-                                            await (modal.app as any).plugins.enablePluginAndSave(i)
+                                            conditionalEnable(modal, i)
+                                            // await (modal.app as any).plugins.enablePluginAndSave(i)
                                             i.enabled = true
+                                            // updateDelayedPluginStatus à revoir !!!!!
                                             i.switched++
 
                                         }
                                         previousWasEnabled.map(plugin => {
-                                            plugin.groupInfo.wasEnabled = false
+                                            plugin.groupInfo.groupWasEnabled = false
                                         })
                                         getLength(plugin)
                                         modal.onOpen();
@@ -214,7 +221,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                         const confirmReset = window.confirm('skip re-enable ?');
                                         if (confirmReset) {
                                             previousWasEnabled.map(plugin => {
-                                                plugin.groupInfo.wasEnabled = false
+                                                plugin.groupInfo.groupWasEnabled = false
                                             })
                                             await modal.plugin.saveSettings();
                                             new Notice("All values have been reset.");
@@ -372,7 +379,7 @@ export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, 
         .setValue(pluginItem.enabled)
         .setDisabled(disable) //quick-plugin-switcher disabled
         .onChange(async () => {
-            await togglePluginAndSave(modal, pluginItem)
+            await togglePlugin(modal, pluginItem)
         })
 }
 

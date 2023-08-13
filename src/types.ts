@@ -17,7 +17,7 @@ export const Groups: GroupData = {
 
 export interface PluginGroupInfo {
     groupIndices: number[];
-    wasEnabled: boolean;
+    groupWasEnabled: boolean;
 }
 
 export interface QPSSettings {
@@ -29,7 +29,6 @@ export interface QPSSettings {
     search: string;
     numberOfGroups: number;
     groupsNames: Record<number, string>;
-    delayedPlugins: PluginInfo[]
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
@@ -41,7 +40,6 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     search: "",
     numberOfGroups: 3,
     groupsNames: {},
-    delayedPlugins :[] 
 };
 
 export interface PluginInfo {
@@ -55,6 +53,6 @@ export interface PluginInfo {
     enabled: boolean;
     switched: number;
     groupInfo: PluginGroupInfo;
-    delayed: boolean; // Nouvelle propriété 'delayed'
-    time: number; // Nouvelle propriété 'time'
+    delayed: boolean;
+    time: number;
 }

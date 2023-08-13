@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
 import { NewVersion, QPSModal } from './modal';
-import { debug, getLength, isEnabled } from './utils';
+import { debug, getLength, isEnabled, removeItem } from './utils';
 import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
 import QPSSettingTab from './settings';
 
@@ -14,10 +14,34 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        console.log("before ready")
         this.app.workspace.onLayoutReady(() => {
-            for (const pluginItem of this.settings.delayedPlugins) {
-                const time = pluginItem.time * 1000 || 0
-                if (pluginItem.enabled) {
+            const { settings } = this
+            const allPluginsList = settings.allPluginsList || [];
+            const manifests = (this.app as any).plugins.manifests || {};
+            // plugin have been deleted from obsidian UI ?
+            let stillInstalled: PluginInfo[] = []
+
+            for (const plugin of allPluginsList) {
+                if (Object.keys(manifests).includes(plugin.id))
+                    stillInstalled.push(plugin) 
+            }
+            // plugin has been toggled from obsidian UI ? or if is delayed unabled
+            for (const plugin of stillInstalled) {
+                    if (
+                        isEnabled(plugin.id) !== plugin.enabled
+                        &&
+                        !plugin.delayed
+                    ) {
+                        plugin.enabled = !plugin.enabled;
+                    }// pas pu traiter le cas désactivé depuis l'ui et delayed
+            }
+
+            for (const pluginItem of this.settings.allPluginsList) {
+                if (pluginItem.delayed
+                    && pluginItem.enabled !== isEnabled(pluginItem.id)
+                    && pluginItem.enabled) {
+                    const time = pluginItem.time * 1000 || 0
                     setTimeout(async () => await (this.app as any).plugins.enablePlugin(pluginItem.id), time)
                 }
             }
@@ -25,7 +49,6 @@ export default class QuickPluginSwitcher extends Plugin {
         this.updateInfo()
         this.addSettingTab(new QPSSettingTab(this.app, this));
 
-        // TODO: create a command and a setting to add ribbon
         this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
             this.getPluginsInfo()
             getLength(this)
@@ -46,22 +69,42 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async getPluginsInfo() {
         const { settings } = this
+
         const allPluginsList = settings.allPluginsList || [];
         const manifests = (this.app as any).plugins.manifests || {};
 
         // plugin have been deleted from obsidian UI ?
-        const stillInstalled = allPluginsList.filter(plugin =>
-            Object.keys(manifests).includes(plugin.id)
-        );
+        let stillInstalled: PluginInfo[] = []
+        let uninstalled: PluginInfo[] = []
+
+        for (const plugin of allPluginsList) {
+            if (Object.keys(manifests).includes(plugin.id))
+                stillInstalled.push(plugin)
+            else {
+                uninstalled.push(plugin)
+            }
+        }
 
         for (const key of Object.keys(manifests)) {
-            // plugin has been toggled from obsidian UI ?
+            // plugin has been toggled from obsidian UI ? or if is delayed unabled
             const pluginInList = stillInstalled.find(plugin => plugin.id === manifests[key].id);
+
             if (pluginInList) {
                 if (
-                    !pluginInList.delayed &&
-                    isEnabled(manifests[key].id) !== pluginInList.enabled) {
+                    isEnabled(manifests[key].id) !== pluginInList.enabled
+                    &&
+                    !pluginInList.delayed
+                ) {
                     pluginInList.enabled = !pluginInList.enabled;
+                }
+                else if (pluginInList.delayed && isEnabled(manifests[key].id) !==
+                    pluginInList.enabled) { 
+                    if (isEnabled(manifests[key].id)){
+                        pluginInList.enabled = true;
+                        await (this.app as any).plugins.disablePluginAndSave(pluginInList.id)
+                        await (this.app as any).plugins.enablePlugin(pluginInList.id)
+                        pluginInList.switched++;// besoin que là?
+                    }
                 }
                 continue
             } else {
@@ -77,11 +120,13 @@ export default class QuickPluginSwitcher extends Plugin {
                     switched: 0,
                     groupInfo: {
                         groupIndices: [],
-                        wasEnabled: false,
+                        groupWasEnabled: false,
                     },
                     delayed: false,
-                    time: 0
+                    time: 0,
+                    delayedEnabled: false
                 };
+
                 stillInstalled.push(notInListInfo);
             }
         }

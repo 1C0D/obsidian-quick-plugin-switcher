@@ -93,11 +93,6 @@
   color:rgb(3, 3, 3)
 }
 
-.bullet-content-input {
-  display: none;
-  width: 40px;
-}
-
 .qps-quick-plugin-switcher input {
   color: rgb(106, 101, 140);
 }

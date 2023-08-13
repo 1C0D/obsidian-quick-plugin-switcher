@@ -1,4 +1,4 @@
-import { Groups, PluginInfo } from "./types"
+import { Groups, PluginInfo, QPSSettings } from "./types"
 import Plugin from "./main"
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
@@ -28,16 +28,16 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
     const numberOfGroups = _this.settings.numberOfGroups;
     const currentGroupKeys = Object.keys(Groups);
-    
+
     // delete groups if new value < previous value (when moving slider in prefs)
     for (let i = 1; i < currentGroupKeys.length; i++) {
         const key = currentGroupKeys[i];
         delete Groups[key];
     }
-    
+
     for (let i = 1; i <= numberOfGroups; i++) {
         const groupKey = (_this.settings.groupsNames[i] !== undefined) ?
-        _this.settings.groupsNames[i]: `Group${i}`;
+            _this.settings.groupsNames[i] : `Group${i}`;
         const { emoji } = getEmojiForGroup(i);
         const groupEmoji = emoji;
         Groups[`Group${i}`] = `${groupEmoji}${groupKey}`;
@@ -51,14 +51,14 @@ export const getEmojiForGroup = (groupNumber: number) => {
 };
 
 
-export const togglePluginAndSave = async (modal: QPSModal, pluginItem: PluginInfo) => {
+export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
     const { plugin } = modal
+    const { settings } = plugin
 
     pluginItem.enabled = !pluginItem.enabled;
     pluginItem.enabled
-        ? await (modal.app as any).plugins.enablePluginAndSave(pluginItem.id) //AndSave
+        ? await conditionalEnable(modal, pluginItem)
         : await (modal.app as any).plugins.disablePluginAndSave(pluginItem.id);
-    pluginItem.switched++;
     getLength(plugin)
     await plugin.saveSettings();
     modal.onOpen();
@@ -71,5 +71,22 @@ export async function openDirectoryInFileManager(shell: any, modal: QPSModal, pl
         await shell.openExternal(filePath);
     } catch (err) {
         console.error(`Error opening the directory: ${err.message}`);
+    }
+}
+
+export const delayedReEnable = async (_this: QPSModal, pluginItem: PluginInfo) => {
+    const { settings } = _this.plugin
+    if (pluginItem.enabled) {
+        await (_this.app as any).plugins.disablePluginAndSave(pluginItem.id)
+        await (_this.app as any).plugins.enablePlugin(pluginItem.id)
+    }
+}
+
+export const conditionalEnable = async (_this:any, pluginItem: PluginInfo) => {
+    if (pluginItem.delayed) {
+        await (_this.app as any).plugins.enablePlugin(pluginItem.id)
+    } else {
+        pluginItem.switched++;// besoin que là?
+        await (_this.app as any).plugins.enablePluginAndSave(pluginItem.id)
     }
 }

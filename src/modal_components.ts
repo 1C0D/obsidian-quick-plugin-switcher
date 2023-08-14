@@ -8,6 +8,7 @@ import {
 import { DescriptionModal } from "./secondary_modals";
 import {
     conditionalEnable,
+    getEmojiForGroup,
     openDirectoryInFileManager,
     reset, sortByName, sortSwitched, togglePlugin
 } from "./modal_utils";
@@ -43,10 +44,13 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
         // set dropdownOptions
         for (const groupKey in Groups) {
             const groupIndex = parseInt(groupKey.replace("Group", ""));
-            if (groupKey === "SelectGroup" ||
-                settings.allPluginsList.some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)
+            if (groupKey === "SelectGroup"
+                // || settings.allPluginsList.some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)
             ) {
                 dropdownOptions[groupKey] = Groups[groupKey];
+            } else if (settings.allPluginsList.
+                some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)) {
+                dropdownOptions[groupKey] = getEmojiForGroup(groupIndex).emoji + Groups[groupKey]
             }
         }
         // if a group is empty get back dropdown to SelectGroup

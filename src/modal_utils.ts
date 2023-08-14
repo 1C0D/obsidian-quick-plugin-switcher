@@ -36,11 +36,18 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
     }
 
     for (let i = 1; i <= numberOfGroups; i++) {
-        const groupKey = (_this.settings.groupsNames[i] !== undefined) ?
-            _this.settings.groupsNames[i] : `Group${i}`;
+        if (_this.settings.groups[i]?.name === undefined)
+            _this.settings.groups[i] = {
+                name: "",
+                delayed: false,
+                time: 0
+            };
+
+        const groupKey = (_this.settings.groups[i]?.name !== "") ?
+            _this.settings.groups[i]?.name : `Group${i}`;
         const { emoji } = getEmojiForGroup(i);
-        const groupEmoji = emoji;
-        Groups[`Group${i}`] = `${groupEmoji}${groupKey}`;
+        // Groups[`Group${i}`] = `${emoji}${groupKey}`;
+        Groups[`Group${i}`] = `${groupKey}`;
     }
 }
 
@@ -49,6 +56,20 @@ export const getEmojiForGroup = (groupNumber: number) => {
     const colors = ["#FFD700", "#0000FF", "#FF0000", "#FFFFFF", "#A52A2A", "#00FF00", "#800080"];
     return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
 };
+
+// export const getCircleGroup=(groupIndex: number) => {
+//     const { color } = getEmojiForGroup(groupIndex);
+//     const background = `background: ${color};`;
+
+//     const content = `<div
+//             style="${background}"
+//             class="qps-item-line-group"
+//             >
+//             &nbsp;
+//             </div>
+//             `
+//     return content
+// }
 
 
 export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
@@ -89,4 +110,8 @@ export const conditionalEnable = async (_this:any, pluginItem: PluginInfo) => {
         pluginItem.switched++;// besoin que là?
         await (_this.app as any).plugins.enablePluginAndSave(pluginItem.id)
     }
+}
+
+export const selectValue = (input:HTMLInputElement | null)=> {
+    input?.setSelectionRange(0, input?.value.length);
 }

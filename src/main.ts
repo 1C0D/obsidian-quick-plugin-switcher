@@ -24,17 +24,17 @@ export default class QuickPluginSwitcher extends Plugin {
 
             for (const plugin of allPluginsList) {
                 if (Object.keys(manifests).includes(plugin.id))
-                    stillInstalled.push(plugin) 
+                    stillInstalled.push(plugin)
             }
             // plugin has been toggled from obsidian UI ? or if is delayed unabled
             for (const plugin of stillInstalled) {
-                    if (
-                        isEnabled(plugin.id) !== plugin.enabled
-                        &&
-                        !plugin.delayed
-                    ) {
-                        plugin.enabled = !plugin.enabled;
-                    }// pas pu traiter le cas désactivé depuis l'ui et delayed
+                if (
+                    isEnabled(plugin.id) !== plugin.enabled
+                    &&
+                    !plugin.delayed
+                ) {
+                    plugin.enabled = !plugin.enabled;
+                }// pas pu traiter le cas désactivé depuis l'ui et delayed
             }
 
             for (const pluginItem of this.settings.allPluginsList) {
@@ -98,8 +98,8 @@ export default class QuickPluginSwitcher extends Plugin {
                     pluginInList.enabled = !pluginInList.enabled;
                 }
                 else if (pluginInList.delayed && isEnabled(manifests[key].id) !==
-                    pluginInList.enabled) { 
-                    if (isEnabled(manifests[key].id)){
+                    pluginInList.enabled) {
+                    if (isEnabled(manifests[key].id)) {
                         pluginInList.enabled = true;
                         await (this.app as any).plugins.disablePluginAndSave(pluginInList.id)
                         await (this.app as any).plugins.enablePlugin(pluginInList.id)
@@ -120,11 +120,10 @@ export default class QuickPluginSwitcher extends Plugin {
                     switched: 0,
                     groupInfo: {
                         groupIndices: [],
-                        groupWasEnabled: false,
+                        groupWasEnabled: false
                     },
                     delayed: false,
                     time: 0,
-                    delayedEnabled: false
                 };
 
                 stillInstalled.push(notInListInfo);

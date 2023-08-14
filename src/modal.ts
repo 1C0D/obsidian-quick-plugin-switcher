@@ -8,7 +8,7 @@ import {
     powerButton, itemTogglePluginButton,
     itemToggleClass, itemTextComponent
 } from "./modal_components";
-import { delayedReEnable, getEmojiForGroup, getGroupTitle } from "./modal_utils";
+import { delayedReEnable, getEmojiForGroup, getGroupTitle, selectValue } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -100,39 +100,102 @@ export class QPSModal extends Modal {
 
         for (let i = 1; i < groups.length; i++) {
             const groupKey = groups[i];
+            console.log("groupKey", groupKey)
             const span = contentEl.createEl("span", { cls: ["qps-groups-item"] })
             span.textContent = `${groupKey}`;
+            const content = this.getCircleGroup(i)
+            span.insertAdjacentHTML("beforebegin", content);
+
             span.addEventListener("dblclick", () => {
                 if (this.isDblClick) return
                 this.editGroupName(span, i, groupKey)
             });
+            span.addEventListener("contextmenu", (evt) => {
+                if (this.isDblClick) return
+                this.groupMenu(evt, span, i, groupKey)
+            });
+            if (settings.groups[i].time !== 0) {
+                span.addClass("delayed-group")
+                // const element = document.querySelector('.qps-circle-title-group');
+                // if (element) {
+                //     const value = settings.groups[i].time ? settings.groups[i].time : ""
+                //     element.textContent = `${value}`
+                // }
+            }
         }
+    }
+
+    getCircleGroup(groupIndex: number) {
+        const {settings} = this.plugin
+        const { color } = getEmojiForGroup(groupIndex);
+        const background = `background-color: ${color};`;
+        const value = settings.groups[groupIndex].time ? settings.groups[groupIndex].time : ""
+
+        const content = `<div
+            style="${background}"
+            class="qps-circle-title-group"
+            >
+            ${value}
+            </div>
+            `
+        return content
+    }
+
+    groupMenu = (evt: MouseEvent, span: HTMLSpanElement, groupNumber: number, emoji: string) => {
+        const { plugin } = this
+        const { settings } = plugin
+        const menu = new Menu();
+        menu.addItem((item) =>
+            item
+                .setTitle("delay group")
+                .onClick(() => {
+                    const currentValue = settings.groups[groupNumber].time || 0;
+                    span.innerHTML = `<input type="text" value="${currentValue}" />`;
+
+                    const input = span.querySelector("input");
+                    input?.focus();
+                    selectValue(input)
+
+                    input?.addEventListener("blur", () => {
+                        setTimeout(() => {
+                            // if (this.isDblClick) return
+                            input.value ? settings.groups[groupNumber].time = parseInt(input.value) :
+                                settings.groups[groupNumber].time = 0;
+                            span.textContent = `${emoji}${input.value}`;
+                            this.onOpen();
+                        }, 100);
+                    });
+                })
+        )
+        menu.showAtMouseEvent(evt);
     }
 
     editGroupName = (span: HTMLSpanElement, groupNumber: number, emoji: string) => {
         const { plugin } = this
         const { settings } = plugin
-        const currentValue = settings.groupsNames[groupNumber] || "";
+        const currentValue = settings.groups[groupNumber].name !== "" ?
+            settings.groups[groupNumber]?.name : "";
         span.innerHTML = `<input type="text" value="${currentValue}" />`;
 
         const input = span.querySelector("input");
         input?.focus();
+        selectValue(input)
 
         input?.addEventListener("blur", () => {
             setTimeout(() => {
                 if (this.isDblClick) return
-                input.value ? settings.groupsNames[groupNumber] = input.value :
-                    settings.groupsNames[groupNumber] = Groups[groupNumber];
-                span.textContent = `${emoji}${input.value}`;
+                input?.value ? settings.groups[groupNumber].name = input?.value :
+                    settings.groups[groupNumber].name = Groups[groupNumber];
+                span.textContent = `${emoji}${input?.value}`;
                 this.onOpen();
-            }, 100);
+            }, 200);
         });
 
         input?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 if (this.isDblClick) return
-                input.value ? settings.groupsNames[groupNumber] = input.value :
-                    settings.groupsNames[groupNumber] = Groups[groupNumber];
+                input?.value ? settings.groups[groupNumber].name = input?.value :
+                    settings.groups[groupNumber].name = Groups[groupNumber];
                 span.textContent = `${emoji}${input.value}`
                 this.onOpen()
             }
@@ -164,17 +227,17 @@ export class QPSModal extends Modal {
             // create groups circles
             const indices = pluginItem.groupInfo.groupIndices
             if (indices.length) {
-                const content = this.getContent(pluginItem, indices);
+                const content = this.getCirclesItem(pluginItem, indices);
                 text.insertAdjacentHTML("afterend", content);
 
                 if (indices.length >= 3) { // 2 circles
                     const [valeur0, valeur1, ...part2] = indices;
                     const part1 = [valeur0, valeur1];
 
-                    const content1 = this.getContent(pluginItem, part1);
+                    const content1 = this.getCirclesItem(pluginItem, part1);
                     text.insertAdjacentHTML("afterend", content1);
 
-                    const content2 = this.getContent(pluginItem, part2);
+                    const content2 = this.getCirclesItem(pluginItem, part2);
                     text.insertAdjacentHTML("afterend", content2);
                 }
             }
@@ -190,7 +253,7 @@ export class QPSModal extends Modal {
                 const input = itemContainer.querySelector("input");
                 input?.focus();
                 //select value
-                input?.setSelectionRange(0, input?.value.length);
+                selectValue(input)
 
 
                 if (!pluginItem.delayed) {
@@ -242,7 +305,7 @@ export class QPSModal extends Modal {
         this.onOpen();
     }
 
-    getContent(pluginItem: PluginInfo, indices: number[]) {
+    getCirclesItem(pluginItem: PluginInfo, indices: number[]) {
         const len = indices.length
         let background = "";
         if (len === 1) {

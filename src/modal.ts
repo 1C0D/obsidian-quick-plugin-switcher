@@ -1,5 +1,5 @@
-import { App, DropdownComponent, Menu, Modal, SearchComponent, Setting } from "obsidian"
-import { Groups, PluginInfo, QPSSettings } from "./types"
+import { App, DropdownComponent, Menu, Modal, Notice, SearchComponent, Setting } from "obsidian"
+import { DEFAULT_SETTINGS, Groups, PluginInfo, QPSSettings } from "./types"
 import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
@@ -23,6 +23,9 @@ export class QPSModal extends Modal {
     }
 
     onOpen() {
+        if (this.plugin.toUpdate) {
+            new NewVersion(this.app, this.plugin).open();
+        }
         const { contentEl } = this;
         contentEl.empty();
         getGroupTitle(this.plugin)
@@ -100,22 +103,26 @@ export class QPSModal extends Modal {
 
         for (let i = 1; i < groups.length; i++) {
             const groupKey = groups[i];
-            console.log("groupKey", groupKey)
             const span = contentEl.createEl("span", { cls: ["qps-groups-item"] })
             span.textContent = `${groupKey}`;
             const content = this.getCircleGroup(i)
             span.insertAdjacentHTML("beforebegin", content);
+            const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
+            span.insertAdjacentHTML("beforeend", groupNumberText);
 
-            span.addEventListener("dblclick", () => {
+
+            span.addEventListener("dblclick", (e) => {
                 if (this.isDblClick) return
+                e.stopPropagation()
                 this.editGroupName(span, i, groupKey)
             });
             span.addEventListener("contextmenu", (evt) => {
                 if (this.isDblClick) return
                 this.groupMenu(evt, span, i, groupKey)
             });
-            if (settings.groups[i].time !== 0) {
-                span.addClass("delayed-group")
+            // if (settings.groups[i].time !== 0 ) {
+            if (settings.groups[i].applied) {
+                span.toggleClass("delayed-group", true)
                 // const element = document.querySelector('.qps-circle-title-group');
                 // if (element) {
                 //     const value = settings.groups[i].time ? settings.groups[i].time : ""
@@ -126,7 +133,7 @@ export class QPSModal extends Modal {
     }
 
     getCircleGroup(groupIndex: number) {
-        const {settings} = this.plugin
+        const { settings } = this.plugin
         const { color } = getEmojiForGroup(groupIndex);
         const background = `background-color: ${color};`;
         const value = settings.groups[groupIndex].time ? settings.groups[groupIndex].time : ""
@@ -158,15 +165,67 @@ export class QPSModal extends Modal {
 
                     input?.addEventListener("blur", () => {
                         setTimeout(() => {
-                            // if (this.isDblClick) return
-                            input.value ? settings.groups[groupNumber].time = parseInt(input.value) :
+                            if (this.isDblClick) return
+                            parseInt(input?.value) ? settings.groups[groupNumber].time = parseInt(input.value) :
                                 settings.groups[groupNumber].time = 0;
-                            span.textContent = `${emoji}${input.value}`;
+                            span.textContent = `${input.value}`;
                             this.onOpen();
                         }, 100);
                     });
+
+                    input?.addEventListener("keydown", (event) => {
+                        if (event.key === "Enter") {
+                            if (this.isDblClick) return
+                            parseInt(input?.value) ? settings.groups[groupNumber].time = parseInt(input.value) :
+                                settings.groups[groupNumber].time = 0;
+                            span.textContent = `${settings.groups[groupNumber].time}`;
+                            this.onOpen();
+                        };
+                    });
                 })
         )
+        menu.addItem((item) =>
+            item
+                .setTitle("apply")
+                .onClick(() => {
+                    const { plugin } = this
+                    const { settings } = plugin
+                    const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
+                    if (!inGroup.length || settings.groups[groupNumber].time === 0) {
+                        new Notice("No Plugin in this group");
+                        return
+                    }
+                    const confirm = window.confirm("Caution: plugins will be restarted");
+                    if (confirm) {
+                        for (const plugin of inGroup) {
+                            plugin.time = settings.groups[groupNumber].time
+                            plugin.delayed = true
+                            settings.groups[groupNumber].applied = true
+                            this.onOpen()
+                        }
+                        // plugin.saveSettings()
+                    } else new Notice("operation cancelled")
+
+                }))
+        menu.addItem((item) =>
+            item
+                .setTitle("reset")
+                .onClick(() => {
+                    const { plugin } = this
+                    const { settings } = plugin
+                    const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
+                    if (!inGroup.length) {
+                        new Notice("No Plugin in this group");
+                        return
+                    }
+                    for (const plugin of inGroup) {
+                        plugin.time = 0
+                        plugin.delayed = false
+                        settings.groups[groupNumber].applied = false
+                        this.onOpen()
+                    }
+                    plugin.saveSettings()
+                }))
         menu.showAtMouseEvent(evt);
     }
 
@@ -184,9 +243,9 @@ export class QPSModal extends Modal {
         input?.addEventListener("blur", () => {
             setTimeout(() => {
                 if (this.isDblClick) return
-                input?.value ? settings.groups[groupNumber].name = input?.value :
-                    settings.groups[groupNumber].name = Groups[groupNumber];
-                span.textContent = `${emoji}${input?.value}`;
+                input?.value ? settings.groups[groupNumber].name = input.value :
+                    settings.groups[groupNumber].name = `Group${groupNumber}`;
+                span.textContent = `${settings.groups[groupNumber].name}`;
                 this.onOpen();
             }, 200);
         });
@@ -194,9 +253,9 @@ export class QPSModal extends Modal {
         input?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 if (this.isDblClick) return
-                input?.value ? settings.groups[groupNumber].name = input?.value :
+                input?.value ? settings.groups[groupNumber].name = input.value :
                     settings.groups[groupNumber].name = Groups[groupNumber];
-                span.textContent = `${emoji}${input.value}`
+                span.textContent = `${settings.groups[groupNumber].name}`
                 this.onOpen()
             }
         });
@@ -244,6 +303,7 @@ export class QPSModal extends Modal {
 
             // create temp input in input to modify delayed entering time
             itemContainer.addEventListener("dblclick", async (evt) => {
+                if (pluginItem.id === "quick-plugin-switcher") return
                 const { plugin } = this
                 const currentValue = pluginItem.time
                 const container = itemContainer
@@ -257,7 +317,7 @@ export class QPSModal extends Modal {
 
 
                 if (!pluginItem.delayed) {
-                    input?.addEventListener("keydown", async (event) => {//remove keydown
+                    input?.addEventListener("keydown", async (event) => {
                         if (event.key === "Enter") {
                             this.addDelay(pluginItem, input, itemContainer, container)
                             this.isDblClick = false
@@ -406,15 +466,18 @@ export class NewVersion extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
+        // contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
         const content = `
-        <b>Warning:</b> to make this new version work, a reset is needed.
-        you will loose previous added groups. Sorry for the inconvenience. <br><br>
-        <b>Important:</b> you have to click plugin items now before to use shortcuts.<br>
-        you can click several plugins then a shortcut. <br><br>
-        <b>New feature:</b> you can now change groups name by double cliking them, 
-        and reset value to default just entering nothing and validating (with return or clicking on the modal UI).
-        I will add a gif in the github help
+        <b>Warning:</b><br>
+        For the new feature(user request) adding a delay to plugin(s) at start,
+        default values needed to be restored.<br>
+        Sorry for the inconvenience.<br><br>
+        <b>New feature:</b><br>
+        Double click, on a plugin name, to add/delete a delay to a plugin.<br>
+        Right click on groups name, to open context menu: add a delay, "apply" to all linked plugins,
+        reset.<br>
+        Remember, you have to click plugin name before using shortcuts.(1 to 7 and 0 to delete)<br>
+        I will add a gif for the new delay feature in the GitHub help.
         `
         contentEl.createDiv("", (el: HTMLDivElement) => {
             el.innerHTML = content;
@@ -424,8 +487,8 @@ export class NewVersion extends Modal {
     async onClose() {
         const { contentEl } = this;
         contentEl.empty();
+        this.plugin.settings = { ...DEFAULT_SETTINGS };
         this.plugin.settings.savedVersion = this.plugin.manifest.version;
-        this.plugin.settings.allPluginsList = []
         await this.plugin.saveSettings();
     }
 }

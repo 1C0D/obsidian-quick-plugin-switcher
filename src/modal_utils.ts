@@ -40,12 +40,13 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
             _this.settings.groups[i] = {
                 name: "",
                 delayed: false,
-                time: 0
+                time: 0,
+                applied: false
             };
 
         const groupKey = (_this.settings.groups[i]?.name !== "") ?
             _this.settings.groups[i]?.name : `Group${i}`;
-        const { emoji } = getEmojiForGroup(i);
+        // const { emoji } = getEmojiForGroup(i);
         // Groups[`Group${i}`] = `${emoji}${groupKey}`;
         Groups[`Group${i}`] = `${groupKey}`;
     }

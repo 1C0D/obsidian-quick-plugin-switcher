@@ -28,7 +28,7 @@ export interface QPSSettings {
     selectedGroup: keyof typeof Groups;
     search: string;
     numberOfGroups: number;
-    groups: Record<number, { name: string; delayed: boolean; time: number }>
+    groups: Record<number, { name: string; delayed: boolean; time: number, applied:boolean }>
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {

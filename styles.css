@@ -68,6 +68,13 @@
   margin-right: 2px;
 }
 
+/* circles */
+.qps-item-line-group {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.3rem;
+  border-radius: 50%;
+}
 
 .qps-item-line input {
   width: 59%;
@@ -97,16 +104,29 @@
   color: rgb(106, 101, 140);
 }
 
-/* circles */
-.qps-item-line-group {
-  display: inline-block;
-  width: 1.2rem;
-  height: 1.3rem;
-  border-radius: 50%;
+.qps-groups {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  row-gap: 5px;
+  margin-top: 10px
 }
 
+.qps-groups-item {
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.shortcut-number {
+  color: rgb(102, 143, 143);
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* delayed */
 .delayed-group {
-  color: rgba(255, 81, 0, 0.566)
+  /* color: rgba(255, 81, 0, 0.566) */
+  color: rgb(44, 181, 154)
 }
 
 
@@ -117,6 +137,7 @@
   border-radius: 50%;
 }
 
+/* time */
 .qps-circle-title-group {
   content: var(--group-circle-content, "-1");
   font-size: 0.8rem;

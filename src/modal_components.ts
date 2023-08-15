@@ -352,7 +352,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
             .addSeparator();
         menu.addItem((item) => {
             item
-                .setTitle("Clear groups")
+                .setTitle("Clear items groups")
                 .setIcon("user-minus")
 
             const submenu = (item as any).setSubmenu() as Menu;

@@ -11,10 +11,11 @@ export default class QuickPluginSwitcher extends Plugin {
     lengthAll: number = 0
     lengthDisabled: number = 0
     lengthEnabled: number = 0
+    toUpdate: boolean = false
 
     async onload() {
-        await this.loadSettings();
-        console.log("before ready")
+        this.toUpdate = await this.loadSettings();
+        // this.updateInfo()
         this.app.workspace.onLayoutReady(() => {
             const { settings } = this
             const allPluginsList = settings.allPluginsList || [];
@@ -46,7 +47,6 @@ export default class QuickPluginSwitcher extends Plugin {
                 }
             }
         })
-        this.updateInfo()
         this.addSettingTab(new QPSSettingTab(this.app, this));
 
         this.addRibbonIcon('toggle-right', 'Quick Plugin Switcher', (evt: MouseEvent) => {
@@ -134,16 +134,36 @@ export default class QuickPluginSwitcher extends Plugin {
         getLength(this);
     }
 
-    async updateInfo() {
-        if (
-            !(this.settings.savedVersion === "0.0.0") && this.settings.savedVersion < "1.8.0"
-        ) {
-            new NewVersion(this.app, this).open();
-        }
-    }
+    // async updateInfo() {
+    //     if (
+    //         // !(this.settings.savedVersion === "0.0.0")
+    //         // && this.settings.savedVersion < "1.9.0"
+    //         // &&
+    //         this.toUpdate
+    //     ) {
+    //         new NewVersion(this.app, this).open();
+    //         console.log("ici")
+    //         // this.settings = { ...DEFAULT_SETTINGS }     
+    //     } else {
+    //         this.settings.savedVersion = this.manifest.version
+    //         await this.saveSettings()
+    //     }
+    // }
 
     async loadSettings() {
-        this.settings = { ...DEFAULT_SETTINGS, ...await this.loadData() };
+        const previousSettings = { ...await this.loadData()}
+        if ("groups" in previousSettings) {
+            this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
+            this.settings.savedVersion = this.manifest.version
+            await this.saveSettings()
+            return false
+        }
+        else {
+            this.settings = { ...DEFAULT_SETTINGS } 
+            this.settings.savedVersion = this.manifest.version
+            await this.saveSettings()
+            return true
+        }
     }
 
     async saveSettings() {

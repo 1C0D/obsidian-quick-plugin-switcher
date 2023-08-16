@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
-import { NewVersion, QPSModal } from './modal';
-import { debug, getLength, isEnabled, removeItem } from './utils';
+import { QPSModal } from './modal';
+import { getLength, isEnabled } from './utils';
 import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
 import QPSSettingTab from './settings';
 
@@ -15,8 +15,7 @@ export default class QuickPluginSwitcher extends Plugin {
 
     async onload() {
         this.toUpdate = await this.loadSettings();
-        // this.updateInfo()
-        this.app.workspace.onLayoutReady(() => {
+        this.app.workspace.onLayoutReady(async () => {
             const { settings } = this
             const allPluginsList = settings.allPluginsList || [];
             const manifests = (this.app as any).plugins.manifests || {};
@@ -35,7 +34,7 @@ export default class QuickPluginSwitcher extends Plugin {
                     !plugin.delayed
                 ) {
                     plugin.enabled = !plugin.enabled;
-                }// pas pu traiter le cas désactivé depuis l'ui et delayed
+                }// when deactivated from UI, if delayed, won't be updated until modal opened. hard to fix
             }
 
             for (const pluginItem of this.settings.allPluginsList) {
@@ -53,7 +52,7 @@ export default class QuickPluginSwitcher extends Plugin {
             this.getPluginsInfo()
             getLength(this)
             new QPSModal(this.app, this).open();
-            // debug(this, "ext-to-vault", "after QPSModal")
+            // debug(this, "ext-to-vault", "after QPSModal") //could be useful later
         });
 
         this.addCommand({
@@ -103,7 +102,7 @@ export default class QuickPluginSwitcher extends Plugin {
                         pluginInList.enabled = true;
                         await (this.app as any).plugins.disablePluginAndSave(pluginInList.id)
                         await (this.app as any).plugins.enablePlugin(pluginInList.id)
-                        pluginInList.switched++;// besoin que là?
+                        pluginInList.switched++;
                     }
                 }
                 continue
@@ -134,7 +133,7 @@ export default class QuickPluginSwitcher extends Plugin {
         getLength(this);
     }
 
-    // async updateInfo() {
+    // async updateInfo() { // could be usefull later
     //     if (
     //         // !(this.settings.savedVersion === "0.0.0")
     //         // && this.settings.savedVersion < "1.9.0"
@@ -151,7 +150,7 @@ export default class QuickPluginSwitcher extends Plugin {
     // }
 
     async loadSettings() {
-        const previousSettings = { ...await this.loadData()}
+        const previousSettings = { ...await this.loadData() }
         if ("groups" in previousSettings) {
             this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
             this.settings.savedVersion = this.manifest.version
@@ -159,10 +158,12 @@ export default class QuickPluginSwitcher extends Plugin {
             return false
         }
         else {
-            this.settings = { ...DEFAULT_SETTINGS } 
+            this.settings = { ...DEFAULT_SETTINGS }
             this.settings.savedVersion = this.manifest.version
             await this.saveSettings()
-            return true
+            if (Object.keys(previousSettings).length === 0) { // new installation don't run modal
+                return false
+            } else return true
         }
     }
 

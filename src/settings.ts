@@ -13,34 +13,19 @@ export default class QPSSettingTab extends PluginSettingTab {
         const { settings } = plugin;
 
         containerEl.empty();
-        containerEl.createEl("h2", { text: "Quick Plugin Switcher" });
+        containerEl.createEl("h4", { text: "Quick Plugin Switcher" });
         const content = `
-        <b>Important:</b> you have to click plugin items now, before to use shortcuts.<br>
-        you can click several plugins then a shortcut. <br><br>
-        <b>New feature:</b> you can now rename groups by double cliking them,
-        and reset value to default just entering nothing and validating (with return or clicking on the modal UI).
-        I will add a gif in the github help
-        <br><br>`
+        <b>Important:</b><br> you have to click plugin names before to use shortcuts 1 to 7 max(see setting below) to add groups and 0/del/← to delete).<br>
+        you can click several plugins names then a shortcut. <br><br>
+        <b>New feature:</b><br> Add a delay on plugins at start, double clicking plugin name, to toggle delayed or not (enter a time in seconds)<br>
+        Right click on group to open a menu to handle delay by group. set the delay, then apply or reset. entering no delay is reseting too<br>
+        <br>
+        Rename groups double cliking them, reset name to default entering nothing and validating (return or clicking on the modal UI).<br>
+        you can watch videos I put in the help.
+        <br><br><br>`
         containerEl.createDiv("", (el: HTMLDivElement) => {
             el.innerHTML = content;
         })
-
-        new Setting(containerEl)
-            .setName("In case of bug reset all values")
-            .setDesc("Should not be needed, but could be useful in case of bug. It's askings for confirmation")
-            .addButton(btn => {
-                btn
-                    .setIcon("alert-octagon")
-                    .setTooltip("Reset all values")
-                    .onClick(async () => {
-                        const confirmReset = window.confirm('Do you want to reset all values?');
-                        if (confirmReset) {
-                            settings.allPluginsList = []
-                            await plugin.saveSettings();
-                            // new Notice("All values have been reset.");
-                        } else { new Notice("Operation cancelled."); }
-                    });
-            });
 
         let saveSettingsTimeout: ReturnType<typeof setTimeout>;
         const { numberOfGroups } = settings;
@@ -82,6 +67,27 @@ export default class QPSSettingTab extends PluginSettingTab {
                         }
                     });
             })
+        
+        new Setting(containerEl)
+            .setName("Reset in case of bug. IMPORTANT: After that you need to minimize obsidian window and restore it, to get back the focus to obsidian. Don't ask me why")
+            .setDesc("Should not be needed, but could be useful in case of bug.")
+            .addButton(btn => {
+                btn
+                    .setIcon("alert-octagon")
+                    .setTooltip("Reset all values")
+                    .onClick(async () => {
+                        const confirmReset = window.confirm('Do you want to reset all values?');
+                        if (confirmReset) {
+                            if (plugin.settings.hasOwnProperty('allPluginsList')) {
+                                plugin.settings.allPluginsList = [];
+                            }
+                            if (plugin.settings.hasOwnProperty('groups')) {
+                                plugin.settings.groups = {};
+                            }
+                            await plugin.saveSettings();
+                        } else { new Notice("Operation cancelled."); }
+                    });
+            });
     }
 
 

@@ -1,5 +1,8 @@
-import { App, DropdownComponent, Menu, Modal, Notice, SearchComponent, Setting } from "obsidian"
-import { DEFAULT_SETTINGS, Groups, PluginInfo, QPSSettings } from "./types"
+import {
+    App, DropdownComponent, Menu, Modal, Notice,
+    SearchComponent, Setting
+} from "obsidian"
+import { Groups, PluginInfo, QPSSettings } from "./types"
 import { getLength, removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
@@ -8,7 +11,7 @@ import {
     powerButton, itemTogglePluginButton,
     itemToggleClass, itemTextComponent
 } from "./modal_components";
-import { delayedReEnable, getEmojiForGroup, getGroupTitle, selectValue } from "./modal_utils";
+import { delayedReEnable, getCirclesItem, getEmojiForGroup, getGroupTitle, selectValue } from "./modal_utils";
 
 export class QPSModal extends Modal {
     header: HTMLElement
@@ -23,17 +26,19 @@ export class QPSModal extends Modal {
     }
 
     onOpen() {
-        if (this.plugin.toUpdate) {
-            new NewVersion(this.app, this.plugin).open();
+        const {plugin} = this
+        if (this.plugin.toUpdate) { // message when opening 
+            new NewVersion(this.app, plugin).open();
+            plugin.toUpdate = false
         }
         const { contentEl } = this;
         contentEl.empty();
-        getGroupTitle(this.plugin)
+        getGroupTitle(plugin)
         this.container(contentEl)
         this.addHeader(this.header)
         this.addSearch(this.search)
         this.addGroups(this.groups)
-        this.addItems(this.plugin.settings.allPluginsList)
+        this.addItems(plugin.settings.allPluginsList)
     }
 
     // create header/search/items elts & class
@@ -61,8 +66,8 @@ export class QPSModal extends Modal {
             .onChange(async (value: QPSSettings['filters']) => {
                 settings.filters = value;
                 getLength(plugin)
-                this.onOpen()
                 await plugin.saveSettings();
+                this.onOpen()
             })
 
         // mostSwitched reset button
@@ -113,21 +118,15 @@ export class QPSModal extends Modal {
 
             span.addEventListener("dblclick", (e) => {
                 if (this.isDblClick) return
-                e.stopPropagation()
                 this.editGroupName(span, i, groupKey)
             });
             span.addEventListener("contextmenu", (evt) => {
                 if (this.isDblClick) return
                 this.groupMenu(evt, span, i, groupKey)
             });
-            // if (settings.groups[i].time !== 0 ) {
+
             if (settings.groups[i].applied) {
                 span.toggleClass("delayed-group", true)
-                // const element = document.querySelector('.qps-circle-title-group');
-                // if (element) {
-                //     const value = settings.groups[i].time ? settings.groups[i].time : ""
-                //     element.textContent = `${value}`
-                // }
             }
         }
     }
@@ -187,7 +186,7 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("apply")
-                .onClick(() => {
+                .onClick(async () => {
                     const { plugin } = this
                     const { settings } = plugin
                     const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
@@ -195,12 +194,17 @@ export class QPSModal extends Modal {
                         new Notice("No Plugin in this group");
                         return
                     }
-                    const confirm = window.confirm("Caution: plugins will be restarted");
+                    const confirm = window.confirm("Caution: if enabled, plugins will be restarted");
                     if (confirm) {
                         for (const plugin of inGroup) {
                             plugin.time = settings.groups[groupNumber].time
                             plugin.delayed = true
                             settings.groups[groupNumber].applied = true
+                            if (plugin.enabled) { 
+                                await(this.app as any).plugins.disablePluginAndSave(plugin.id)
+                                await(this.app as any).plugins.enablePlugin(plugin.id)
+                            }
+                            this.plugin.saveSettings()
                             this.onOpen()
                         }
                         // plugin.saveSettings()
@@ -286,17 +290,17 @@ export class QPSModal extends Modal {
             // create groups circles
             const indices = pluginItem.groupInfo.groupIndices
             if (indices.length) {
-                const content = this.getCirclesItem(pluginItem, indices);
+                const content = getCirclesItem(pluginItem, indices);
                 text.insertAdjacentHTML("afterend", content);
 
                 if (indices.length >= 3) { // 2 circles
                     const [valeur0, valeur1, ...part2] = indices;
                     const part1 = [valeur0, valeur1];
 
-                    const content1 = this.getCirclesItem(pluginItem, part1);
+                    const content1 = getCirclesItem(pluginItem, part1);
                     text.insertAdjacentHTML("afterend", content1);
 
-                    const content2 = this.getCirclesItem(pluginItem, part2);
+                    const content2 = getCirclesItem(pluginItem, part2);
                     text.insertAdjacentHTML("afterend", content2);
                 }
             }
@@ -319,8 +323,10 @@ export class QPSModal extends Modal {
                 if (!pluginItem.delayed) {
                     input?.addEventListener("keydown", async (event) => {
                         if (event.key === "Enter") {
-                            this.addDelay(pluginItem, input, itemContainer, container)
-                            this.isDblClick = false
+                            setTimeout(async () => {
+                                this.addDelay(pluginItem, input, itemContainer, container)
+                                this.isDblClick = false
+                            }, 100);
                         }
                     });
                     input?.addEventListener("blur", () => {
@@ -365,28 +371,6 @@ export class QPSModal extends Modal {
         this.onOpen();
     }
 
-    getCirclesItem(pluginItem: PluginInfo, indices: number[]) {
-        const len = indices.length
-        let background = "";
-        if (len === 1) {
-            const { color } = getEmojiForGroup(indices[len - 1]);
-            background = `background: ${color};`;
-        } else if (len === 2) {
-            const { color: color1 } = getEmojiForGroup(indices[len - 2]);
-            const { color: color2 } = getEmojiForGroup(indices[len - 1]);
-            background = `background: linear-gradient(90deg, ${color1} 50%, ${color2} 50%);`;
-        }
-
-        const content = `<div
-            style="${background}"
-            class="qps-item-line-group"
-            >
-            &nbsp;
-            </div>
-            `
-        return content
-    }
-
     handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
         if (pluginItem.id === "quick-plugin-switcher") return
         const numberOfGroups = this.plugin.settings.numberOfGroups;
@@ -407,7 +391,6 @@ export class QPSModal extends Modal {
                 const index = pluginItem.groupInfo.groupIndices.indexOf(groupIndex);
                 if (index === -1) {
                     pluginItem.groupInfo.groupIndices?.push(groupIndex);
-                    await this.plugin.saveSettings()
                     this.onOpen();
                 }
             } else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
@@ -445,7 +428,6 @@ export class QPSModal extends Modal {
             }
             await this.plugin.saveSettings()
             this.items.removeEventListener('keydown', handleKeyDown);
-            // this.onOpen();
         }
         this.items.addEventListener('keydown', handleKeyDown)
     }
@@ -469,15 +451,12 @@ export class NewVersion extends Modal {
         // contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
         const content = `
         <b>Warning:</b><br>
-        For the new feature(user request) adding a delay to plugin(s) at start,
-        default values needed to be restored.<br>
-        Sorry for the inconvenience.<br><br>
+        For this new feature(request) adding a delay to plugin(s) at start,
+        default values need to be restored. Sorry for the inconvenience.<br><br>
         <b>New feature:</b><br>
         Double click, on a plugin name, to add/delete a delay to a plugin.<br>
         Right click on groups name, to open context menu: add a delay, "apply" to all linked plugins,
-        reset.<br>
-        Remember, you have to click plugin name before using shortcuts.(1 to 7 and 0 to delete)<br>
-        I will add a gif for the new delay feature in the GitHub help.
+        reset.
         `
         contentEl.createDiv("", (el: HTMLDivElement) => {
             el.innerHTML = content;
@@ -487,8 +466,9 @@ export class NewVersion extends Modal {
     async onClose() {
         const { contentEl } = this;
         contentEl.empty();
-        this.plugin.settings = { ...DEFAULT_SETTINGS };
-        this.plugin.settings.savedVersion = this.plugin.manifest.version;
-        await this.plugin.saveSettings();
+        this.plugin.toUpdate = false
+        // this.plugin.settings = { ...DEFAULT_SETTINGS };
+        // this.plugin.settings.savedVersion = this.plugin.manifest.version;
+        // await this.plugin.saveSettings();
     }
 }

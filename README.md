@@ -14,7 +14,7 @@ Most Switched filter is useful for most often switched plugins...(you can reset 
 
 ![filters](img/show_by_group.jpg)
 
-## Add group to plugins
+## Add group to **plugins**
 
 As you can see above, you can add groups to your plugins ( 7 colors )
 

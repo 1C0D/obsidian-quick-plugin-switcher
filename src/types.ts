@@ -12,7 +12,7 @@ interface GroupData {
 }
 
 export const Groups: GroupData = {
-    SelectGroup : "All groups",
+    SelectGroup : "All",
 }
 
 export interface PluginGroupInfo {

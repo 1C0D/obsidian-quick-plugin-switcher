@@ -1,4 +1,4 @@
-import { Groups, PluginInfo, QPSSettings } from "./types"
+import { Groups, PluginInfo } from "./types"
 import Plugin from "./main"
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
@@ -46,8 +46,6 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
 
         const groupKey = (_this.settings.groups[i]?.name !== "") ?
             _this.settings.groups[i]?.name : `Group${i}`;
-        // const { emoji } = getEmojiForGroup(i);
-        // Groups[`Group${i}`] = `${emoji}${groupKey}`;
         Groups[`Group${i}`] = `${groupKey}`;
     }
 }
@@ -58,20 +56,27 @@ export const getEmojiForGroup = (groupNumber: number) => {
     return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
 };
 
-// export const getCircleGroup=(groupIndex: number) => {
-//     const { color } = getEmojiForGroup(groupIndex);
-//     const background = `background: ${color};`;
+export const getCirclesItem = (pluginItem: PluginInfo, indices: number[]) => { //move this to modal utilities
+    const len = indices.length
+    let background = "";
+    if (len === 1) {
+        const { color } = getEmojiForGroup(indices[len - 1]);
+        background = `background: ${color};`;
+    } else if (len === 2) {
+        const { color: color1 } = getEmojiForGroup(indices[len - 2]);
+        const { color: color2 } = getEmojiForGroup(indices[len - 1]);
+        background = `background: linear-gradient(90deg, ${color1} 50%, ${color2} 50%);`;
+    }
 
-//     const content = `<div
-//             style="${background}"
-//             class="qps-item-line-group"
-//             >
-//             &nbsp;
-//             </div>
-//             `
-//     return content
-// }
-
+    const content = `<div
+            style="${background}"
+            class="qps-item-line-group"
+            >
+            &nbsp;
+            </div>
+            `
+    return content
+}
 
 export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
     const { plugin } = modal
@@ -104,15 +109,16 @@ export const delayedReEnable = async (_this: QPSModal, pluginItem: PluginInfo) =
     }
 }
 
-export const conditionalEnable = async (_this:any, pluginItem: PluginInfo) => {
+export const conditionalEnable = async (_this: any, pluginItem: PluginInfo) => {
     if (pluginItem.delayed) {
         await (_this.app as any).plugins.enablePlugin(pluginItem.id)
+        await _this.plugin.saveSettings()
     } else {
         pluginItem.switched++;// besoin que là?
         await (_this.app as any).plugins.enablePluginAndSave(pluginItem.id)
     }
 }
 
-export const selectValue = (input:HTMLInputElement | null)=> {
+export const selectValue = (input: HTMLInputElement | null) => {
     input?.setSelectionRange(0, input?.value.length);
 }

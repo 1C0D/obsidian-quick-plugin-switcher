@@ -45,9 +45,8 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
         for (const groupKey in Groups) {
             const groupIndex = parseInt(groupKey.replace("Group", ""));
             if (groupKey === "SelectGroup"
-                // || settings.allPluginsList.some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)
             ) {
-                dropdownOptions[groupKey] = Groups[groupKey];
+                dropdownOptions[groupKey] = Groups[groupKey]+`(${ plugin.lengthAll })`;
             } else if (settings.allPluginsList.
                 some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)) {
                 dropdownOptions[groupKey] = getEmojiForGroup(groupIndex).emoji + Groups[groupKey]
@@ -60,9 +59,10 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
                 return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
             })
         );
+        
         new DropdownComponent(contentEl)
             .addOptions(dropdownOptions)
-            .setValue(notEmpty ? settings.selectedGroup as string : "SelectGroup")
+            .setValue(settings.selectedGroup as string)
             .onChange(async (value: QPSSettings['selectedGroup']) => {
                 settings.selectedGroup = value;
                 await plugin.saveSettings();
@@ -130,9 +130,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
                                     if (pluginToUpdate) {
                                         conditionalEnable(modal, pluginToUpdate)
-                                        // await (modal.app as any).plugins.enablePluginAndSave(i)
                                         pluginToUpdate.enabled = true
-                                        // updateDelayedPluginStatus à revoir !!!!!
                                     }
                                 }
                                 getLength(plugin)
@@ -188,7 +186,6 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                             i.groupInfo.groupWasEnabled = true
                                             await (modal.app as any).plugins.disablePluginAndSave(i.id)
                                             i.enabled = false
-                                            // updateDelayedPluginStatus à revoir !!!!!
                                         })
                                         await Promise.all(toDisable);
                                         if (toDisable) {
@@ -201,9 +198,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     else {
                                         for (const i of previousWasEnabled) {
                                             conditionalEnable(modal, i)
-                                            // await (modal.app as any).plugins.enablePluginAndSave(i)
                                             i.enabled = true
-                                            // updateDelayedPluginStatus à revoir !!!!!
                                             i.switched++
 
                                         }
@@ -309,6 +304,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                 .setTitle("Open plugin folder")
                 .setIcon("folder-open")
                 .onClick(() => {
+                    
                     openDirectoryInFileManager(shell, modal, pluginItem)
                 })
         );

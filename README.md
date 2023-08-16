@@ -1,6 +1,6 @@
 ## Quick Plugin Switcher
 
-This plugin simplifies the process of managing your plugins    
+This plugin simplifies the process of managing your plugins (demos at the end of this page)
 
 - quickly switch your plugins (ribbon bar icon or command)  
 - apply filters to show them  
@@ -69,5 +69,13 @@ if you add a space at the end of your search, it will modify search to "starting
 ![search_space](img/search_space.jpg)
 
 ## videos
+
+-3- delay at start (feature request, inspired by "plugin groups")
+![demo_delay](gif/demo_delay.gif)
+update info will show only once
+
+-2- groups
 ![Newvid](gif/multi-group-rename.gif)
+
+-1- first demo
 ![vid](gif/demo.gif)  

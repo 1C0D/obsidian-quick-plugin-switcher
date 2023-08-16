@@ -214,7 +214,7 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("reset")
-                .onClick(() => {
+                .onClick(async () => {
                     const { plugin } = this
                     const { settings } = plugin
                     const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
@@ -226,6 +226,9 @@ export class QPSModal extends Modal {
                         plugin.time = 0
                         plugin.delayed = false
                         settings.groups[groupNumber].applied = false
+                        if (plugin.enabled) {
+                            await (this.app as any).plugins.enablePluginAndSave(plugin.id)
+                        }
                         this.onOpen()
                     }
                     plugin.saveSettings()

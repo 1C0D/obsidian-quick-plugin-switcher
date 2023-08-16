@@ -125,9 +125,9 @@ export class QPSModal extends Modal {
                 this.groupMenu(evt, span, i, groupKey)
             });
 
-            if (settings.groups[i].applied) {
-                span.toggleClass("delayed-group", true)
-            }
+            // if (settings.groups[i].applied) {
+            //     span.toggleClass("delayed-group", true)
+            // }
         }
     }
 

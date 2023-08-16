@@ -4,43 +4,63 @@ This plugin simplifies the process of managing your plugins
 
 - quickly switch your plugins (ribbon bar icon or command)  
 - apply filters to show them  
-- and search engine
-![ribbon access](img/ribbon_access.jpg)
+- search engine
+- add plugins to groups
+- plugin delayed start
+- open plugin in its directory, show description
+  
+![UI](img/UI.jpg)
 
 ## Filterable item list    
 
-![filters](img/filters.jpg)  
-Most Switched filter is useful for most often switched plugins...(you can reset this)  
-
+![filters](img/filters.jpg) 
+  
+Most Switched filter (most switched plugins)   
+![most_switched](img/most-switched.jpg)
+  
+By group  
 ![filters](img/show_by_group.jpg)
-
+  
+  
 ## Add group to **plugins**
 
-As you can see above, you can add groups to your plugins ( 7 colors )
+- Add groups to your plugins. Set number of groups in settings
 
-you can then toggle plugins by group   
-
-1 - Add group
-  - using shortcut <kbd>1 to 7</kbd> and <kbd>0/del/suppr</kbd>, over each item
-  - using context menu
-![groups](img/item_context_menu.jpg)  
-you can see other the possible operations  
-
-- you can add several groups(4 max) by plugin item  
-  and then delete them <kbd>0/del/suppr</kbd>
-![groups](img/several_groups.jpg) 
-- you can now rename groups
-![groups](img/rename.jpg)
-
-2 - you can then toggle plugins  
+- Toggle plugins by group   
   
-- all or by group   
-( group shown if enabled plugin inside)  
+1 - Add groups
+  - Shorcuts:
+    - <b>click</b> the plugin name 
+    - <b>then press</b> <kbd>1 to 7 </kbd> to add group, <kbd>0/del/suppr</kbd> to delete.    
+    (tips: click several plugins then press shortcut)
+   
+  - Context Menu
+![groups](img/item_context_menu.jpg)
+
+- Several groups(4 max) by plugin. Delete  
+![groups](img/several_groups.jpg) 
+  
+- rename groups (dbl click)
+![groups](img/rename.jpg)
+  
+2 - Toggle several plugins  
+      
+- All or by group
 ![toggle](img/toggle-plugins-by-group.jpg)
 
-- you can re-enable same plugins later
+- re-enable plugins or skip it to reset the toggle
 ![toggle](img/re-enable.jpg)  
-you can skip re-enable and reset the toggle, without re-enabling
+
+## Delay plugins at start
+
+- delay each plugin
+![plugin-delay](img/plugin-delay.jpg)  
+notice time in the bullet and color
+
+- delay by group
+![delay_group](img/delay_group.jpg)
+Erase time in the bullet entering 0 or nothing in delay group
+
 
 ## Search tool
 

@@ -9,7 +9,7 @@ export const reset = (modal: QPSModal) => {
     const { plugin } = modal
     const confirm = window.confirm("Reset most switched values?");
     if (confirm) {
-        plugin.reset = true //if true reset done in modals addItems()
+        plugin.reset = true //if true reset done, in modals addItems()
         getLength(plugin)
         modal.onOpen()
     } else {

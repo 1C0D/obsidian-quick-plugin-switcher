@@ -1,4 +1,4 @@
-import { Plugin } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { getLength, isEnabled } from './utils';
 import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
@@ -26,21 +26,29 @@ export default class QuickPluginSwitcher extends Plugin {
                 if (Object.keys(manifests).includes(plugin.id))
                     stillInstalled.push(plugin)
             }
+
+            // allow to detect disable from UI, when delayed. thks GPT!
+            this.wrapDisablePluginAndSave(stillInstalled)
+
+
             // plugin has been toggled from obsidian UI ? or if is delayed unabled
             for (const plugin of stillInstalled) {
                 if (
                     isEnabled(plugin.id) !== plugin.enabled
                     &&
-                    !plugin.delayed
+                    !plugin.delayed //because if delayed isEnabled false 
                 ) {
                     plugin.enabled = !plugin.enabled;
-                }// when deactivated from UI, if delayed, won't be updated until modal opened. hard to fix
+                }
             }
+            await this.saveSettings()
 
-            for (const pluginItem of this.settings.allPluginsList) {
-                if (pluginItem.delayed
-                    && pluginItem.enabled !== isEnabled(pluginItem.id)
-                    && pluginItem.enabled) {
+            //delay at start
+            for (const pluginItem of stillInstalled) {
+                if (
+                    pluginItem.delayed
+                    && pluginItem.enabled
+                ) {
                     const time = pluginItem.time * 1000 || 0
                     setTimeout(async () => await (this.app as any).plugins.enablePlugin(pluginItem.id), time)
                 }
@@ -52,7 +60,6 @@ export default class QuickPluginSwitcher extends Plugin {
             this.getPluginsInfo()
             getLength(this)
             new QPSModal(this.app, this).open();
-            // debug(this, "ext-to-vault", "after QPSModal") //could be useful later
         });
 
         this.addCommand({
@@ -133,6 +140,43 @@ export default class QuickPluginSwitcher extends Plugin {
         getLength(this);
     }
 
+    wrapDisablePluginAndSave = async (stillInstalled: PluginInfo[]) => {
+        const { app } = this as any
+        const { plugins } = app
+        const originalDisablePluginAndSave = plugins.disablePluginAndSave;
+        const originalEnablePluginAndSave = plugins.enablePluginAndSave;
+        const _this = this
+
+        plugins.disablePluginAndSave = async function (pluginId: string) {
+            if (stillInstalled) {
+                const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                if (
+                    plugin
+                    && plugin.delayed
+                    && plugin.time > 0
+                ) {
+                    plugin.enabled = false
+                    await _this.saveSettings()
+                }
+            }
+            return originalDisablePluginAndSave.call(this, pluginId);
+        }
+        plugins.enablePluginAndSave = async function (pluginId: string) {
+            if (stillInstalled) {
+                const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                if (
+                    plugin
+                    && plugin.delayed
+                    && plugin.time > 0
+                ) {
+                    new Notice(`delayed, reenable it in Quick switcher plugin too`)
+                }
+            }
+            return originalEnablePluginAndSave.call(this, pluginId);
+        }
+    }
+
+
     // async updateInfo() { // could be usefull later
     //     if (
     //         // !(this.settings.savedVersion === "0.0.0")
@@ -141,7 +185,6 @@ export default class QuickPluginSwitcher extends Plugin {
     //         this.toUpdate
     //     ) {
     //         new NewVersion(this.app, this).open();
-    //         console.log("ici")
     //         // this.settings = { ...DEFAULT_SETTINGS }     
     //     } else {
     //         this.settings.savedVersion = this.manifest.version

@@ -116,7 +116,6 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                         if (i.enabled) settings.wasEnabled.push(i.id)
                                         await (modal.app as any).plugins.disablePluginAndSave(i.id)
                                         i.enabled = false;
-                                        // updateDelayedPluginStatus à revoir !!!!!
                                     }
                                     getLength(plugin)
                                     modal.onOpen();
@@ -394,7 +393,6 @@ export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDiv
     const text = new TextComponent(itemContainer)
         .setValue(customValue)
         .inputEl
-
 
     return text
 }

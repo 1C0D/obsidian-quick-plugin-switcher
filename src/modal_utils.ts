@@ -102,15 +102,12 @@ export async function openDirectoryInFileManager(shell: any, modal: QPSModal, pl
 }
 
 export const delayedReEnable = async (_this: QPSModal, pluginItem: PluginInfo) => {
-    const { settings } = _this.plugin
-    if (pluginItem.enabled) {
-        await (_this.app as any).plugins.disablePluginAndSave(pluginItem.id)
-        await (_this.app as any).plugins.enablePlugin(pluginItem.id)
-    }
+    await (_this.app as any).plugins.disablePluginAndSave(pluginItem.id)
+    await (_this.app as any).plugins.enablePlugin(pluginItem.id).then(pluginItem.enabled = true)
 }
 
 export const conditionalEnable = async (_this: any, pluginItem: PluginInfo) => {
-    if (pluginItem.delayed) {
+    if (pluginItem.delayed && pluginItem.time > 0) {
         await (_this.app as any).plugins.enablePlugin(pluginItem.id)
         await _this.plugin.saveSettings()
     } else {

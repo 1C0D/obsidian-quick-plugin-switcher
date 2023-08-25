@@ -26,7 +26,7 @@ export class QPSModal extends Modal {
     }
 
     onOpen() {
-        const {plugin} = this
+        const { plugin } = this
         if (this.plugin.toUpdate) { // message when opening 
             new NewVersion(this.app, plugin).open();
             plugin.toUpdate = false
@@ -200,9 +200,11 @@ export class QPSModal extends Modal {
                             plugin.time = settings.groups[groupNumber].time
                             plugin.delayed = true
                             settings.groups[groupNumber].applied = true
-                            if (plugin.enabled) { 
-                                await(this.app as any).plugins.disablePluginAndSave(plugin.id)
-                                await(this.app as any).plugins.enablePlugin(plugin.id)
+                            if (plugin.enabled) {
+                                // this.plugin.fromPlugin = true
+                                await (this.app as any).plugins.disablePluginAndSave(plugin.id)
+                                await (this.app as any).plugins.enablePlugin(plugin.id)
+                                // this.plugin.fromPlugin = false
                             }
                             this.plugin.saveSettings()
                             this.onOpen()
@@ -365,9 +367,11 @@ export class QPSModal extends Modal {
         pluginItem.delayed = true
         pluginItem.time = parseInt(input.value) || 0
 
-        delayedReEnable(this, pluginItem)
         if (pluginItem.time === 0) {
             pluginItem.delayed = false
+        }
+        if (pluginItem.delayed && pluginItem.enabled) {
+            delayedReEnable(this, pluginItem)
         }
         await this.plugin.saveSettings();
         itemContainer = container
@@ -451,7 +455,6 @@ export class NewVersion extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        // contentEl.createEl("h1", { text: "Quick Plugin Switcher" });
         const content = `
         <b>Warning:</b><br>
         For this new feature(request) adding a delay to plugin(s) at start,
@@ -470,8 +473,5 @@ export class NewVersion extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         this.plugin.toUpdate = false
-        // this.plugin.settings = { ...DEFAULT_SETTINGS };
-        // this.plugin.settings.savedVersion = this.plugin.manifest.version;
-        // await this.plugin.saveSettings();
     }
 }

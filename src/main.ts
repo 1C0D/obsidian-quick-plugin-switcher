@@ -1,3 +1,4 @@
+import { around } from "monkey-around";
 import { Notice, Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { getLength, isEnabled } from './utils';
@@ -27,9 +28,17 @@ export default class QuickPluginSwitcher extends Plugin {
                     stillInstalled.push(plugin)
             }
 
-            // allow to detect disable from UI, when delayed. thks GPT!
-            this.wrapDisablePluginAndSave(stillInstalled)
+            const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
+                stillInstalled,
+                async () => { await this.saveSettings() }
+            )
 
+            this.register(
+                wrapper1
+            );
+            this.register(
+                wrapper2
+            );
 
             // plugin has been toggled from obsidian UI ? or if is delayed unabled
             for (const plugin of stillInstalled) {
@@ -71,6 +80,50 @@ export default class QuickPluginSwitcher extends Plugin {
                 new QPSModal(this.app, this).open();
             }
         });
+    }
+
+    wrapDisableEnablePluginAndSave(stillInstalled: PluginInfo[], cb: () => {}) {
+        const wrapper1 = around((this.app as any).plugins, {
+            disablePluginAndSave(oldMethod) {
+                return async function (pluginId: string) {
+                    if (stillInstalled) {
+                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                        if (
+                            plugin
+                            && plugin.delayed
+                            && plugin.time > 0
+                        ) {
+                            plugin.enabled = false
+                            cb()
+                        }
+                    }
+                    return oldMethod.call(this, pluginId);
+                }
+            },
+        })
+        const wrapper2 = around((this.app as any).plugins, {
+            enablePluginAndSave(oldMethod) {
+                return async function (pluginId: string) {
+                    let altReturn = false
+                    if (stillInstalled) {
+                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                        if (
+                            plugin
+                            && plugin.delayed
+                            && plugin.time > 0
+                        ) {
+                            plugin.enabled = true
+                            altReturn = true
+                            cb()
+                        }
+                    }
+                    if (altReturn) return (this.app as any).plugins.enablePlugin.call(this, pluginId)
+                    return oldMethod.call(this, pluginId);
+                }
+            },
+        })
+
+        return { wrapper1, wrapper2 }
     }
 
     async getPluginsInfo() {
@@ -140,41 +193,45 @@ export default class QuickPluginSwitcher extends Plugin {
         getLength(this);
     }
 
-    wrapDisablePluginAndSave = async (stillInstalled: PluginInfo[]) => {
-        const { app } = this as any
-        const { plugins } = app
-        const originalDisablePluginAndSave = plugins.disablePluginAndSave;
-        const originalEnablePluginAndSave = plugins.enablePluginAndSave;
-        const _this = this
 
-        plugins.disablePluginAndSave = async function (pluginId: string) {
-            if (stillInstalled) {
-                const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
-                if (
-                    plugin
-                    && plugin.delayed
-                    && plugin.time > 0
-                ) {
-                    plugin.enabled = false
-                    await _this.saveSettings()
-                }
-            }
-            return originalDisablePluginAndSave.call(this, pluginId);
-        }
-        plugins.enablePluginAndSave = async function (pluginId: string) {
-            if (stillInstalled) {
-                const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
-                if (
-                    plugin
-                    && plugin.delayed
-                    && plugin.time > 0
-                ) {
-                    new Notice(`delayed, reenable it in Quick switcher plugin too`)
-                }
-            }
-            return originalEnablePluginAndSave.call(this, pluginId);
-        }
-    }
+    // patchDisablePluginAndSave = 
+
+
+    // wrapDisablePluginAndSave = async (stillInstalled: PluginInfo[]) => {
+    //     const { app } = this as any
+    //     const { plugins } = app
+    //     const originalDisablePluginAndSave = plugins.disablePluginAndSave;
+    //     const originalEnablePluginAndSave = plugins.enablePluginAndSave;
+    //     const _this = this
+
+    //     plugins.disablePluginAndSave = async function (pluginId: string) {
+    //         if (stillInstalled) {
+    //             const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+    //             if (
+    //                 plugin
+    //                 && plugin.delayed
+    //                 && plugin.time > 0
+    //             ) {
+    //                 plugin.enabled = false
+    //                 await _this.saveSettings()
+    //             }
+    //         }
+    //         return originalDisablePluginAndSave.call(this, pluginId);
+    //     }
+    //     plugins.enablePluginAndSave = async function (pluginId: string) {
+    //         if (stillInstalled) {
+    //             const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+    //             if (
+    //                 plugin
+    //                 && plugin.delayed
+    //                 && plugin.time > 0
+    //             ) {
+    //                 new Notice(`delayed, reenable it in Quick switcher plugin too`)
+    //             }
+    //         }
+    //         return originalEnablePluginAndSave.call(this, pluginId);
+    //     }
+    // }
 
 
     // async updateInfo() { // could be usefull later

@@ -46,7 +46,7 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
             const groupIndex = parseInt(groupKey.replace("Group", ""));
             if (groupKey === "SelectGroup"
             ) {
-                dropdownOptions[groupKey] = Groups[groupKey]+`(${ plugin.lengthAll })`;
+                dropdownOptions[groupKey] = Groups[groupKey] + `(${plugin.lengthAll})`;
             } else if (settings.allPluginsList.
                 some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)) {
                 dropdownOptions[groupKey] = getEmojiForGroup(groupIndex).emoji + Groups[groupKey]
@@ -59,7 +59,7 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
                 return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
             })
         );
-        
+
         new DropdownComponent(contentEl)
             .addOptions(dropdownOptions)
             .setValue(settings.selectedGroup as string)
@@ -294,7 +294,7 @@ export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemCon
 }
 
 // un param inutilisé
-export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plugin, pluginItem: PluginInfo) => {
+export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plugin, pluginItem: PluginInfo) {
     evt.preventDefault();
     const menu = new Menu();
     if (shell) {
@@ -303,7 +303,7 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                 .setTitle("Open plugin folder")
                 .setIcon("folder-open")
                 .onClick(() => {
-                    
+
                     openDirectoryInFileManager(shell, modal, pluginItem)
                 })
         );
@@ -316,6 +316,18 @@ export const handleContextMenu = (evt: MouseEvent, modal: QPSModal, plugin: Plug
                 new DescriptionModal(plugin.app, plugin, pluginItem).open();
             })
     )
+    const pluginSettings = (this.app as any).setting.openTabById(pluginItem.id)
+    if (pluginSettings) {
+        menu.addItem((item) =>
+            item
+                .setTitle("Plugin settings")
+                .setIcon("settings")
+                .onClick(async () => {
+                    await (this.app as any).setting.open()
+                    await pluginSettings.display();
+                })
+        )
+    }
     if (pluginItem.id !== "quick-plugin-switcher") {
         menu.addSeparator()
         menu.addItem((item) => {

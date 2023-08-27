@@ -1,5 +1,5 @@
 import { around } from "monkey-around";
-import { Notice, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { getLength, isEnabled } from './utils';
 import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';

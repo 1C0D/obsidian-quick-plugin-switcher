@@ -503,13 +503,16 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
             })
     )
 
-    // submenu.addItem((item) => // TODO
-    //     item
-    //         .setTitle("Plugin github")
-    //         .setIcon("text")
-    //         .onClick(() => {
-    //         })
-    // )
+    submenu.addItem((item) => // TODO
+        item
+            .setTitle("Plugin github")
+            .setIcon("github")
+            .onClick(() => {
+                openGitHubRepo(pluginItem)
+            })
+    )
+
+
 
     const pluginSettings = (modal.app as any).setting.openTabById(pluginItem.id)
     submenu.addSeparator()
@@ -536,5 +539,32 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
                 showHotkeysFor(pluginItem)
             })
     )
+}
+
+
+async function openGitHubRepo(plugin: PluginInfo) {
+    try {
+        const response = await fetch(
+            'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json');
+        const pluginsData: Array<any> = await response.json();
+
+        const pluginData = pluginsData.find(item => item.id === plugin.id);
+        if (pluginData && pluginData.repo) {
+            const repoURL = `https://github.com/${pluginData.repo}`;
+            window.open(repoURL, '_blank'); // open browser in new tab
+        } else {
+            console.log("Repo not found for the plugin.");
+            try {
+                const repoURL = `https://github.com/${plugin.author}/${plugin.id}`
+                window.open(repoURL, '_blank');
+            } catch {
+                const repoURL = `https://github.com/${plugin.author}`
+                window.open(repoURL, '_blank');
+                console.log("Repo not found for the plugin.");
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching plugin data:", error);
+    }
 }
 

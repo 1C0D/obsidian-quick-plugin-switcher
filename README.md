@@ -1,4 +1,4 @@
-## Quick Plugin Switcher
+****## Quick Plugin Switcher
 
 This plugin simplifies the process of managing your plugins (demos at the end of this page)
 
@@ -61,6 +61,15 @@ notice time in the bullet and color
 ![delay_group](img/delay_group.jpg)
 Erase time in the bullet entering 0 or nothing in delay group
 
+## More tools
+
+- Open plugin folder
+- Open plugin short description
+- Open plugin github
+- Open Obsidian plugin settings
+- Open plugin shortcuts
+
+![tools](img/tools.jpg)
 
 ## Search tool
 

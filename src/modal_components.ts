@@ -300,47 +300,20 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
     if (shell) {
         menu.addItem((item) =>
             item
-                .setTitle("Open plugin folder")
+                .setTitle("Plugin folder")
                 .setIcon("folder-open")
                 .onClick(() => {
-
                     openDirectoryInFileManager(shell, modal, pluginItem)
                 })
         );
     }
-    menu.addItem((item) =>
+    menu.addItem((item) => {
         item
-            .setTitle("Plugin description")
-            .setIcon("text")
-            .onClick(() => {
-                new DescriptionModal(plugin.app, plugin, pluginItem).open();
-            })
-    )
-    const pluginSettings = (this.app as any).setting.openTabById(pluginItem.id)
-    if (pluginSettings) {
-        menu.addItem((item) =>
-            item
-                .setTitle("Plugin settings")
-                .setIcon("settings")
-                .onClick(async () => {
-                    await (this.app as any).setting.open()
-                    await pluginSettings.display();
-                })
-        )
-    }
-
-    // helped by hotkey-helper code, even if it is extremly simplified
-    const pluginCommands = this.app.setting.openTabById(pluginItem.id)?.app?.commands.commands
-    if (pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id)) {
-        menu.addItem((item) =>
-            item
-                .setTitle("modify hotkeys")
-                .setIcon("plus-circle")
-                .onClick(async () => {
-                    showHotkeysFor(pluginItem)
-                })
-        )
-    }
+            .setTitle("Plugin features")
+            .setIcon("package-plus")
+        const submenu = (item as any).setSubmenu() as Menu;
+        pluginFeatureSubmenu(submenu, pluginItem, modal);
+    })
 
     if (pluginItem.id !== "quick-plugin-switcher") {
         menu.addSeparator()
@@ -349,7 +322,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
                 .setTitle("Add to group")
                 .setIcon("user")
             const submenu = (item as any).setSubmenu() as Menu;
-            addToGroupMenuItems(submenu, pluginItem, modal);
+            addToGroupSubMenu(submenu, pluginItem, modal);
         })
         menu.addItem((item) => {
             item
@@ -395,7 +368,6 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
         })
     }
     menu.showAtMouseEvent(evt);
-
 }
 
 
@@ -408,7 +380,7 @@ function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
     return false;
 }
 
-const showHotkeysFor = async function (pluginItem:PluginInfo) {
+const showHotkeysFor = async function (pluginItem: PluginInfo) {
     await (this.app as any).setting.open()
     await (this.app as any).setting.open()
     await (this.app as any).setting.openTabById("hotkeys")
@@ -504,7 +476,7 @@ function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin)
     });
 }
 
-const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) => {
+const addToGroupSubMenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) => {
     Object.entries(Groups).forEach(([key, value]) => {
         if (key !== "SelectGroup") {
             submenu.addItem((item) =>
@@ -519,5 +491,50 @@ const addToGroupMenuItems = (submenu: Menu, pluginItem: PluginInfo, modal: QPSMo
             );
         }
     });
+}
+
+const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSModal) => {
+    submenu.addItem((item) =>
+        item
+            .setTitle("Plugin description")
+            .setIcon("text")
+            .onClick(() => {
+                new DescriptionModal(modal.plugin.app, modal.plugin, pluginItem).open();
+            })
+    )
+
+    // submenu.addItem((item) => // TODO
+    //     item
+    //         .setTitle("Plugin github")
+    //         .setIcon("text")
+    //         .onClick(() => {
+    //         })
+    // )
+
+    const pluginSettings = (modal.app as any).setting.openTabById(pluginItem.id)
+    submenu.addSeparator()
+    submenu.addItem((item) =>
+        item
+            .setTitle("Plugin settings")
+            .setIcon("settings")
+            .setDisabled(!pluginSettings)
+            .onClick(async () => {
+                await (modal.app as any).setting.open()
+                await pluginSettings.display();
+            })
+    )
+
+    // helped by hotkey-helper code, even if it is extremly simplified
+    const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)?.app?.commands.commands
+    const condition = pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id)
+    submenu.addItem((item) =>
+        item
+            .setTitle("Modify hotkeys")
+            .setIcon("plus-circle")
+            .setDisabled(!condition)
+            .onClick(async () => {
+                showHotkeysFor(pluginItem)
+            })
+    )
 }
 

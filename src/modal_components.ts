@@ -328,6 +328,20 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
                 })
         )
     }
+
+    // helped by hotkey-helper code, even if it is extremly simplified
+    const pluginCommands = this.app.setting.openTabById(pluginItem.id)?.app?.commands.commands
+    if (pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id)) {
+        menu.addItem((item) =>
+            item
+                .setTitle("modify hotkeys")
+                .setIcon("plus-circle")
+                .onClick(async () => {
+                    showHotkeysFor(pluginItem)
+                })
+        )
+    }
+
     if (pluginItem.id !== "quick-plugin-switcher") {
         menu.addSeparator()
         menu.addItem((item) => {
@@ -382,6 +396,25 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
     }
     menu.showAtMouseEvent(evt);
 
+}
+
+
+function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
+    for (const key in obj) {
+        if (key.startsWith(prefix)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const showHotkeysFor = async function (pluginItem:PluginInfo) {
+    await (this.app as any).setting.open()
+    await (this.app as any).setting.open()
+    await (this.app as any).setting.openTabById("hotkeys")
+    const tab = await (this.app as any).setting.activeTab
+    tab.searchComponent.inputEl.value = pluginItem.name + ":"
+    tab.updateHotkeyVisibility()
 }
 
 export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {

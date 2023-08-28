@@ -15,14 +15,8 @@ export default class QPSSettingTab extends PluginSettingTab {
         containerEl.empty();
         containerEl.createEl("h4", { text: "Quick Plugin Switcher" });
         const content = `
-        <b>Important:</b><br> you have to click plugin names before to use shortcuts 1 to 7 max(see setting below) to add groups and 0/del/← to delete).<br>
-        you can click several plugins names then a shortcut. <br><br>
-        <b>New feature:</b><br> Add a delay on plugins at start, double clicking plugin name, to toggle delayed or not (enter a time in seconds)<br>
-        Right click on group to open a menu to handle delay by group. set the delay, then apply or reset. entering no delay is reseting too<br>
-        <br>
-        Rename groups double cliking them, reset name to default entering nothing and validating (return or clicking on the modal UI).<br>
-        you can watch videos I put in the help.
-        <br><br><br>`
+        <b>Important:</b><br> you have to click a plugin name before to use a shortcut.<br>
+        you can click several names then a shortcut. <br><br>`
         containerEl.createDiv("", (el: HTMLDivElement) => {
             el.innerHTML = content;
         })
@@ -67,7 +61,7 @@ export default class QPSSettingTab extends PluginSettingTab {
                         }
                     });
             })
-        
+
         new Setting(containerEl)
             .setName("Reset in case of bug. IMPORTANT: After that you need to minimize obsidian window and restore it, to get back the focus to obsidian. Don't ask me why")
             .setDesc("Should not be needed, but could be useful in case of bug.")
@@ -87,6 +81,17 @@ export default class QPSSettingTab extends PluginSettingTab {
                             await plugin.saveSettings();
                         } else { new Notice("Operation cancelled."); }
                     });
+            });
+
+        new Setting(containerEl)
+            .setName("Show hotkeys line reminder")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.showHotKeys)
+                    .onChange((value) => {
+                        this.plugin.settings.showHotKeys = value;
+                        this.plugin.saveSettings();
+                    })
             });
     }
 

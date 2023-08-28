@@ -11,6 +11,11 @@ This plugin simplifies the process of managing your plugins (demos at the end of
   
 ![UI](img/UI.jpg)
 
+you have now an option in settings to show shortcuts
+
+![show_hotkey](img/show_hotkey_desc.jpg)
+
+
 ## Filterable item list    
 
 ![filters](img/filters.jpg) 
@@ -63,11 +68,13 @@ Erase time in the bullet entering 0 or nothing in delay group
 
 ## More tools
 
-- Open plugin folder
+some shortcuts have been added to this now. activate the option to show shortcuts guide in settings 
+
+**- Open plugin folder
 - Open plugin short description
 - Open plugin github
 - Open Obsidian plugin settings
-- Open plugin shortcuts
+- Open plugin shortcuts**
 
 ![tools](img/tools.jpg)
 
@@ -78,6 +85,9 @@ if you add a space at the end of your search, it will modify search to "starting
 ![search_space](img/search_space.jpg)
 
 ## videos
+
+-4- shortcuts helper
+![shortcuts helper](gif/shortcuts_helper.gif)
 
 -3- delay at start (feature request, inspired by "plugin groups")
 ![demo_delay](gif/demo_delay.gif)

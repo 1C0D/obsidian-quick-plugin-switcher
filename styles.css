@@ -18,6 +18,12 @@
   margin-bottom: 10px;
 }
 
+.qps-hk-desc{
+  font-size: 0.94rem;
+  font-style: italic;
+  word-spacing: 0.5rem
+}
+
 .qps-toggle-plugins {
   margin-left: auto;
 }

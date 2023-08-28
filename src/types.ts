@@ -1,10 +1,10 @@
 export const Filters: GroupData = {
-    All : "all",
-    Enabled : "enabled",
-    Disabled : "disabled",
-    EnabledFirst : "enabledFirst",
-    MostSwitched : "mostSwitched",
-    ByGroup : "byGroup",
+    All: "all",
+    Enabled: "enabled",
+    Disabled: "disabled",
+    EnabledFirst: "enabledFirst",
+    MostSwitched: "mostSwitched",
+    ByGroup: "byGroup",
 }
 
 interface GroupData {
@@ -12,7 +12,7 @@ interface GroupData {
 }
 
 export const Groups: GroupData = {
-    SelectGroup : "All",
+    SelectGroup: "All",
 }
 
 export interface PluginGroupInfo {
@@ -28,7 +28,8 @@ export interface QPSSettings {
     selectedGroup: keyof typeof Groups;
     search: string;
     numberOfGroups: number;
-    groups: Record<number, { name: string; delayed: boolean; time: number, applied:boolean }>
+    groups: Record<number, { name: string; delayed: boolean; time: number, applied: boolean }>;
+    showHotKeys: boolean
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
@@ -39,7 +40,8 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     selectedGroup: "SelectGroup",
     search: "",
     numberOfGroups: 3,
-    groups: {}
+    groups: {},
+    showHotKeys: true
 };
 
 export interface PluginInfo {

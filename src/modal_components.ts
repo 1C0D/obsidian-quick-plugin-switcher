@@ -13,7 +13,7 @@ import {
     reset, sortByName, sortSwitched, togglePlugin
 } from "./modal_utils";
 import { getLength, removeItem } from "./utils";
-let shell: any = null;
+export let shell: any = null;
 try {
     const electron = require("electron");
     shell = electron.shell;
@@ -300,7 +300,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
     if (shell) {
         menu.addItem((item) =>
             item
-                .setTitle("Plugin folder")
+                .setTitle("Plugin folder (f)")
                 .setIcon("folder-open")
                 .onClick(() => {
                     openDirectoryInFileManager(shell, modal, pluginItem)
@@ -378,15 +378,6 @@ function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
         }
     }
     return false;
-}
-
-const showHotkeysFor = async function (pluginItem: PluginInfo) {
-    await (this.app as any).setting.open()
-    await (this.app as any).setting.open()
-    await (this.app as any).setting.openTabById("hotkeys")
-    const tab = await (this.app as any).setting.activeTab
-    tab.searchComponent.inputEl.value = pluginItem.name + ":"
-    tab.updateHotkeyVisibility()
 }
 
 export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
@@ -505,7 +496,7 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
 
     submenu.addItem((item) => // TODO
         item
-            .setTitle("Plugin github")
+            .setTitle("Plugin github (g)")
             .setIcon("github")
             .onClick(() => {
                 openGitHubRepo(pluginItem)
@@ -518,31 +509,51 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
     submenu.addSeparator()
     submenu.addItem((item) =>
         item
-            .setTitle("Plugin settings")
+            .setTitle("Plugin settings (s)")
             .setIcon("settings")
             .setDisabled(!pluginSettings)
             .onClick(async () => {
-                await (modal.app as any).setting.open()
-                await pluginSettings.display();
+                await openPluginSettings(modal, pluginSettings)
             })
     )
 
     // helped by hotkey-helper code, even if it is extremly simplified
     const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)?.app?.commands.commands
-    const condition = pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id)
+    const condition = getCondition(modal, pluginItem)
     submenu.addItem((item) =>
         item
-            .setTitle("Modify hotkeys")
+            .setTitle("Modify hotkeys (h)")
             .setIcon("plus-circle")
             .setDisabled(!condition)
-            .onClick(async () => {
-                showHotkeysFor(pluginItem)
+            .onClick(async() => {
+                showHotkeysFor(pluginItem, condition)
             })
     )
 }
 
+export async function openPluginSettings(modal: QPSModal, pluginSettings: any) {
+    if (!pluginSettings) { new Notice("No settings on this plugin"); return }
+    await (modal.app as any).setting.open()
+    await pluginSettings?.display();
+}
 
-async function openGitHubRepo(plugin: PluginInfo) {
+export const showHotkeysFor = async function (pluginItem: PluginInfo, condition: boolean) {
+    if (!condition) { new Notice("No HotKeys on this plugin"); return }
+    await (this.app as any).setting.open()
+    await (this.app as any).setting.openTabById("hotkeys")
+    const tab = await (this.app as any).setting.activeTab
+    tab.searchComponent.inputEl.value = pluginItem.name + ":"
+    tab.updateHotkeyVisibility()
+    tab.searchComponent.inputEl.blur()
+}
+
+export const getCondition = function (modal: QPSModal, pluginItem: PluginInfo) {
+    const pluginCommands = (modal.app as any).
+        setting.openTabById(pluginItem.id)?.app?.commands.commands
+    return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id)
+}
+
+export async function openGitHubRepo(plugin: PluginInfo) {
     try {
         const response = await fetch(
             'https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json');

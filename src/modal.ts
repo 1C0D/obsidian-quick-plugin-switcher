@@ -9,16 +9,19 @@ import {
     doSearch, handleContextMenu, modeSort,
     mostSwitchedResetButton, filterByGroup,
     powerButton, itemTogglePluginButton,
-    itemToggleClass, itemTextComponent
+    itemToggleClass, itemTextComponent, shell, openGitHubRepo, openPluginSettings, showHotkeysFor, getCondition
 } from "./modal_components";
-import { delayedReEnable, getCirclesItem, getEmojiForGroup, getGroupTitle, selectValue } from "./modal_utils";
+import { delayedReEnable, getCirclesItem, getEmojiForGroup, getGroupTitle, openDirectoryInFileManager, selectValue } from "./modal_utils";
+
 
 export class QPSModal extends Modal {
     header: HTMLElement
     items: HTMLElement
     search: HTMLElement
     groups: HTMLElement
+    hotkeysDesc: HTMLElement
     isDblClick = false
+
 
     constructor(app: App, public plugin: QuickPluginSwitcher) {
         super(app);
@@ -38,6 +41,7 @@ export class QPSModal extends Modal {
         this.addHeader(this.header)
         this.addSearch(this.search)
         this.addGroups(this.groups)
+        if (this.plugin.settings.showHotKeys) this.setHotKeysdesc()
         this.addItems(plugin.settings.allPluginsList)
     }
 
@@ -46,6 +50,7 @@ export class QPSModal extends Modal {
         this.header = contentEl.createEl("div", { text: "Plugins List", cls: ["qps-header"] })
         this.search = contentEl.createEl("div", { cls: ["qps-search"] });
         this.groups = contentEl.createEl("div", { cls: ["qps-groups"] });
+        this.hotkeysDesc = contentEl.createEl("p", { cls: ["qps-hk-desc"] });
         this.items = contentEl.createEl("div", { cls: ["qps-items"] });
     }
 
@@ -270,6 +275,9 @@ export class QPSModal extends Modal {
         });
     };
 
+    setHotKeysdesc(): void {
+        this.hotkeysDesc.setText(`Keys: (1-7)➕ (0)❌ (f)📁 (g)github (s)⚙️ (h)hotkeys`)
+    }
     async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
         const { settings } = plugin
@@ -379,7 +387,6 @@ export class QPSModal extends Modal {
     }
 
     handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
-        if (pluginItem.id === "quick-plugin-switcher") return
         const numberOfGroups = this.plugin.settings.numberOfGroups;
         const keyToGroupMap: Record<string, number> = {};
 
@@ -388,20 +395,32 @@ export class QPSModal extends Modal {
             keyToGroupMap[i.toString()] = i;
         }
 
+        const pluginSettings = (this.app as any).setting.openTabById(pluginItem.id)
+        const condition = getCondition(this, pluginItem)
+        const KeyToSettingsMap = {
+            "g": () => openGitHubRepo(pluginItem),
+            "s": () => openPluginSettings(this, pluginSettings),
+            "h": () => showHotkeysFor(pluginItem, condition)
+        }
+        if (shell) KeyToSettingsMap["f"] = () => openDirectoryInFileManager(shell, this, pluginItem)
+
         // handle groups shortcuts
         const handleKeyDown = async (event: KeyboardEvent) => {
             if (this.isDblClick) return
             const keyPressed = event.key;
-            if (keyPressed in keyToGroupMap) {
-                const groupIndex = parseInt(keyPressed);
+            if (keyPressed in keyToGroupMap && !(pluginItem.id === "quick-plugin-switcher")) {
+                const groupIndex = keyToGroupMap[keyPressed];
                 if (pluginItem.groupInfo.groupIndices.length === 4) return
                 const index = pluginItem.groupInfo.groupIndices.indexOf(groupIndex);
                 if (index === -1) {
                     pluginItem.groupInfo.groupIndices?.push(groupIndex);
                     this.onOpen();
                 }
-            } else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
-                keyPressed === "0") {
+            } else if (keyPressed in KeyToSettingsMap) {
+                KeyToSettingsMap[keyPressed]()
+            }
+            else if (keyPressed === "Delete" || keyPressed === "Backspace" ||
+                keyPressed === "0" && !(pluginItem.id === "quick-plugin-switcher")) {
                 if (!pluginItem.groupInfo.groupIndices.length) return
                 if (pluginItem.groupInfo.groupIndices.length === 1) {
                     pluginItem.groupInfo.groupIndices = [];

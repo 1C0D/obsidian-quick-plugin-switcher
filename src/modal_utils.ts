@@ -93,11 +93,12 @@ export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
 
 //desktop only
 export async function openDirectoryInFileManager(shell: any, modal: QPSModal, pluginItem: PluginInfo) {
-    const filePath = (modal.app as any).vault.adapter.getFullPath(pluginItem.dir);
+    const filePath = (modal.app as any).vault.adapter.getFullPath(pluginItem.dir)
     try {
         await shell.openExternal(filePath);
     } catch (err) {
-        console.error(`Error opening the directory: ${err.message}`);
+        const plugins = (app as any).vault.adapter.getFullPath(".obsidian/plugins")
+        await shell.openExternal(plugins)
     }
 }
 

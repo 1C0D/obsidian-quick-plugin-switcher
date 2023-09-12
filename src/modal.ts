@@ -11,7 +11,7 @@ import {
     powerButton, itemTogglePluginButton,
     itemToggleClass, itemTextComponent, shell, openGitHubRepo, openPluginSettings, showHotkeysFor, getCondition
 } from "./modal_components";
-import { delayedReEnable, getCirclesItem, getEmojiForGroup, getGroupTitle, openDirectoryInFileManager, selectValue } from "./modal_utils";
+import { conditionalEnable, delayedReEnable, getCirclesItem, getEmojiForGroup, getGroupTitle, openDirectoryInFileManager, selectValue } from "./modal_utils";
 
 
 export class QPSModal extends Modal {
@@ -94,6 +94,7 @@ export class QPSModal extends Modal {
                     .setValue(settings.search)
                     .setPlaceholder("Search")
                     .onChange(async (value: string) => {
+                        settings.search = value
                         const listItems = doSearch(plugin, value)
                         this.items.empty()
                         this.addItems(listItems)
@@ -155,10 +156,13 @@ export class QPSModal extends Modal {
     groupMenu = (evt: MouseEvent, span: HTMLSpanElement, groupNumber: number, emoji: string) => {
         const { plugin } = this
         const { settings } = plugin
+        const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
+
         const menu = new Menu();
         menu.addItem((item) =>
             item
                 .setTitle("delay group")
+                .setDisabled(!inGroup.length)
                 .onClick(() => {
                     const currentValue = settings.groups[groupNumber].time || 0;
                     span.innerHTML = `<input type="text" value="${currentValue}" />`;
@@ -188,17 +192,12 @@ export class QPSModal extends Modal {
                     });
                 })
         )
+        
         menu.addItem((item) =>
             item
                 .setTitle("apply")
+                .setDisabled(!inGroup.length || settings.groups[groupNumber].time === 0)
                 .onClick(async () => {
-                    const { plugin } = this
-                    const { settings } = plugin
-                    const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
-                    if (!inGroup.length || settings.groups[groupNumber].time === 0) {
-                        new Notice("No Plugin in this group");
-                        return
-                    }
                     const confirm = window.confirm("Caution: if enabled, plugins will be restarted");
                     if (confirm) {
                         for (const plugin of inGroup) {
@@ -221,14 +220,8 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("reset")
+                .setDisabled(!inGroup.length || settings.groups[groupNumber].time === 0)
                 .onClick(async () => {
-                    const { plugin } = this
-                    const { settings } = plugin
-                    const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
-                    if (!inGroup.length) {
-                        new Notice("No Plugin in this group");
-                        return
-                    }
                     for (const plugin of inGroup) {
                         plugin.time = 0
                         plugin.delayed = false
@@ -239,7 +232,48 @@ export class QPSModal extends Modal {
                         this.onOpen()
                     }
                     plugin.saveSettings()
+                }
+                
+            ))
+        menu.addSeparator()
+        const toEnable = inGroup.filter(i => i.enabled === false)
+        menu.addItem((item) =>
+            item
+                .setTitle("enable all plugins in group")
+                .setDisabled(!inGroup.length || !toEnable.length)
+                .onClick(async() => { 
+                    await Promise.all(toEnable.map(async (i) => {
+                        conditionalEnable(this, i);
+                        (this.app as any).plugins.enablePluginAndSave(i.id)
+                        i.enabled = true
+                        this.plugin.saveSettings()
+                    }))
+                    if (toEnable) {
+                        getLength(plugin)
+                        new Notice("All plugins enabled.");
+                        await this.plugin.saveSettings()
+                        this.onOpen();
+                    }
                 }))
+        
+        const toDisable = inGroup.filter(i => i.enabled === true)
+        menu.addItem((item) =>
+            item
+                .setTitle("disable all plugins in group")
+                .setDisabled(!inGroup.length || !toDisable.length)
+                .onClick(async() => { 
+                    await Promise.all(toDisable.map(async (i) => {
+                        (this.app as any).plugins.disablePluginAndSave(i.id)
+                        i.enabled = false
+                    }))
+                    if (toDisable) {
+                        getLength(plugin)
+                        new Notice("All plugins disabled.");
+                        await this.plugin.saveSettings()
+                        this.onOpen();
+                    }
+                }))
+        
         menu.showAtMouseEvent(evt);
     }
 
@@ -282,6 +316,8 @@ export class QPSModal extends Modal {
         const { plugin } = this
         const { settings } = plugin
 
+        const value = settings.search
+        listItems = doSearch(plugin, value)
         // Sort for chosen mode
         listItems = modeSort(plugin, listItems)
 

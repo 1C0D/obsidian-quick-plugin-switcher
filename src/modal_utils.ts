@@ -80,7 +80,6 @@ export const getCirclesItem = (pluginItem: PluginInfo, indices: number[]) => { /
 
 export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
     const { plugin } = modal
-    const { settings } = plugin
 
     pluginItem.enabled = !pluginItem.enabled;
     pluginItem.enabled

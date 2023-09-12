@@ -128,7 +128,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     //check plugin not deleted between
                                     const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
                                     if (pluginToUpdate) {
-                                        conditionalEnable(modal, pluginToUpdate)
+                                        await conditionalEnable(modal, pluginToUpdate)
                                         pluginToUpdate.enabled = true
                                     }
                                 }
@@ -159,7 +159,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                     menu.addSeparator()
                     menu.addItem((item) =>
                         item
-                            .setTitle("Disable plugins by group")
+                            .setTitle("Toggle enabled-plugins by group")
                             .setDisabled(true)
                     )
                 }
@@ -196,7 +196,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     }
                                     else {
                                         for (const i of previousWasEnabled) {
-                                            conditionalEnable(modal, i)
+                                            await conditionalEnable(modal, i)
                                             i.enabled = true
                                             i.switched++
 

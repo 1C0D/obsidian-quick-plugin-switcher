@@ -6,7 +6,10 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json"
+		"start": "node scripts/start.mjs",
+		"startf": "node scripts/start.mjs -f",
+		"version": "node scripts/update-version.mjs",
+		"acp": "node scripts/acp.mjs"
 	},
 	"keywords": [],
 	"author": "1C0D",

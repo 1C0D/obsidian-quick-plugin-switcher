@@ -57,15 +57,16 @@ function updateManifestVersions(targetVersion) {
     let versions = JSON.parse(readFileSync("versions.json", "utf8"));
     versions[targetVersion] = minAppVersion;
     writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
-
+    
+    // update package.json
     let packageJsn = JSON.parse(readFileSync("package.json", "utf8"));
     packageJsn.version = targetVersion;
     writeFileSync("package.json", JSON.stringify(packageJsn, null, "\t"));
 
+    // this is doing a bug
     // let packageLockJsn = JSON.parse(readFileSync("package-lock.json", "utf8"));
     // packageLockJsn.version = targetVersion;
     // writeFileSync("package.json", JSON.stringify(packageLockJsn, null, "\t"));
-
 }
 
 updateVersion()

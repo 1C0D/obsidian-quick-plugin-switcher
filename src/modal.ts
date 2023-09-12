@@ -241,10 +241,10 @@ export class QPSModal extends Modal {
             item
                 .setTitle("enable all plugins in group")
                 .setDisabled(!inGroup.length || !toEnable.length)
-                .onClick(async() => { 
+                .onClick(async () => { 
+                    console.log("toEnable", toEnable)
                     await Promise.all(toEnable.map(async (i) => {
                         conditionalEnable(this, i);
-                        (this.app as any).plugins.enablePluginAndSave(i.id)
                         i.enabled = true
                         this.plugin.saveSettings()
                     }))
@@ -261,7 +261,7 @@ export class QPSModal extends Modal {
             item
                 .setTitle("disable all plugins in group")
                 .setDisabled(!inGroup.length || !toDisable.length)
-                .onClick(async() => { 
+                .onClick(async () => {                     
                     await Promise.all(toDisable.map(async (i) => {
                         (this.app as any).plugins.disablePluginAndSave(i.id)
                         i.enabled = false

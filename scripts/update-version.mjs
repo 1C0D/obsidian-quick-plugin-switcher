@@ -62,9 +62,9 @@ function updateManifestVersions(targetVersion) {
     packageJsn.version = targetVersion;
     writeFileSync("package.json", JSON.stringify(packageJsn, null, "\t"));
 
-    let packageLockJsn = JSON.parse(readFileSync("package-lock.json", "utf8"));
-    packageLockJsn.version = targetVersion;
-    writeFileSync("package.json", JSON.stringify(packageLockJsn, null, "\t"));
+    // let packageLockJsn = JSON.parse(readFileSync("package-lock.json", "utf8"));
+    // packageLockJsn.version = targetVersion;
+    // writeFileSync("package.json", JSON.stringify(packageLockJsn, null, "\t"));
 
 }
 

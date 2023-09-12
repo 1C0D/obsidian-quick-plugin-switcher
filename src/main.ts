@@ -83,11 +83,12 @@ export default class QuickPluginSwitcher extends Plugin {
     }
 
     wrapDisableEnablePluginAndSave(stillInstalled: PluginInfo[], cb: () => {}) {
+        const manifests = (this.app as any).plugins.manifests || {}
         const wrapper1 = around((this.app as any).plugins, {
             disablePluginAndSave(oldMethod) {
                 return async function (pluginId: string) {
                     if (stillInstalled) {
-                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId && !isEnabled(manifests[pluginId].id))
                         if (
                             plugin
                             && plugin.delayed
@@ -106,7 +107,7 @@ export default class QuickPluginSwitcher extends Plugin {
                 return async function (pluginId: string) {
                     let altReturn = false
                     if (stillInstalled) {
-                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
+                        const plugin = stillInstalled.find(plugin => plugin.id === pluginId && isEnabled(manifests[pluginId].id))
                         if (
                             plugin
                             && plugin.delayed
@@ -192,62 +193,6 @@ export default class QuickPluginSwitcher extends Plugin {
         await this.saveSettings()
         getLength(this);
     }
-
-
-    // patchDisablePluginAndSave = 
-
-
-    // wrapDisablePluginAndSave = async (stillInstalled: PluginInfo[]) => {
-    //     const { app } = this as any
-    //     const { plugins } = app
-    //     const originalDisablePluginAndSave = plugins.disablePluginAndSave;
-    //     const originalEnablePluginAndSave = plugins.enablePluginAndSave;
-    //     const _this = this
-
-    //     plugins.disablePluginAndSave = async function (pluginId: string) {
-    //         if (stillInstalled) {
-    //             const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
-    //             if (
-    //                 plugin
-    //                 && plugin.delayed
-    //                 && plugin.time > 0
-    //             ) {
-    //                 plugin.enabled = false
-    //                 await _this.saveSettings()
-    //             }
-    //         }
-    //         return originalDisablePluginAndSave.call(this, pluginId);
-    //     }
-    //     plugins.enablePluginAndSave = async function (pluginId: string) {
-    //         if (stillInstalled) {
-    //             const plugin = stillInstalled.find(plugin => plugin.id === pluginId)
-    //             if (
-    //                 plugin
-    //                 && plugin.delayed
-    //                 && plugin.time > 0
-    //             ) {
-    //                 new Notice(`delayed, reenable it in Quick switcher plugin too`)
-    //             }
-    //         }
-    //         return originalEnablePluginAndSave.call(this, pluginId);
-    //     }
-    // }
-
-
-    // async updateInfo() { // could be usefull later
-    //     if (
-    //         // !(this.settings.savedVersion === "0.0.0")
-    //         // && this.settings.savedVersion < "1.9.0"
-    //         // &&
-    //         this.toUpdate
-    //     ) {
-    //         new NewVersion(this.app, this).open();
-    //         // this.settings = { ...DEFAULT_SETTINGS }     
-    //     } else {
-    //         this.settings.savedVersion = this.manifest.version
-    //         await this.saveSettings()
-    //     }
-    // }
 
     async loadSettings() {
         const previousSettings = { ...await this.loadData() }

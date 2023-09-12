@@ -368,7 +368,6 @@ export class QPSModal extends Modal {
                 //select value
                 selectValue(input)
 
-
                 if (!pluginItem.delayed) {
                     input?.addEventListener("keydown", async (event) => {
                         if (event.key === "Enter") {
@@ -392,7 +391,6 @@ export class QPSModal extends Modal {
                     itemContainer = container
                     this.onOpen();
                 }
-
             })
 
             text.addEventListener("click", (evt) => {

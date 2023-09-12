@@ -564,14 +564,14 @@ export async function openGitHubRepo(plugin: PluginInfo) {
             const repoURL = `https://github.com/${pluginData.repo}`;
             window.open(repoURL, '_blank'); // open browser in new tab
         } else {
-            console.log("Repo not found for the plugin.");
+            console.debug("Repo not found for the plugin.");
             try {
                 const repoURL = `https://github.com/${plugin.author}/${plugin.id}`
                 window.open(repoURL, '_blank');
             } catch {
                 const repoURL = `https://github.com/${plugin.author}`
                 window.open(repoURL, '_blank');
-                console.log("Repo not found for the plugin.");
+                console.debug("Repo not found for the plugin.");
             }
         }
     } catch (error) {

@@ -1,6 +1,7 @@
 import { Filters, Groups, PluginInfo, QPSSettings } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./modal";
+import { confirm } from "./secondary_modals";
 import {
     ButtonComponent, DropdownComponent, ExtraButtonComponent,
     Menu, Notice, TextComponent, ToggleComponent
@@ -109,19 +110,16 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                         .onClick(async () => {
                             // disable all except this plugin
                             if (plugin.lengthEnabled > 1) {
-                                const confirmReset = window.confirm('Do you want to disable all plugins?');
-                                if (confirmReset) {
-                                    for (const i of settings.allPluginsList) {
-                                        if (i.id === "quick-plugin-switcher") continue
-                                        if (i.enabled) settings.wasEnabled.push(i.id)
-                                        await (modal.app as any).plugins.disablePluginAndSave(i.id)
-                                        i.enabled = false;
-                                    }
-                                    getLength(plugin)
-                                    modal.onOpen();
-                                    await plugin.saveSettings()
-                                    new Notice("All plugins disabled.");
-                                } else { new Notice("Operation cancelled."); }
+                                for (const i of settings.allPluginsList) {
+                                    if (i.id === "quick-plugin-switcher") continue
+                                    if (i.enabled) settings.wasEnabled.push(i.id)
+                                    await (modal.app as any).plugins.disablePluginAndSave(i.id)
+                                    i.enabled = false;
+                                }
+                                getLength(plugin)
+                                modal.onOpen();
+                                await plugin.saveSettings()
+                                new Notice("All plugins disabled", 1500);
                             }
                             else if (settings.wasEnabled.length > 0) {
                                 for (const i of settings.wasEnabled) {
@@ -135,7 +133,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                 getLength(plugin)
                                 modal.onOpen()
                                 settings.wasEnabled = []
-                                new Notice("All plugins re-enabled.")
+                                new Notice("All plugins re-enabled", 1500)
                                 await modal.plugin.saveSettings()
                             }
                         })
@@ -146,23 +144,23 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                             .setTitle("Skip re-enable")
                             .setIcon("reset")
                             .onClick(async () => {
-                                const confirmReset = window.confirm('Delete data to re-enable plugins and return to disable state?');
+                                const confirmReset = await confirm("reset to disable", 300);
                                 if (confirmReset) {
                                     settings.wasEnabled = []
                                     await modal.plugin.saveSettings();
-                                    new Notice("All values have been reset.");
-                                } else { new Notice("Operation cancelled."); }
+                                    new Notice("Done", 1500);
+                                } else { new Notice("Operation cancelled", 1000); }
                             })
                     );
                 }
-                if (plugin.lengthEnabled > 1) {
-                    menu.addSeparator()
-                    menu.addItem((item) =>
-                        item
-                            .setTitle("Toggle enabled-plugins by group")
-                            .setDisabled(true)
-                    )
-                }
+
+                menu.addSeparator()
+                menu.addItem((item) =>
+                    item
+                        .setTitle("Toggle enabled-plugins by group")
+                        .setDisabled(true)
+                )
+
                 Object.keys(Groups).forEach((groupKey) => {
                     if (groupKey === "SelectGroup") return
                     const groupValue = Groups[groupKey as keyof typeof Groups]
@@ -190,7 +188,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                         if (toDisable) {
                                             getLength(plugin)
                                             modal.onOpen();
-                                            new Notice("All plugins disabled.");
+                                            new Notice("All plugins disabled", 1500);
                                             await modal.plugin.saveSettings()
                                         }
                                     }
@@ -206,7 +204,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                         })
                                         getLength(plugin)
                                         modal.onOpen();
-                                        new Notice("All plugins re-enabled.");
+                                        new Notice("All plugins re-enabled", 1500);
                                     }
                                 }
                                 ))
@@ -216,14 +214,14 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                     .setTitle("Skip re-enable")
                                     .setIcon("reset")
                                     .onClick(async () => {
-                                        const confirmReset = window.confirm('skip re-enable ?');
+                                        const confirmReset = await confirm('skip re-enable ?', 200);
                                         if (confirmReset) {
                                             previousWasEnabled.map(plugin => {
                                                 plugin.groupInfo.groupWasEnabled = false
                                             })
                                             await modal.plugin.saveSettings();
-                                            new Notice("All values have been reset.");
-                                        } else { new Notice("Operation cancelled."); }
+                                            new Notice("Done", 1000);
+                                        } else { new Notice("Operation cancelled", 1000); }
                                     })
                             );
                         }
@@ -333,12 +331,12 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
                 subitem
                     .setTitle("All groups")
                     .onClick(async () => {
-                        const confirmReset = window.confirm('Detach all groups?');
+                        const confirmReset = await confirm('Detach all groups from this plugin?', 300);
                         if (confirmReset) {
                             pluginItem.groupInfo.groupIndices = [];
                             modal.onOpen();
-                            // new Notice("No group on this plugin.");
-                        } else { new Notice("Operation cancelled."); }
+                            new Notice("Done", 1000);
+                        } else { new Notice("Operation cancelled", 1000); }
                     });
             });
             addRemoveItemGroupMenuItems(modal, submenu, plugin, pluginItem);
@@ -354,14 +352,14 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
                 subitem
                     .setTitle("All groups")
                     .onClick(async () => {
-                        const confirmReset = window.confirm('Do you want to reset all groups?');
+                        const confirmReset = await confirm('Detach all groups from all plugins?', 300);
                         if (confirmReset) {
                             for (const i of plugin.settings.allPluginsList) {
                                 i.groupInfo.groupIndices = [];
                             }
                             modal.onOpen();
-                            new Notice("All groups have been reset.");
-                        } else { new Notice("Operation cancelled."); }
+                            new Notice("Done", 1000);
+                        } else { new Notice("Operation cancelled", 1000); }
                     });
             });
             addRemoveGroupMenuItems(modal, submenu, plugin);
@@ -457,9 +455,9 @@ function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin)
                         }
                         modal.onOpen();
                         if (pluginsRemoved) {
-                            new Notice(`All plugins removed from ${groupValue}.`);
+                            new Notice(`All plugins removed from ${groupValue}`);
                         } else {
-                            new Notice(`No plugins found in ${groupValue} group.`);
+                            new Notice(`No plugins found in ${groupValue} group`);
                         }
                     });
             });
@@ -525,7 +523,7 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
             .setTitle("Modify hotkeys (h)")
             .setIcon("plus-circle")
             .setDisabled(!condition)
-            .onClick(async() => {
+            .onClick(async () => {
                 showHotkeysFor(pluginItem, condition)
             })
     )

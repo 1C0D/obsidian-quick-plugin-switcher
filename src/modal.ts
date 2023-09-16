@@ -130,10 +130,6 @@ export class QPSModal extends Modal {
                 if (this.isDblClick) return
                 this.groupMenu(evt, span, i, groupKey)
             });
-
-            // if (settings.groups[i].applied) {
-            //     span.toggleClass("delayed-group", true)
-            // }
         }
     }
 
@@ -162,7 +158,6 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("delay group")
-                .setDisabled(!inGroup.length)
                 .onClick(() => {
                     const currentValue = settings.groups[groupNumber].time || 0;
                     span.innerHTML = `<input type="text" value="${currentValue}" />`;
@@ -198,24 +193,17 @@ export class QPSModal extends Modal {
                 .setTitle("apply")
                 .setDisabled(!inGroup.length || settings.groups[groupNumber].time === 0)
                 .onClick(async () => {
-                    const confirm = window.confirm("Caution: if enabled, plugins will be restarted");
-                    if (confirm) {
                         for (const plugin of inGroup) {
                             plugin.time = settings.groups[groupNumber].time
                             plugin.delayed = true
                             settings.groups[groupNumber].applied = true
                             if (plugin.enabled) {
-                                // this.plugin.fromPlugin = true
                                 await (this.app as any).plugins.disablePluginAndSave(plugin.id)
                                 await (this.app as any).plugins.enablePlugin(plugin.id)
-                                // this.plugin.fromPlugin = false
                             }
                             this.plugin.saveSettings()
                             this.onOpen()
                         }
-                        // plugin.saveSettings()
-                    } else new Notice("operation cancelled")
-
                 }))
         menu.addItem((item) =>
             item
@@ -242,7 +230,6 @@ export class QPSModal extends Modal {
                 .setTitle("enable all plugins in group")
                 .setDisabled(!inGroup.length || !toEnable.length)
                 .onClick(async () => { 
-                    console.log("toEnable", toEnable)
                     await Promise.all(toEnable.map(async (i) => {
                         conditionalEnable(this, i);
                         i.enabled = true
@@ -310,7 +297,7 @@ export class QPSModal extends Modal {
     };
 
     setHotKeysdesc(): void {
-        this.hotkeysDesc.setText(`Keys: (1-7)➕ (0)❌ (f)📁 (g)github (s)⚙️ (h)hotkeys`)
+        this.hotkeysDesc.setText(`Keys: (1-7)➕ (0)❌ (f)📁 (g)github (s)⚙️ (h)hotkeys (dblClick)delay`)
     }
     async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
@@ -393,9 +380,9 @@ export class QPSModal extends Modal {
                 }
             })
 
-            text.addEventListener("click", (evt) => {
+            text.addEventListener("mouseover", (evt) => {
                 if (this.isDblClick) return
-                this.handleHotkeys(evt, pluginItem, text) // modifier encore (sans clic avant)???
+                this.handleHotkeys(evt, pluginItem, text)
             })
             text.addEventListener("contextmenu", (evt) => {
                 if (this.isDblClick) return
@@ -423,7 +410,6 @@ export class QPSModal extends Modal {
     handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
         const numberOfGroups = this.plugin.settings.numberOfGroups;
         const keyToGroupMap: Record<string, number> = {};
-
         // Generate keyToGroupMap based on the number of groups available
         for (let i = 1; i <= numberOfGroups; i++) {
             keyToGroupMap[i.toString()] = i;
@@ -487,9 +473,15 @@ export class QPSModal extends Modal {
                 }
             }
             await this.plugin.saveSettings()
-            this.items.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keydown', handleKeyDown);
         }
-        this.items.addEventListener('keydown', handleKeyDown)
+
+        const handleMouseLeave = (event: MouseEvent) => {
+            document.removeEventListener('keydown', handleKeyDown);
+            itemContainer.removeEventListener('mouseleave', handleMouseLeave);
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        itemContainer.addEventListener('mouseleave', handleMouseLeave);        
     }
 
 
@@ -512,10 +504,6 @@ export class NewVersion extends Modal {
         <b>Warning:</b><br>
         For this new feature(request) adding a delay to plugin(s) at start,
         default values need to be restored. Sorry for the inconvenience.<br><br>
-        <b>New feature:</b><br>
-        Double click, on a plugin name, to add/delete a delay to a plugin.<br>
-        Right click on groups name, to open context menu: add a delay, "apply" to all linked plugins,
-        reset.
         `
         contentEl.createDiv("", (el: HTMLDivElement) => {
             el.innerHTML = content;

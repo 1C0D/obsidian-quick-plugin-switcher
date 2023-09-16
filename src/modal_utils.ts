@@ -3,17 +3,19 @@ import Plugin from "./main"
 import { QPSModal } from "./modal";
 import { getLength } from "./utils";
 import { Notice } from "obsidian";
+import { confirm } from "./secondary_modals";
 
 
-export const reset = (modal: QPSModal) => {
+export const reset = async (modal: QPSModal) => {
     const { plugin } = modal
-    const confirm = window.confirm("Reset most switched values?");
-    if (confirm) {
-        plugin.reset = true //if true reset done, in modals addItems()
+    const confirmed = await confirm("Reset most switched values?", 250);
+    if (confirmed) {
+        plugin.reset = true //if true, reset done in modal>addItems()
         getLength(plugin)
         modal.onOpen()
+        new Notice("Done", 1000)
     } else {
-        new Notice("operation cancelled")
+        new Notice("Operation cancelled",1000)
     }
 }
 

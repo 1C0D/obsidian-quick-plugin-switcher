@@ -151,3 +151,13 @@
   text-align: center;
   color: rgb(3, 3, 3)
 }
+
+/* confirm modal */
+.qps-confirm-modal {
+  display: flex;
+  width: 100%;
+  flex-flow: row wrap;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  padding-top: 10px;
+}

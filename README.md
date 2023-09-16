@@ -1,5 +1,7 @@
 ****## Quick Plugin Switcher
 
+New: no more needed to click on a plugin before to use shortcuts  
+
 This plugin simplifies the process of managing your plugins (demos at the end of this page)
 
 - quickly switch your plugins (ribbon bar icon or command)  
@@ -7,7 +9,7 @@ This plugin simplifies the process of managing your plugins (demos at the end of
 - search engine
 - add plugins to groups
 - plugin delayed start
-- open plugin in its directory, show description
+- open plugin in its directory, show description, open github...
   
 ![UI](img/UI.jpg)
 
@@ -35,9 +37,7 @@ By group
   
 1 - Add groups
   - Shorcuts:
-    - <b>click</b> the plugin name 
-    - <b>then press</b> <kbd>1 to 7 </kbd> to add group, <kbd>0/del/suppr</kbd> to delete.    
-    (tips: click several plugins then press shortcut)
+    - Over a plugin name, press</b> <kbd>1 to 7 </kbd> to add group, <kbd>0/del/suppr</kbd> to delete.
    
   - Context Menu
 ![groups](img/item_context_menu.jpg)
@@ -48,7 +48,7 @@ By group
 - rename groups (dbl click)
 ![groups](img/rename.jpg)
   
-2 - Toggle several plugins  
+2 - Toggle several plugins (disabled plugins are ignored) 
       
 - All or by group
 ![toggle](img/toggle-plugins-by-group.jpg)
@@ -56,9 +56,12 @@ By group
 - re-enable plugins or skip it to reset the toggle
 ![toggle](img/re-enable.jpg)  
 
+3 - Enable disable all plugins in a group  
+![toggle](img/togglePluginsInGroup.jpeg)  
+
 ## Delay plugins at start
 
-- delay each plugin
+- delay each plugin → dbl click
 ![plugin-delay](img/plugin-delay.jpg)  
 notice time in the bullet and color
 

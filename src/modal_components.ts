@@ -281,6 +281,9 @@ export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemCon
     if (pluginItem.id === "quick-plugin-switcher") {
         itemContainer.toggleClass("qps-quick-plugin-switcher", true);
     }
+    if (pluginItem.desktopOnly === true) {
+        itemContainer.addClass("qps-desktop-only");
+    }
     if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) {
         itemContainer.toggleClass("qps-most-switched", true);
     }
@@ -288,7 +291,6 @@ export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemCon
         itemContainer.toggleClass("toggle-bullet-color", true);
         itemContainer.style.setProperty("--bullet-content", `"${pluginItem.time}"`);
     }
-
 }
 
 // un param inutilisé
@@ -390,10 +392,10 @@ export const itemTogglePluginButton = (modal: QPSModal, pluginItem: PluginInfo, 
 
 
 export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
-    const isGrouped = pluginItem.groupInfo.groupIndices?.length;
+    // const isGrouped = pluginItem.groupInfo.groupIndices?.length;
     let customValue = pluginItem.name;
-    if (isGrouped) {
-        customValue = `${pluginItem.name}`;
+    if (pluginItem.desktopOnly) {
+        customValue = '\u1D30' + customValue;
     }
 
     const text = new TextComponent(itemContainer)

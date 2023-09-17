@@ -51,6 +51,7 @@ export interface PluginInfo {
     dir: string;
     author: string;
     authorUrl?: string;
+    desktopOnly: boolean;
     version: string;
     enabled: boolean;
     switched: number;

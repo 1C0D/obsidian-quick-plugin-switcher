@@ -166,6 +166,10 @@ export default class QuickPluginSwitcher extends Plugin {
                         pluginInList.switched++;
                     }
                 }
+                // compatibility with previous versions
+                if (pluginInList.desktopOnly === undefined) {
+                    pluginInList.desktopOnly = manifests[key].isDesktopOnly || false;
+                }
                 continue
             } else {
                 const notInListInfo: PluginInfo = {
@@ -176,6 +180,7 @@ export default class QuickPluginSwitcher extends Plugin {
                     version: manifests[key].version || "",
                     author: manifests[key].author || "",
                     authorUrl: manifests[key].authorUrl || "",
+                    desktopOnly: manifests[key].isDesktopOnly || false,
                     enabled: isEnabled(manifests[key].id) || false,
                     switched: 0,
                     groupInfo: {

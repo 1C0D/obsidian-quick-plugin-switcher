@@ -297,7 +297,7 @@ export class QPSModal extends Modal {
     };
 
     setHotKeysdesc(): void {
-        this.hotkeysDesc.setText(`Keys: (1-7)➕ (0)❌ (f)📁 (g)github (s)⚙️ (h)hotkeys (dblClick)delay`)
+        this.hotkeysDesc.setText(`Keys: (1-7)➕ (0)❌ (f)📁 (g)github (s)⚙️ (h)hotkeys (x2Click)delay`)
     }
     async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
@@ -319,9 +319,9 @@ export class QPSModal extends Modal {
 
             // create items
             let itemContainer = this.items.createEl("div", { cls: "qps-item-line" });
-            itemToggleClass(this, pluginItem, itemContainer)
             itemTogglePluginButton(this, pluginItem, itemContainer)
             const text = itemTextComponent(pluginItem, itemContainer)
+            itemToggleClass(this, pluginItem, itemContainer)
             text.readOnly = true
             // create groups circles
             const indices = pluginItem.groupInfo.groupIndices

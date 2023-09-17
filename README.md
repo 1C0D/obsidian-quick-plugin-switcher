@@ -1,4 +1,4 @@
-****## Quick Plugin Switcher
+## Quick Plugin Switcher
 
 New: no more needed to click on a plugin before to use shortcuts  
 desktop only are now marked with a ᴰ

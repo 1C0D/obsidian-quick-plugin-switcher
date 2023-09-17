@@ -25,9 +25,9 @@ try {
 //addHeader /////////////////////////////////
 
 export const mostSwitchedResetButton = (modal: QPSModal, contentEl: HTMLElement) => {
-    const { settings } = modal.plugin
-    if (settings.filters === Filters.MostSwitched &&
-        settings.allPluginsList.some(
+    const { settingS } = modal.plugin
+    if (settingS.filters === Filters.MostSwitched &&
+        settingS.allPluginsList.some(
             plugin => plugin.switched !== 0)) {
         new ExtraButtonComponent(contentEl).setIcon("reset").setTooltip("Reset mostSwitched values")
             .onClick(async () => {
@@ -39,8 +39,8 @@ export const mostSwitchedResetButton = (modal: QPSModal, contentEl: HTMLElement)
 
 export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
     const { plugin } = modal
-    const { settings } = plugin
-    if (settings.filters === Filters.ByGroup) {
+    const { settingS } = plugin
+    if (settingS.filters === Filters.ByGroup) {
         const dropdownOptions: { [key: string]: string } = {};
         // set dropdownOptions
         for (const groupKey in Groups) {
@@ -48,24 +48,24 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
             if (groupKey === "SelectGroup"
             ) {
                 dropdownOptions[groupKey] = Groups[groupKey] + `(${plugin.lengthAll})`;
-            } else if (settings.allPluginsList.
+            } else if (settingS.allPluginsList.
                 some(plugin => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1)) {
                 dropdownOptions[groupKey] = getEmojiForGroup(groupIndex).emoji + Groups[groupKey]
             }
         }
         // if a group is empty get back dropdown to SelectGroup
-        const notEmpty = (settings.selectedGroup === "SelectGroup" ||
-            settings.allPluginsList.some(plugin => {
-                const groupIndex = parseInt((settings.selectedGroup as string).replace("Group", ""));
+        const notEmpty = (settingS.selectedGroup === "SelectGroup" ||
+            settingS.allPluginsList.some(plugin => {
+                const groupIndex = parseInt((settingS.selectedGroup as string).replace("Group", ""));
                 return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
             })
         );
 
         new DropdownComponent(contentEl)
             .addOptions(dropdownOptions)
-            .setValue(settings.selectedGroup as string)
+            .setValue(settingS.selectedGroup as string)
             .onChange(async (value: QPSSettings['selectedGroup']) => {
-                settings.selectedGroup = value;
+                settingS.selectedGroup = value;
                 await plugin.saveSettings();
                 modal.onOpen();
             });
@@ -77,7 +77,7 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
 export const doSearch = (_this: Plugin, value: string) => {
     const listItems: PluginInfo[] = []
     // search process
-    for (const i of _this.settings.allPluginsList) {
+    for (const i of _this.settingS.allPluginsList) {
         if (i.name.toLowerCase().includes(value.toLowerCase()) ||
             value.length > 1 && value[value.length - 1] === " " &&
             i.name.toLowerCase().startsWith(value.trim().toLowerCase())) {
@@ -89,14 +89,14 @@ export const doSearch = (_this: Plugin, value: string) => {
 
 export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
     const { plugin } = modal
-    const { settings } = plugin
+    const { settingS } = plugin
     new ButtonComponent(el)
         .setIcon("power")
         .setCta()
         .setTooltip("toggle plugins options").buttonEl
         .addEventListener("click", (evt: MouseEvent) => {
             const menu = new Menu();
-            if (plugin.lengthEnabled === 1 && settings.wasEnabled.length === 0) {
+            if (plugin.lengthEnabled === 1 && settingS.wasEnabled.length === 0) {
                 menu.addItem((item) =>
                     item
                         .setTitle("No enabled plugins")
@@ -105,14 +105,14 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
             else {
                 menu.addItem((item) =>
                     item
-                        .setTitle(settings.wasEnabled.length > 0 ? "Enable previous disabled plugins" : "Disable all plugins")
-                        .setIcon(settings.wasEnabled.length > 0 ? "power" : "power-off")
+                        .setTitle(settingS.wasEnabled.length > 0 ? "Enable previous disabled plugins" : "Disable all plugins")
+                        .setIcon(settingS.wasEnabled.length > 0 ? "power" : "power-off")
                         .onClick(async () => {
                             // disable all except this plugin
                             if (plugin.lengthEnabled > 1) {
-                                for (const i of settings.allPluginsList) {
+                                for (const i of settingS.allPluginsList) {
                                     if (i.id === "quick-plugin-switcher") continue
-                                    if (i.enabled) settings.wasEnabled.push(i.id)
+                                    if (i.enabled) settingS.wasEnabled.push(i.id)
                                     await (modal.app as any).plugins.disablePluginAndSave(i.id)
                                     i.enabled = false;
                                 }
@@ -121,10 +121,10 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                 await plugin.saveSettings()
                                 new Notice("All plugins disabled", 1500);
                             }
-                            else if (settings.wasEnabled.length > 0) {
-                                for (const i of settings.wasEnabled) {
+                            else if (settingS.wasEnabled.length > 0) {
+                                for (const i of settingS.wasEnabled) {
                                     //check plugin not deleted between
-                                    const pluginToUpdate = settings.allPluginsList.find(plugin => plugin.id === i);
+                                    const pluginToUpdate = settingS.allPluginsList.find(plugin => plugin.id === i);
                                     if (pluginToUpdate) {
                                         await conditionalEnable(modal, pluginToUpdate)
                                         pluginToUpdate.enabled = true
@@ -132,13 +132,13 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                                 }
                                 getLength(plugin)
                                 modal.onOpen()
-                                settings.wasEnabled = []
+                                settingS.wasEnabled = []
                                 new Notice("All plugins re-enabled", 1500)
                                 await modal.plugin.saveSettings()
                             }
                         })
                 )
-                if (settings.wasEnabled.length > 0) {
+                if (settingS.wasEnabled.length > 0) {
                     menu.addItem((item) =>
                         item
                             .setTitle("Skip re-enable")
@@ -146,7 +146,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                             .onClick(async () => {
                                 const confirmReset = await confirm("reset to disable", 300);
                                 if (confirmReset) {
-                                    settings.wasEnabled = []
+                                    settingS.wasEnabled = []
                                     await modal.plugin.saveSettings();
                                     new Notice("Done", 1500);
                                 } else { new Notice("Operation cancelled", 1000); }
@@ -165,7 +165,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
                     if (groupKey === "SelectGroup") return
                     const groupValue = Groups[groupKey as keyof typeof Groups]
                     const groupIndex = Object.keys(Groups).indexOf(groupKey);
-                    const inGroup = settings.allPluginsList.filter((plugin) => {
+                    const inGroup = settingS.allPluginsList.filter((plugin) => {
                         return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
                     });
                     let previousWasEnabled = inGroup.filter(
@@ -235,17 +235,17 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 }
 
 export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
-    const { settings } = _this
+    const { settingS } = _this
     // after reset MostSwitched
     if (_this.reset) {
-        const allPluginsList = settings.allPluginsList
+        const allPluginsList = settingS.allPluginsList
         allPluginsList.forEach(i => {
             i.switched = 0
         })
         _this.reset = false
     }
     // EnabledFirst
-    if (settings.filters === Filters.EnabledFirst) {
+    if (settingS.filters === Filters.EnabledFirst) {
         const enabledItems = listItems.filter(i => i.enabled)
         const disabledItems = listItems.filter(i => !i.enabled)
         sortByName(enabledItems)
@@ -253,8 +253,8 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
         listItems = [...enabledItems, ...disabledItems]
     }
     // ByGroup
-    else if (settings.filters === Filters.ByGroup) {
-        const groupIndex = Object.keys(Groups).indexOf(settings.selectedGroup as string);
+    else if (settingS.filters === Filters.ByGroup) {
+        const groupIndex = Object.keys(Groups).indexOf(settingS.selectedGroup as string);
         if (groupIndex !== 0) {
             const groupedItems = listItems.filter(i => {
                 return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
@@ -264,7 +264,7 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
         }
     }
     // MostSwitched
-    else if (settings.filters === Filters.MostSwitched) { // && !plugin.reset
+    else if (settingS.filters === Filters.MostSwitched) { // && !plugin.reset
         sortByName(listItems)
         sortSwitched(listItems)
 
@@ -277,14 +277,14 @@ export const modeSort = (_this: Plugin, listItems: PluginInfo[]) => {
     return listItems
 }
 export const itemToggleClass = (modal: QPSModal, pluginItem: PluginInfo, itemContainer: HTMLDivElement) => {
-    const { settings } = modal.plugin
+    const { settingS } = modal.plugin
     if (pluginItem.id === "quick-plugin-switcher") {
         itemContainer.toggleClass("qps-quick-plugin-switcher", true);
     }
     if (pluginItem.desktopOnly === true) {
         itemContainer.addClass("qps-desktop-only");
     }
-    if (settings.filters === Filters.MostSwitched && pluginItem.switched !== 0) {
+    if (settingS.filters === Filters.MostSwitched && pluginItem.switched !== 0) {
         itemContainer.toggleClass("qps-most-switched", true);
     }
     if (pluginItem.delayed) {
@@ -356,7 +356,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal, plugin: Plug
                     .onClick(async () => {
                         const confirmReset = await confirm('Detach all groups from all plugins?', 300);
                         if (confirmReset) {
-                            for (const i of plugin.settings.allPluginsList) {
+                            for (const i of plugin.settingS.allPluginsList) {
                                 i.groupInfo.groupIndices = [];
                             }
                             modal.onOpen();
@@ -406,9 +406,9 @@ export const itemTextComponent = (pluginItem: PluginInfo, itemContainer: HTMLDiv
 }
 
 function addRemoveItemGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin, pluginItem: PluginInfo) {
-    const { settings } = plugin;
+    const { settingS } = plugin;
     Object.keys(Groups).forEach((groupKey) => {
-        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settings, groupKey)
+        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settingS, groupKey)
         const getGroup = pluginItem.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
             submenu.addItem((subitem) => {
@@ -428,9 +428,9 @@ function addRemoveItemGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plu
     });
 }
 
-const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
+const getGroupIndexLength = (settingS: QPSSettings, groupKey: string) => {
     const groupIndex = Object.keys(Groups).indexOf(groupKey);
-    const lengthGroup = settings.allPluginsList.filter((i) =>
+    const lengthGroup = settingS.allPluginsList.filter((i) =>
         i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
     ).length;
     const groupValue = Groups[groupKey as keyof typeof Groups];
@@ -439,16 +439,16 @@ const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
 }
 
 function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu, plugin: Plugin) {
-    const { settings } = plugin
+    const { settingS } = plugin
     Object.keys(Groups).forEach((groupKey) => {
-        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settings, groupKey)
+        const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(settingS, groupKey)
         if (groupKey !== "SelectGroup" && lengthGroup) {
             submenu.addItem((subitem) => {
                 subitem
                     .setTitle(`${groupValue}`)
                     .onClick(async () => {
                         let pluginsRemoved = false;
-                        for (const i of settings.allPluginsList) {
+                        for (const i of settingS.allPluginsList) {
                             const index = i.groupInfo.groupIndices?.indexOf(groupIndex);
                             if (index !== -1) {
                                 i.groupInfo.groupIndices?.splice(index, 1);
@@ -509,8 +509,8 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
     submenu.addSeparator()
     submenu.addItem((item) =>
         item
-            .setTitle("Plugin settings (s)")
-            .setIcon("settings")
+            .setTitle("Plugin settingS (s)")
+            .setIcon("settingS")
             .setDisabled(!pluginSettings)
             .onClick(async () => {
                 await openPluginSettings(modal, pluginSettings)
@@ -532,7 +532,7 @@ const pluginFeatureSubmenu = (submenu: Menu, pluginItem: PluginInfo, modal: QPSM
 }
 
 export async function openPluginSettings(modal: QPSModal, pluginSettings: any) {
-    if (!pluginSettings) { new Notice("No settings on this plugin"); return }
+    if (!pluginSettings) { new Notice("No settingS on this plugin"); return }
     await (modal.app as any).setting.open()
     await pluginSettings?.display();
 }

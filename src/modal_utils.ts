@@ -28,7 +28,7 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 }
 
 export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
-    const numberOfGroups = _this.settings.numberOfGroups;
+    const numberOfGroups = _this.settingS.numberOfGroups;
     const currentGroupKeys = Object.keys(Groups);
 
     // delete groups if new value < previous value (when moving slider in prefs)
@@ -38,16 +38,16 @@ export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
     }
 
     for (let i = 1; i <= numberOfGroups; i++) {
-        if (_this.settings.groups[i]?.name === undefined)
-            _this.settings.groups[i] = {
+        if (_this.settingS.groups[i]?.name === undefined)
+            _this.settingS.groups[i] = {
                 name: "",
                 delayed: false,
                 time: 0,
                 applied: false
             };
 
-        const groupKey = (_this.settings.groups[i]?.name !== "") ?
-            _this.settings.groups[i]?.name : `Group${i}`;
+        const groupKey = (_this.settingS.groups[i]?.name !== "") ?
+            _this.settingS.groups[i]?.name : `Group${i}`;
         Groups[`Group${i}`] = `${groupKey}`;
     }
 }

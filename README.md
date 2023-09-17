@@ -1,8 +1,10 @@
 ## Quick Plugin Switcher
 
-New: no more needed to click on a plugin before to use shortcuts  
-desktop only are now marked with a ᴰ
+New: 
+- no more needed to click on a plugin before to use shortcuts  
+- desktop only are now marked with a ᴰ
 ![show_hotkey](img/desktopOnly.jpg)
+- settings for mobiles independant from desktop settings (when using a same vault)
 
 This plugin simplifies the process of managing your plugins (demos at the end of this page)
 

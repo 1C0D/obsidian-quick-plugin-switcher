@@ -1,13 +1,14 @@
 import { around } from "monkey-around";
-import { Plugin } from 'obsidian';
+import { Platform, Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { getLength, isEnabled } from './utils';
-import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
+import { BaseSettings, DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
 import QPSSettingTab from './settings';
 
 
 export default class QuickPluginSwitcher extends Plugin {
     settings: QPSSettings;
+    settingS: BaseSettings // 
     reset: boolean = false
     lengthAll: number = 0
     lengthDisabled: number = 0
@@ -17,11 +18,12 @@ export default class QuickPluginSwitcher extends Plugin {
     async onload() {
         this.toUpdate = await this.loadSettings();
         this.app.workspace.onLayoutReady(async () => {
-            const { settings } = this
-            const allPluginsList = settings.allPluginsList || [];
+            const { settingS } = this
+            const allPluginsList = settingS.allPluginsList || [];
             const manifests = (this.app as any).plugins.manifests || {};
             // plugin have been deleted from obsidian UI ?
             let stillInstalled: PluginInfo[] = []
+
 
             for (const plugin of allPluginsList) {
                 if (Object.keys(manifests).includes(plugin.id))
@@ -128,9 +130,9 @@ export default class QuickPluginSwitcher extends Plugin {
     }
 
     async getPluginsInfo() {
-        const { settings } = this
+        const { settingS } = this
 
-        const allPluginsList = settings.allPluginsList || [];
+        const allPluginsList = settingS.allPluginsList || [];
         const manifests = (this.app as any).plugins.manifests || {};
 
         // plugin have been deleted from obsidian UI ?
@@ -194,27 +196,24 @@ export default class QuickPluginSwitcher extends Plugin {
                 stillInstalled.push(notInListInfo);
             }
         }
-        settings.allPluginsList = stillInstalled;
+        settingS.allPluginsList = stillInstalled;
         await this.saveSettings()
         getLength(this);
     }
 
+    conditionalSettings() {
+        const isMobile = Platform.isMobileApp
+        if (isMobile) this.settingS = this.settings.mobileSettings
+        else this.settingS = this.settings
+    }
+
     async loadSettings() {
         const previousSettings = { ...await this.loadData() }
-        if ("groups" in previousSettings) {
-            this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
-            this.settings.savedVersion = this.manifest.version
-            await this.saveSettings()
-            return false
-        }
-        else {
-            this.settings = { ...DEFAULT_SETTINGS }
-            this.settings.savedVersion = this.manifest.version
-            await this.saveSettings()
-            if (Object.keys(previousSettings).length === 0) { // new installation don't run modal
-                return false
-            } else return true
-        }
+        this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
+        this.conditionalSettings()
+        this.settingS.savedVersion = this.manifest.version
+        await this.saveSettings()
+        return false
     }
 
     async saveSettings() {

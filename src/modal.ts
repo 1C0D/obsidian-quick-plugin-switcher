@@ -41,8 +41,8 @@ export class QPSModal extends Modal {
         this.addHeader(this.header)
         this.addSearch(this.search)
         this.addGroups(this.groups)
-        if (this.plugin.settings.showHotKeys) this.setHotKeysdesc()
-        this.addItems(plugin.settings.allPluginsList)
+        if (this.plugin.settingS.showHotKeys) this.setHotKeysdesc()
+        this.addItems(plugin.settingS.allPluginsList)
     }
 
     // create header/search/items elts & class
@@ -56,7 +56,7 @@ export class QPSModal extends Modal {
 
     addHeader = (contentEl: HTMLElement): void => {
         const { plugin } = this
-        const { settings } = plugin
+        const { settingS } = plugin
 
         //dropdown with filters
         new DropdownComponent(contentEl).addOptions({
@@ -67,9 +67,9 @@ export class QPSModal extends Modal {
             mostSwitched: `Most Switched(${plugin.lengthAll})`,
             byGroup: `By Group`
         })
-            .setValue(settings.filters as string)
+            .setValue(settingS.filters as string)
             .onChange(async (value: QPSSettings['filters']) => {
-                settings.filters = value;
+                settingS.filters = value;
                 getLength(plugin)
                 await plugin.saveSettings();
                 this.onOpen()
@@ -84,17 +84,17 @@ export class QPSModal extends Modal {
 
     addSearch(contentEl: HTMLElement): void {
         const { plugin } = this
-        const { settings } = plugin
+        const { settingS } = plugin
 
         new Setting(contentEl)
             .setName("Search Plugin")
             .setDesc("")
             .addSearch(async (search: SearchComponent) => {
                 search
-                    .setValue(settings.search)
+                    .setValue(settingS.search)
                     .setPlaceholder("Search")
                     .onChange(async (value: string) => {
-                        settings.search = value
+                        settingS.search = value
                         const listItems = doSearch(plugin, value)
                         this.items.empty()
                         this.addItems(listItems)
@@ -109,7 +109,7 @@ export class QPSModal extends Modal {
 
     addGroups(contentEl: HTMLElement): void {
         const { plugin } = this;
-        const { settings } = plugin;
+        const { settingS } = plugin;
         const groups = Object.values(Groups);
 
         for (let i = 1; i < groups.length; i++) {
@@ -134,10 +134,10 @@ export class QPSModal extends Modal {
     }
 
     getCircleGroup(groupIndex: number) {
-        const { settings } = this.plugin
+        const { settingS } = this.plugin
         const { color } = getEmojiForGroup(groupIndex);
         const background = `background-color: ${color};`;
-        const value = settings.groups[groupIndex].time ? settings.groups[groupIndex].time : ""
+        const value = settingS.groups[groupIndex].time ? settingS.groups[groupIndex].time : ""
 
         const content = `<div
             style="${background}"
@@ -151,15 +151,15 @@ export class QPSModal extends Modal {
 
     groupMenu = (evt: MouseEvent, span: HTMLSpanElement, groupNumber: number, emoji: string) => {
         const { plugin } = this
-        const { settings } = plugin
-        const inGroup = settings.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
+        const { settingS } = plugin
+        const inGroup = settingS.allPluginsList.filter((i) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1)
 
         const menu = new Menu();
         menu.addItem((item) =>
             item
                 .setTitle("delay group")
                 .onClick(() => {
-                    const currentValue = settings.groups[groupNumber].time || 0;
+                    const currentValue = settingS.groups[groupNumber].time || 0;
                     span.innerHTML = `<input type="text" value="${currentValue}" />`;
 
                     const input = span.querySelector("input");
@@ -169,8 +169,8 @@ export class QPSModal extends Modal {
                     input?.addEventListener("blur", () => {
                         setTimeout(() => {
                             if (this.isDblClick) return
-                            parseInt(input?.value) ? settings.groups[groupNumber].time = parseInt(input.value) :
-                                settings.groups[groupNumber].time = 0;
+                            parseInt(input?.value) ? settingS.groups[groupNumber].time = parseInt(input.value) :
+                                settingS.groups[groupNumber].time = 0;
                             span.textContent = `${input.value}`;
                             this.onOpen();
                         }, 100);
@@ -179,9 +179,9 @@ export class QPSModal extends Modal {
                     input?.addEventListener("keydown", (event) => {
                         if (event.key === "Enter") {
                             if (this.isDblClick) return
-                            parseInt(input?.value) ? settings.groups[groupNumber].time = parseInt(input.value) :
-                                settings.groups[groupNumber].time = 0;
-                            span.textContent = `${settings.groups[groupNumber].time}`;
+                            parseInt(input?.value) ? settingS.groups[groupNumber].time = parseInt(input.value) :
+                                settingS.groups[groupNumber].time = 0;
+                            span.textContent = `${settingS.groups[groupNumber].time}`;
                             this.onOpen();
                         };
                     });
@@ -191,12 +191,12 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("apply")
-                .setDisabled(!inGroup.length || settings.groups[groupNumber].time === 0)
+                .setDisabled(!inGroup.length || settingS.groups[groupNumber].time === 0)
                 .onClick(async () => {
                         for (const plugin of inGroup) {
-                            plugin.time = settings.groups[groupNumber].time
+                            plugin.time = settingS.groups[groupNumber].time
                             plugin.delayed = true
-                            settings.groups[groupNumber].applied = true
+                            settingS.groups[groupNumber].applied = true
                             if (plugin.enabled) {
                                 await (this.app as any).plugins.disablePluginAndSave(plugin.id)
                                 await (this.app as any).plugins.enablePlugin(plugin.id)
@@ -208,12 +208,12 @@ export class QPSModal extends Modal {
         menu.addItem((item) =>
             item
                 .setTitle("reset")
-                .setDisabled(!inGroup.length || settings.groups[groupNumber].time === 0)
+                .setDisabled(!inGroup.length || settingS.groups[groupNumber].time === 0)
                 .onClick(async () => {
                     for (const plugin of inGroup) {
                         plugin.time = 0
                         plugin.delayed = false
-                        settings.groups[groupNumber].applied = false
+                        settingS.groups[groupNumber].applied = false
                         if (plugin.enabled) {
                             await (this.app as any).plugins.enablePluginAndSave(plugin.id)
                         }
@@ -266,9 +266,9 @@ export class QPSModal extends Modal {
 
     editGroupName = (span: HTMLSpanElement, groupNumber: number, emoji: string) => {
         const { plugin } = this
-        const { settings } = plugin
-        const currentValue = settings.groups[groupNumber].name !== "" ?
-            settings.groups[groupNumber]?.name : "";
+        const { settingS } = plugin
+        const currentValue = settingS.groups[groupNumber].name !== "" ?
+            settingS.groups[groupNumber]?.name : "";
         span.innerHTML = `<input type="text" value="${currentValue}" />`;
 
         const input = span.querySelector("input");
@@ -278,9 +278,9 @@ export class QPSModal extends Modal {
         input?.addEventListener("blur", () => {
             setTimeout(() => {
                 if (this.isDblClick) return
-                input?.value ? settings.groups[groupNumber].name = input.value :
-                    settings.groups[groupNumber].name = `Group${groupNumber}`;
-                span.textContent = `${settings.groups[groupNumber].name}`;
+                input?.value ? settingS.groups[groupNumber].name = input.value :
+                    settingS.groups[groupNumber].name = `Group${groupNumber}`;
+                span.textContent = `${settingS.groups[groupNumber].name}`;
                 this.onOpen();
             }, 200);
         });
@@ -288,9 +288,9 @@ export class QPSModal extends Modal {
         input?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 if (this.isDblClick) return
-                input?.value ? settings.groups[groupNumber].name = input.value :
-                    settings.groups[groupNumber].name = Groups[groupNumber];
-                span.textContent = `${settings.groups[groupNumber].name}`
+                input?.value ? settingS.groups[groupNumber].name = input.value :
+                    settingS.groups[groupNumber].name = Groups[groupNumber];
+                span.textContent = `${settingS.groups[groupNumber].name}`
                 this.onOpen()
             }
         });
@@ -301,9 +301,9 @@ export class QPSModal extends Modal {
     }
     async addItems(listItems: PluginInfo[]) {
         const { plugin } = this
-        const { settings } = plugin
+        const { settingS } = plugin
 
-        const value = settings.search
+        const value = settingS.search
         listItems = doSearch(plugin, value)
         // Sort for chosen mode
         listItems = modeSort(plugin, listItems)
@@ -311,8 +311,8 @@ export class QPSModal extends Modal {
         // toggle plugin
         for (const pluginItem of listItems) {
             if (
-                (settings.filters === "enabled" && !pluginItem.enabled) ||
-                (settings.filters === "disabled" && pluginItem.enabled)
+                (settingS.filters === "enabled" && !pluginItem.enabled) ||
+                (settingS.filters === "disabled" && pluginItem.enabled)
             ) {
                 continue;
             }
@@ -408,7 +408,7 @@ export class QPSModal extends Modal {
     }
 
     handleHotkeys = async (evt: MouseEvent, pluginItem: PluginInfo, itemContainer: HTMLInputElement) => {
-        const numberOfGroups = this.plugin.settings.numberOfGroups;
+        const numberOfGroups = this.plugin.settingS.numberOfGroups;
         const keyToGroupMap: Record<string, number> = {};
         // Generate keyToGroupMap based on the number of groups available
         for (let i = 1; i <= numberOfGroups; i++) {

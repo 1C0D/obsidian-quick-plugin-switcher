@@ -1,12 +1,12 @@
 import Plugin from "./main"
 
 export const getLength = (_this: Plugin) => {
-    const { settingS } = _this
-    const allPluginsList = settingS.allPluginsList || [];
+    const { settings } = _this
+    const allPluginsList = settings.allPluginsList || [];
     _this.lengthAll = allPluginsList.length
-    _this.lengthEnabled = settingS.allPluginsList.
+    _this.lengthEnabled = settings.allPluginsList.
         filter((plugin) => plugin.enabled).length
-    _this.lengthDisabled = settingS.allPluginsList.
+    _this.lengthDisabled = settings.allPluginsList.
         filter((plugin) => !plugin.enabled).length
 }
 

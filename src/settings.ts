@@ -11,13 +11,13 @@ export default class QPSSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         const { plugin } = this
-        const { settingS } = plugin;
+        const { settings } = plugin;
 
         containerEl.empty();
         containerEl.createEl("h4", { text: "Quick Plugin Switcher" });
 
         let saveSettingsTimeout: ReturnType<typeof setTimeout>;
-        const { numberOfGroups } = settingS;
+        const { numberOfGroups } = settings;
         new Setting(containerEl)
             .setName("Number of plugins groups")
             .setDesc("To treat plugins by groups")
@@ -33,7 +33,7 @@ export default class QPSSettingTab extends PluginSettingTab {
                                 const confirmReset = await confirm(
                                     'reducing number of groups, higher groups info will be lost',350);
                                 if (confirmReset) {
-                                    settingS.allPluginsList.forEach((plugin) => {
+                                    settings.allPluginsList.forEach((plugin) => {
                                         let hasValueGreaterThanValue = false;
                                         for (const groupIndex of plugin.groupInfo.groupIndices) {
                                             if (groupIndex > value) {
@@ -45,13 +45,13 @@ export default class QPSSettingTab extends PluginSettingTab {
                                             plugin.groupInfo.groupIndices = [];
                                         }
                                     });
-                                    settingS.numberOfGroups = value;
+                                    settings.numberOfGroups = value;
                                     await plugin.saveSettings();
                                 } else { slider.setValue(numberOfGroups) }
                             }, 700);
                         } else {
                             clearTimeout(saveSettingsTimeout);
-                            settingS.numberOfGroups = value;
+                            settings.numberOfGroups = value;
                             await plugin.saveSettings();
                         }
                     });
@@ -67,11 +67,11 @@ export default class QPSSettingTab extends PluginSettingTab {
                     .onClick(async () => {
                         const confirmReset = await confirm('Do you want to reset all values?',300);
                         if (confirmReset) {
-                            if (plugin.settingS.hasOwnProperty('allPluginsList')) {
-                                plugin.settingS.allPluginsList = [];
+                            if (plugin.settings.hasOwnProperty('allPluginsList')) {
+                                plugin.settings.allPluginsList = [];
                             }
-                            if (plugin.settingS.hasOwnProperty('groups')) {
-                                plugin.settingS.groups = {};
+                            if (plugin.settings.hasOwnProperty('groups')) {
+                                plugin.settings.groups = {};
                             }
                             await plugin.saveSettings();
                             new Notice("Reset done", 1300)
@@ -84,9 +84,9 @@ export default class QPSSettingTab extends PluginSettingTab {
             .setName("Show hotkeys line reminder")
             .addToggle((toggle) => {
                 toggle
-                    .setValue(this.plugin.settingS.showHotKeys)
+                    .setValue(this.plugin.settings.showHotKeys)
                     .onChange((value) => {
-                        this.plugin.settingS.showHotKeys = value;
+                        this.plugin.settings.showHotKeys = value;
                         this.plugin.saveSettings();
                     })
             });

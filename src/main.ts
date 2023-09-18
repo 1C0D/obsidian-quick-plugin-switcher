@@ -1,29 +1,26 @@
 import { around } from "monkey-around";
-import { Platform, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { QPSModal } from './modal';
 import { getLength, isEnabled } from './utils';
-import { BaseSettings, DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
+import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
 import QPSSettingTab from './settings';
 
 
 export default class QuickPluginSwitcher extends Plugin {
     settings: QPSSettings;
-    settingS: BaseSettings // 
     reset: boolean = false
     lengthAll: number = 0
     lengthDisabled: number = 0
     lengthEnabled: number = 0
-    toUpdate: boolean = false
 
     async onload() {
-        this.toUpdate = await this.loadSettings();
+        await this.loadSettings();
         this.app.workspace.onLayoutReady(async () => {
-            const { settingS } = this
-            const allPluginsList = settingS.allPluginsList || [];
+            const { settings } = this
+            const allPluginsList = settings.allPluginsList || [];
             const manifests = (this.app as any).plugins.manifests || {};
             // plugin have been deleted from obsidian UI ?
             let stillInstalled: PluginInfo[] = []
-
 
             for (const plugin of allPluginsList) {
                 if (Object.keys(manifests).includes(plugin.id))
@@ -130,9 +127,9 @@ export default class QuickPluginSwitcher extends Plugin {
     }
 
     async getPluginsInfo() {
-        const { settingS } = this
+        const { settings } = this
 
-        const allPluginsList = settingS.allPluginsList || [];
+        const allPluginsList = settings.allPluginsList || [];
         const manifests = (this.app as any).plugins.manifests || {};
 
         // plugin have been deleted from obsidian UI ?
@@ -196,24 +193,22 @@ export default class QuickPluginSwitcher extends Plugin {
                 stillInstalled.push(notInListInfo);
             }
         }
-        settingS.allPluginsList = stillInstalled;
+        settings.allPluginsList = stillInstalled;
         await this.saveSettings()
         getLength(this);
     }
 
-    conditionalSettings() {
-        const isMobile = Platform.isMobileApp
-        if (isMobile) this.settingS = this.settings.mobileSettings
-        else this.settingS = this.settings
-    }
-
     async loadSettings() {
         const previousSettings = { ...await this.loadData() }
+        if ("mobileSettings" in previousSettings) {
+            delete previousSettings.mobileSettings;
+        }
+
         this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
-        this.conditionalSettings()
-        this.settingS.savedVersion = this.manifest.version
+        this.settings.savedVersion = this.manifest.version
         await this.saveSettings()
-        return false
+
+
     }
 
     async saveSettings() {

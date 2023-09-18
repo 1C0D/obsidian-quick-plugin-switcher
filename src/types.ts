@@ -20,7 +20,7 @@ export interface PluginGroupInfo {
     groupWasEnabled: boolean;
 }
 
-export interface BaseSettings {
+export interface QPSSettings {
     savedVersion: string;
     allPluginsList: PluginInfo[];
     wasEnabled: string[];
@@ -29,37 +29,8 @@ export interface BaseSettings {
     search: string;
     numberOfGroups: number;
     groups: Record<number, { name: string; delayed: boolean; time: number, applied: boolean }>;
-    showHotKeys: boolean;
-    }
-
-export interface QPSSettings extends BaseSettings {
-    mobileSettings: BaseSettings;
+    showHotKeys: boolean
 }
-
-// export const DEFAULT_BASE_SETTINGS: BaseSettings = {
-//     savedVersion: "0.0.0",
-//     allPluginsList: [],
-//     wasEnabled: [],
-//     filters: Filters.All,
-//     selectedGroup: "SelectGroup",
-//     search: "",
-//     numberOfGroups: 3,
-//     groups: {},
-//     showHotKeys: true,
-// }
-
-// export const DEFAULT_SETTINGS: QPSSettings = {
-//     savedVersion: "0.0.0",
-//     allPluginsList: [],
-//     wasEnabled: [],
-//     filters: Filters.All,
-//     selectedGroup: "SelectGroup",
-//     search: "",
-//     numberOfGroups: 3,
-//     groups: {},
-//     showHotKeys: true,
-//     mobileSettings: DEFAULT_BASE_SETTINGS,
-// };
 
 export const DEFAULT_SETTINGS: QPSSettings = {
     savedVersion: "0.0.0",
@@ -70,18 +41,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
     search: "",
     numberOfGroups: 3,
     groups: {},
-    showHotKeys: true,
-    mobileSettings: {
-        savedVersion: "0.0.0",
-        allPluginsList: [],
-        wasEnabled: [],
-        filters: Filters.All,
-        selectedGroup: "SelectGroup",
-        search: "",
-        numberOfGroups: 3,
-        groups: {},
-        showHotKeys: true,
-    }
+    showHotKeys: true
 };
 
 export interface PluginInfo {

@@ -1,17 +1,19 @@
-import { Groups, PluginInfo } from "./types"
+import { GroupData, Groups, PluginInfo } from "./types"
 import Plugin from "./main"
 import { QPSModal } from "./modal";
-import { getLength } from "./utils";
 import { Notice } from "obsidian";
 import { confirm } from "./secondary_modals";
 
 
+/**
+ * Reset most switched values.
+ */
 export const reset = async (modal: QPSModal) => {
     const { plugin } = modal
     const confirmed = await confirm("Reset most switched values?", 250);
     if (confirmed) {
         plugin.reset = true //if true, reset done in modal>addItems()
-        getLength(plugin)
+        plugin.getLength();
         modal.onOpen()
         new Notice("Done", 1000)
     } else {
@@ -27,30 +29,34 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
     listItems.sort((a, b) => b.switched - a.switched)
 }
 
-export const getGroupTitle = (_this: Plugin) => { // 🟡Group1....
-    const numberOfGroups = _this.settings.numberOfGroups;
-    const currentGroupKeys = Object.keys(Groups);
 
-    // delete groups if new value < previous value (when moving slider in prefs)
-    for (let i = 1; i < currentGroupKeys.length; i++) {
-        const key = currentGroupKeys[i];
-        delete Groups[key];
-    }
+export const getGroupTitle = (plugin: Plugin, Groups: GroupData) => {
+    const {settings} = plugin
+	const numberOfGroups = settings.numberOfGroups;
+	const currentGroupKeys = Object.keys(Groups);
 
-    for (let i = 1; i <= numberOfGroups; i++) {
-        if (_this.settings.groups[i]?.name === undefined)
-            _this.settings.groups[i] = {
-                name: "",
-                delayed: false,
-                time: 0,
-                applied: false
-            };
+	// delete groups if new value < previous value (when moving slider in prefs)
+	for (let i = 1; i < currentGroupKeys.length; i++) {
+		const key = currentGroupKeys[i];
+		delete Groups[key];
+	}
 
-        const groupKey = (_this.settings.groups[i]?.name !== "") ?
-            _this.settings.groups[i]?.name : `Group${i}`;
-        Groups[`Group${i}`] = `${groupKey}`;
-    }
-}
+	for (let i = 1; i <= numberOfGroups; i++) {
+		if (settings.groups[i]?.name === undefined)
+			settings.groups[i] = {
+				name: "",
+				delayed: false,
+				time: 0,
+				applied: false,
+			};
+
+		const groupKey =
+			plugin.settings.groups[i]?.name !== ""
+				? plugin.settings.groups[i]?.name
+				: `Group${i}`;
+		Groups[`Group${i}`] = `${groupKey}`;
+	}
+};
 
 export const getEmojiForGroup = (groupNumber: number) => {
     const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟤", "🟢", "🟣"];
@@ -87,7 +93,7 @@ export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
     pluginItem.enabled
         ? await conditionalEnable(modal, pluginItem)
         : await (modal.app as any).plugins.disablePluginAndSave(pluginItem.id);
-    getLength(plugin)
+    plugin.getLength();
     await plugin.saveSettings();
     modal.onOpen();
 }
@@ -120,4 +126,43 @@ export const conditionalEnable = async (_this: any, pluginItem: PluginInfo) => {
 
 export const selectValue = (input: HTMLInputElement | null) => {
     input?.setSelectionRange(0, input?.value.length);
+}
+
+export function groupNotEmpty(groupIndex: number, modal: QPSModal) {
+	const { plugin } = modal;
+	const { settings } = plugin;
+
+	return settings.allPluginsList.some(
+		(plugin) => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+	);
+}
+
+
+export function getIndexFromSelectedGroup(str:string) {
+	return parseInt(str.slice(-1));
+}
+
+
+// removing groups ---------------
+export function rmvAllGroupsFromPlugin(
+	modal: QPSModal,
+	pluginItem: PluginInfo,
+	groupIndices:number[]
+) {
+	const { settings } = modal.plugin;
+	let isEmpty = false;
+	pluginItem.groupInfo.groupIndices = [];
+	for (const groupIndex of groupIndices) {
+		if (
+			!groupNotEmpty(groupIndex, modal) &&
+			getIndexFromSelectedGroup(settings.selectedGroup) === groupIndex
+		) {
+			isEmpty = true;
+			break;
+		}
+	}
+	if (isEmpty) {
+		settings.selectedGroup = "SelectGroup";
+	}
+	modal.onOpen();
 }

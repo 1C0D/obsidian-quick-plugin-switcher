@@ -1,4 +1,4 @@
-import { App, ButtonComponent, Modal, Setting } from "obsidian";
+import { App, Modal, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginInfo } from "./types"
 

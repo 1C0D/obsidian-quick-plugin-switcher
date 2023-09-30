@@ -1,3 +1,5 @@
+//number of groups for community
+
 import { Notice, PluginSettingTab, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
@@ -23,7 +25,7 @@ export default class QPSSettingTab extends PluginSettingTab {
             .setDesc("To treat plugins by groups")
             .addSlider((slider) => {
                 slider
-                    .setLimits(1, 7, 1)
+                    .setLimits(1, 6, 1)
                     .setValue(numberOfGroups)
                     .setDynamicTooltip()
                     .onChange(async (value) => {

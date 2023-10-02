@@ -1,10 +1,9 @@
 import { around } from "monkey-around";
-import { Plugin } from 'obsidian';
-import { QPSModal } from './modal';
-import { isEnabled } from './utils';
-import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from './types';
-import QPSSettingTab from './settings';
-
+import { Plugin } from "obsidian";
+import { QPSModal } from "./main_modal";
+import { isEnabled } from "./utils";
+import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from "./types";
+import QPSSettingTab from "./settings";
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -213,7 +212,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.getLength();
 	}
 
-	getLength () {
+	getLength() {
 		const { settings } = this;
 		const allPluginsList = settings.allPluginsList || [];
 		this.lengthAll = allPluginsList.length;
@@ -223,7 +222,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.lengthDisabled = settings.allPluginsList.filter(
 			(plugin) => !plugin.enabled
 		).length;
-	};
+	}
 
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };

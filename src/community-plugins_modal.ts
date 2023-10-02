@@ -3,19 +3,34 @@
 // sticky header
 // settings groups length
 // group menu voir plus tard
+//
 
 import {
 	App,
 	DropdownComponent,
+	Menu,
 	Modal,
 	SearchComponent,
 	Setting,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
-import { calculateTimeElapsed, formatNumber } from "./utils";
-import { GroupData, Groups, GroupsComm } from "./types";
-import { getEmojiForGroup, getGroupTitle, selectValue } from "./modal_utils";
+import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
+import {
+	GroupData,
+	GroupsComm,
+	PackageInfoData,
+	PluginCommInfo,
+} from "./types";
+import {
+	createInput,
+	getCirclesItem,
+	getEmojiForGroup,
+	getGroupTitle,
+	groupNotEmpty,
+	rmvAllGroupsFromPlugin,
+} from "./modal_utils";
+
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -24,6 +39,8 @@ export class CPModal extends Modal {
 	groups: HTMLElement;
 	// hotkeysDesc: HTMLElement;
 	isDblClick = false;
+	pluginsList: PluginCommInfo[];
+	pluginStats: PackageInfoData;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -47,12 +64,16 @@ export class CPModal extends Modal {
 
 	async onOpen() {
 		this.plugin.settings.search = "";
-		const pluginsList = await getPluginList();
-		const pluginStats = await fetchAndStorePluginStats();
-		this.draw(this, pluginsList, pluginStats);
+		this.pluginsList = await getPluginList();
+		this.pluginStats = await fetchAndStorePluginStats();
+		this.draw(this, this.pluginsList, this.pluginStats);
 	}
 
-	async draw(modal: CPModal, pluginsList: any[], pluginStats: any[]) {
+	async draw(
+		modal: CPModal,
+		pluginsList: PluginCommInfo[],
+		pluginStats: PackageInfoData
+	) {
 		const { plugin, contentEl } = this;
 		contentEl.empty();
 		this.container();
@@ -65,13 +86,13 @@ export class CPModal extends Modal {
 			pluginStats
 		);
 		this.addGroups(this.groups, GroupsComm);
-		await addItems(this, pluginsList, pluginStats);
+		await this.addItems(this, pluginsList, pluginStats);
 	}
 
 	addHeader = (
 		contentEl: HTMLElement,
-		pluginsList: any,
-		pluginStats: any[]
+		pluginsList: PluginCommInfo[],
+		pluginStats: PackageInfoData
 	): void => {
 		const { plugin } = this;
 		const { settings } = plugin;
@@ -96,9 +117,9 @@ export class CPModal extends Modal {
 
 	addSearch = async (
 		contentEl: HTMLElement,
-		pluginsList: any[],
+		pluginsList: PluginCommInfo[],
 		placeholder: string,
-		pluginStats: any[]
+		pluginStats: PackageInfoData
 	) => {
 		const { plugin } = this;
 		const { settings } = plugin;
@@ -111,32 +132,13 @@ export class CPModal extends Modal {
 					.onChange(async (value: string) => {
 						settings.search = value;
 						// to update list
-						const listItems = await this.doSearch(
-							value,
-							pluginsList
-						);
+						const listItems = doSearch(value, pluginsList);
 						this.items.empty();
-						addItems(this, listItems, pluginStats);
+						this.addItems(this, listItems, pluginStats);
 					});
 			})
 			.setClass("qps-search-component");
 	};
-
-	doSearch(value: string, pluginsList: any[]) {
-		const listItems: any = [];
-
-		for (const i of pluginsList) {
-			if (
-				i.name.toLowerCase().includes(value.toLowerCase()) ||
-				(value.length > 1 &&
-					value[value.length - 1] === " " &&
-					i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
-			) {
-				listItems.push(i);
-			}
-		}
-		return listItems;
-	}
 
 	addGroups(contentEl: HTMLElement, Groups: GroupData): void {
 		const groups = Object.values(Groups);
@@ -183,21 +185,20 @@ export class CPModal extends Modal {
 		}
 	}
 
-	async addItems(modal: CPModal, listItems: any[], pluginStats: any[]) {
-		// const { plugin } = modal;
-		// const { settings } = plugin;
-		// const value = settings.search;
+	async addItems(
+		modal: CPModal,
+		listItems: PluginCommInfo[],
+		// listTaggedItem: PluginsTaggedInfo,
+		pluginStats: PackageInfoData
+	) {
 		listItems = filter(modal, listItems);
 		sortItemsByDownloads(listItems, pluginStats);
 
 		for (const item of listItems.slice(0, 14)) {
-			// console.log("item", item);
 			const itemContainer = modal.items.createEl("div", {
-				cls: "qps-block",
+				cls: "qps-comm-block",
 			});
-			const text = isInstalled(item)
-				? `${item.name} installed`
-				: item.name;
+
 			const name = itemContainer.createDiv(
 				{
 					cls: "qps-community-item-name",
@@ -211,10 +212,12 @@ export class CPModal extends Modal {
 						});
 				}
 			);
+
 			const author = itemContainer.createDiv({
 				cls: "qps-community-item-author",
 				text: `By ${item.author} `,
 			});
+
 			const pluginId = item.id;
 			const pluginInfo = pluginStats[pluginId];
 			// console.log("pluginInfo", pluginInfo);
@@ -224,16 +227,25 @@ export class CPModal extends Modal {
 						cls: "qps-community-item-downloads",
 					},
 					(el: HTMLElement) => {
-						const before = el.createSpan();
-						el.createSpan({
-							text: formatNumber(
-								pluginInfo.downloads,
-								3
-							).toString(),
-						});
-						setIcon(before, "download-cloud");
+						const preSpan = el.createSpan();
+						el.createSpan(
+							{
+								text: formatNumber(
+									pluginInfo.downloads,
+									1
+								).toString(),
+							},
+							(el) => {
+								updatedAddGroups(this, el, item);
+							}
+						);
+						setIcon(preSpan, "download-cloud");
 					}
 				);
+				itemContainer.addEventListener("mouseover", (evt) => {
+					handleHotkeys(this, evt, item, itemContainer);
+				});
+
 				const lastUpdated = new Date(pluginInfo.updated);
 				const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
 				const updatedSince = itemContainer.createDiv({
@@ -241,6 +253,7 @@ export class CPModal extends Modal {
 					text: `Updated ${timeSinceUpdate}`,
 				});
 			}
+
 			const desc = itemContainer.createDiv({
 				cls: "qps-community-item-desc",
 				text: item.description,
@@ -249,73 +262,13 @@ export class CPModal extends Modal {
 	}
 }
 
-async function addItems(modal: CPModal, listItems: any[], pluginStats: any[]) {
-	// const { plugin } = modal;
-	// const { settings } = plugin;
-	// const value = settings.search;
-	listItems = filter(modal, listItems);
-	sortItemsByDownloads(listItems, pluginStats);
-
-	for (const item of listItems.slice(0, 14)) {
-		// console.log("item", item);
-		const itemContainer = modal.items.createEl("div", {
-			cls: "qps-block",
-		});
-		const text = isInstalled(item) ? `${item.name} installed` : item.name;
-		const name = itemContainer.createDiv(
-			{
-				cls: "qps-community-item-name",
-				text: item.name,
-			},
-			(el: HTMLElement) => {
-				if (isInstalled(item))
-					el.createSpan({
-						cls: "installed-span",
-						text: "installed",
-					});
-			}
-		);
-		const author = itemContainer.createDiv({
-			cls: "qps-community-item-author",
-			text: `By ${item.author} `,
-		});
-		const pluginId = item.id;
-		const pluginInfo = pluginStats[pluginId];
-		// console.log("pluginInfo", pluginInfo);
-		if (pluginInfo) {
-			const downloads = itemContainer.createDiv(
-				{
-					cls: "qps-community-item-downloads",
-				},
-				(el: HTMLElement) => {
-					const before = el.createSpan();
-					el.createSpan({
-						text: formatNumber(pluginInfo.downloads, 3).toString(),
-					});
-					setIcon(before, "download-cloud");
-				}
-			);
-			const lastUpdated = new Date(pluginInfo.updated);
-			const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-			const updatedSince = itemContainer.createDiv({
-				cls: "qps-community-item-updated",
-				text: `Updated ${timeSinceUpdate}`,
-			});
-		}
-		const desc = itemContainer.createDiv({
-			cls: "qps-community-item-desc",
-			text: item.description,
-		});
-	}
-}
-
-async function getPluginList() {
+async function getPluginList(): Promise<PluginCommInfo[]> {
 	const repoURL =
 		"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
 	return await fetchIt(repoURL, "communityPluginsData");
 }
 
-async function fetchAndStorePluginStats() {
+async function fetchAndStorePluginStats(): Promise<PackageInfoData> {
 	const communityPluginStatsUrl =
 		"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
 	const pluginStats = await fetchIt(
@@ -344,6 +297,22 @@ async function fetchIt(url: string, storageDataName: string) {
 	}
 }
 
+function doSearch(value: string, pluginsList: PluginCommInfo[]) {
+	const listItems: PluginCommInfo[] = [];
+
+	for (const i of pluginsList) {
+		if (
+			i.name.toLowerCase().includes(value.toLowerCase()) ||
+			(value.length > 1 &&
+				value[value.length - 1] === " " &&
+				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
+		) {
+			listItems.push(i);
+		}
+	}
+	return listItems;
+}
+
 function getInstalled() {
 	return Object.keys(this.app.plugins.manifests);
 }
@@ -352,7 +321,7 @@ function isInstalled(item: any) {
 	return getInstalled().includes(item.id);
 }
 
-function sortItemsByDownloads(listItems: any[], pluginStats: any) {
+function sortItemsByDownloads(listItems: PluginCommInfo[], pluginStats: any) {
 	listItems.sort((a, b) => {
 		const pluginAStats = pluginStats[a.id];
 		const pluginBStats = pluginStats[b.id];
@@ -365,7 +334,7 @@ function sortItemsByDownloads(listItems: any[], pluginStats: any) {
 	});
 }
 
-function filter(modal: CPModal, listItems: any[]) {
+function filter(modal: CPModal, listItems: PluginCommInfo[]): PluginCommInfo[] {
 	if (modal.plugin.settings.communityFilters === "installed") {
 		const installedPlugins = getInstalled.call(this);
 		listItems = listItems.filter((item) =>
@@ -378,8 +347,8 @@ function filter(modal: CPModal, listItems: any[]) {
 			(item) => !installedPlugins.includes(item.id)
 		);
 
-		const notInstalledCount = listItems.length; 
-		console.log("Nombre de plugins non installés : ", notInstalledCount);
+		// const notInstalledCount = listItems.length;
+		// console.log("Nombre de plugins non installés : ", notInstalledCount);
 	}
 
 	return listItems;
@@ -407,12 +376,7 @@ const editGroupName = (
 			? settings.groups[groupNumber]?.name
 			: "";
 
-	const input = document.createElement("input");
-	input.type = "text";
-	input.value = currentValue;
-	span.replaceWith(input);
-	input?.focus();
-	selectValue(input);
+	const input = createInput(span, currentValue);
 
 	input?.addEventListener("blur", () => {
 		setTimeout(() => {
@@ -437,6 +401,151 @@ const editGroupName = (
 	});
 };
 
+const handleHotkeys = async (
+	modal: CPModal,
+	evt: MouseEvent,
+	pluginItem: PluginCommInfo,
+	itemContainer: HTMLElement
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	const numberOfGroups = settings.numberOfGroupsComm;
+	const keyToGroupMap: Record<string, number> = {};
+	// Generate keyToGroupMap based on the number of groups available
+	for (let i = 1; i <= numberOfGroups; i++) {
+		keyToGroupMap[i.toString()] = i;
+	}
+	console.log("keyToGroupMap", keyToGroupMap);
+	// handle groups shortcuts
+	const handleKeyDown = async (event: KeyboardEvent) => {
+		const { plugin } = modal;
+		const { settings } = plugin;
+		if (modal.isDblClick) return;
+		const keyPressed = event.key;
+		const key = pluginItem.id;
+		const taggedItem = settings.pluginsTagged[key];
+		if (!taggedItem) return;
+		const { groupInfo } = taggedItem;
+		const indices = groupInfo.groupIndices;
+		if (
+			indices &&
+			keyPressed in keyToGroupMap &&
+			!(pluginItem.id === "quick-plugin-switcher")
+		) {
+			const groupIndex = keyToGroupMap[keyPressed];
+			if (indices.length === 6) return;
+			const index = indices.indexOf(groupIndex);
+			if (index === -1) {
+				indices.push(groupIndex);
+				modal.onOpen();
+			}
+		} else if (
+			indices &&
+			(keyPressed === "Delete" ||
+				keyPressed === "Backspace" ||
+				(keyPressed === "0" &&
+					!(pluginItem.id === "quick-plugin-switcher")))
+		) {
+			if (!indices.length) return;
+			if (indices.length === 1 && groupInfo) {
+				const groupIndex = indices[0];
+				groupInfo.groupIndices = [];
+				if (!groupNotEmpty(groupIndex, modal)) {
+					settings.selectedGroup = "SelectGroup";
+				}
+				modal.onOpen();
+			} else {
+				const menu = new Menu();
+				menu.addItem((item) => item.setTitle("Remove item group(s)"));
+				menu.addItem((item) =>
+					item.setTitle("All").onClick(() => {
+						rmvAllGroupsFromPlugin(modal, pluginItem);
+					})
+				);
+				for (const groupIndex of indices) {
+					const { emoji } = getEmojiForGroup(groupIndex);
+					menu.addItem((item) =>
+						item
+							.setTitle(`${emoji} group ${groupIndex}`)
+							.onClick(() => {
+								if (groupInfo)
+									groupInfo.groupIndices = removeItem(
+										groupInfo.groupIndices,
+										groupIndex
+									);
+								// if (groupEmpty(groupIndex, modal)) {
+								// 	modal.plugin.settings.selectedGroup =
+								// 		"SelectGroup";
+								// }
+								modal.draw(
+									modal,
+									modal.pluginsList,
+									modal.pluginStats
+								);
+							})
+					);
+				}
+
+				menu.showAtMouseEvent(evt);
+			}
+		}
+		await modal.plugin.saveSettings();
+		document.removeEventListener("keydown", handleKeyDown);
+	};
+
+	const handleMouseLeave = (event: MouseEvent) => {
+		document.removeEventListener("keydown", handleKeyDown);
+		itemContainer.removeEventListener("mouseleave", handleMouseLeave);
+	};
+	document.addEventListener("keydown", handleKeyDown);
+	itemContainer.addEventListener("mouseleave", handleMouseLeave);
+};
+
+const updatedAddGroups = (
+	modal: CPModal,
+	el: HTMLElement,
+	item: PluginCommInfo
+) => {
+	const { settings } = modal.plugin;
+	const key = item.id;
+	// maybe doesn't exist ?
+	const taggedItem = settings.pluginsTagged[key];
+	if (!taggedItem) return;
+	const indices = taggedItem.groupInfo.groupIndices;
+	if (indices?.length) {
+		if (indices.length < 3) {
+			const content = getCirclesItem(indices);
+			el.insertAdjacentHTML("afterend", content);
+		}
+
+		if (indices.length >= 3 && indices.length < 5) {
+			// 2 circles
+			const [valeur0, valeur1, ...part2] = indices;
+			const part1 = [valeur0, valeur1];
+
+			const content1 = getCirclesItem(part1);
+			el.insertAdjacentHTML("afterend", content1);
+
+			const content2 = getCirclesItem(part2);
+			el.insertAdjacentHTML("afterend", content2);
+		} else if (indices.length >= 5) {
+			// 3 circles
+			const [valeur0, valeur1, valeur2, valeur3, ...part3] = indices;
+			const part1 = [valeur0, valeur1];
+			const part2 = [valeur2, valeur3];
+
+			const content1 = getCirclesItem(part1);
+			el.insertAdjacentHTML("afterend", content1);
+
+			const content2 = getCirclesItem(part2);
+			el.insertAdjacentHTML("afterend", content2);
+
+			const content3 = getCirclesItem(part3);
+			el.insertAdjacentHTML("afterend", content3);
+		}
+	}
+};
+
 // const groupMenu = (
 // 	modal: any,
 // 	evt: MouseEvent,
@@ -453,12 +562,7 @@ const editGroupName = (
 // 	menu.addItem((item) =>
 // 		item.setTitle("delay group").onClick(() => {
 // 			const currentValue = settings.groups[groupNumber].time || 0;
-// 			const input = document.createElement("input");
-// 			input.type = "text";
-// 			input.value = currentValue;
-// 			span.replaceWith(input);
-// 			input?.focus();
-// 			selectValue(input);
+// 			const input = createInput(span,currentValue)
 
 // 			input?.addEventListener("blur", () => {
 // 				setTimeout(() => {

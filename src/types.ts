@@ -1,11 +1,11 @@
 export const Filters: GroupData = {
-    All: "all",
-    Enabled: "enabled",
-    Disabled: "disabled",
-    EnabledFirst: "enabledFirst",
-    MostSwitched: "mostSwitched",
-    ByGroup: "byGroup",
-}
+	All: "all",
+	Enabled: "enabled",
+	Disabled: "disabled",
+	EnabledFirst: "enabledFirst",
+	MostSwitched: "mostSwitched",
+	ByGroup: "byGroup",
+};
 
 export const CommFilters: GroupData = {
 	All: "all",
@@ -15,30 +15,30 @@ export const CommFilters: GroupData = {
 };
 
 export interface GroupData {
-    [key: string]: string;
+	[key: string]: string;
 }
 
 export const Groups: GroupData = {
-    SelectGroup: "All",
-}
+	SelectGroup: "All",
+};
 
 export const GroupsComm: GroupData = {
-    SelectGroup: "All",
-}
+	SelectGroup: "All",
+};
 
 export interface PluginGroupInfo {
-    groupIndices: number[];
-    groupWasEnabled: boolean;
+	groupIndices: number[];
+	groupWasEnabled: boolean;
 }
 
-export interface PluginCommGroupInfo {
-    groupIndices: number[];
-    groupWasEnabled: boolean;
+export interface PluginTaggedGroupInfo {
+	groupIndices: number[];
 }
 
 export interface QPSSettings {
 	savedVersion: string;
 	allPluginsList: PluginInfo[];
+	pluginsTagged: PluginsTaggedInfo;
 	wasEnabled: string[];
 	filters: keyof typeof Filters;
 	communityFilters: keyof typeof CommFilters;
@@ -50,16 +50,14 @@ export interface QPSSettings {
 		number,
 		{ name: string; delayed: boolean; time: number; applied: boolean }
 	>;
-	groupsComm: Record<
-		number,
-		{ name: string}
-	>;
+	groupsComm: Record<number, { name: string }>;
 	showHotKeys: boolean;
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
 	savedVersion: "0.0.0",
 	allPluginsList: [],
+	pluginsTagged: {},
 	wasEnabled: [],
 	filters: Filters.All,
 	communityFilters: CommFilters.All,
@@ -73,27 +71,46 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 };
 
 export interface PluginInfo {
-    name: string;
-    id: string;
-    desc: string;
-    dir: string;
-    author: string;
-    authorUrl?: string;
-    desktopOnly: boolean;
-    version: string;
-    enabled: boolean;
-    switched: number;
-    groupInfo: PluginGroupInfo;
-    delayed: boolean;
-    time: number;
+	name: string;
+	id: string;
+	desc: string;
+	dir: string;
+	author: string;
+	authorUrl?: string;
+	desktopOnly: boolean;
+	version: string;
+	enabled: boolean;
+	switched: number;
+	groupInfo: PluginGroupInfo;
+	delayed: boolean;
+	time: number;
 }
 
+// community plugins
 export interface PluginCommInfo {
 	name: string;
 	id: string;
 	description: string;
 	author: string;
 	repo: string;
-	version:string;
-	groupInfo: PluginCommGroupInfo;
+}
+
+//releases
+interface PackageData {
+	downloads: number;
+	updated: number;
+	[version: string]: number;
+}
+
+export interface PackageInfoData {
+	[packageName: string]: PackageData;
+}
+
+//comm plugins tagged
+interface GroupKeY {
+	groupInfo: PluginTaggedGroupInfo;
+}
+
+export interface PluginsTaggedInfo {
+	[key: string]: GroupKeY;
 }

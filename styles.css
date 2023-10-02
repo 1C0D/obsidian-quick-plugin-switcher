@@ -154,6 +154,7 @@
   display: flex;
   align-items: center;
   margin-left: 10px;
+  margin-right: 10px;
   margin-bottom: 5px;
 }
 
@@ -193,6 +194,7 @@
 
 .qps-toggle-plugins button {
   margin-left: 5px;
+  /* margin-right: 10px; */
   margin-bottom: 5px;
 }
 
@@ -248,7 +250,7 @@
 
 .qps-items{grid-template-columns: repeat(auto-fill, minmax(275px, 275px))}
 
-.qps-block {
+.qps-comm-block {
   position: relative;
   background-color: var(--background-primary);
   padding: var(--size-4-3);
@@ -293,4 +295,8 @@
   text-transform: uppercase;
   white-space: nowrap;
   font-size: calc(0.7 * var(--font-ui-smaller));
+}
+
+.post-span-downloads{
+  margin-left:20px
 }

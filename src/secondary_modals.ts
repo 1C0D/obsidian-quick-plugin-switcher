@@ -94,3 +94,28 @@ async function openConfirmModal(app: App, message: string, width?: number, heigh
 export async function confirm(message: string, width?: number, height?: number): Promise<boolean> {
     return await openConfirmModal(this.app, message, width ?? undefined, height ?? undefined);
 }
+
+export class NewVersion extends Modal {
+	constructor(app: App, public plugin: QuickPluginSwitcher) {
+		super(app);
+		this.plugin = plugin;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		const content = `
+        <b>Warning:</b><br>
+        For this new feature(request) adding a delay to plugin(s) at start,
+        default values need to be restored. Sorry for the inconvenience.<br><br>
+        `;
+		contentEl.createDiv("", (el: HTMLDivElement) => {
+			el.innerHTML = content;
+		});
+	}
+
+	async onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+}

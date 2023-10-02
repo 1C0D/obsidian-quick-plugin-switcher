@@ -1,6 +1,7 @@
+// no need to import electron to fix
 import { Filters, Groups, PluginInfo, QPSSettings } from "./types";
 import Plugin from "./main";
-import { QPSModal } from "./modal";
+import { QPSModal } from "./main_modal";
 import { confirm } from "./secondary_modals";
 import {
 	ButtonComponent,
@@ -19,7 +20,6 @@ import {
 	openDirectoryInFileManager,
 	reset,
 	rmvAllGroupsFromPlugin,
-	selectValue,
 	sortByName,
 	sortSwitched,
 } from "./modal_utils";
@@ -82,24 +82,6 @@ export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
 			});
 	}
 };
-
-//addSearch /////////////////////////////////
-
-// export const doSearch = (_this: Plugin, value: string) => {
-// 	const listItems: PluginInfo[] = [];
-// 	// search process
-// 	for (const i of _this.settings.allPluginsList) {
-// 		if (
-// 			i.name.toLowerCase().includes(value.toLowerCase()) ||
-// 			(value.length > 1 &&
-// 				value[value.length - 1] === " " &&
-// 				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
-// 		) {
-// 			listItems.push(i);
-// 		}
-// 	}
-// 	return listItems;
-// };
 
 export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
@@ -207,7 +189,6 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 				Object.keys(Groups).forEach((groupKey) => {
 					if (groupKey === "SelectGroup") return;
 					const groupValue = Groups[groupKey as keyof typeof Groups];
-					// const groupIndex = Object.keys(Groups).indexOf(groupKey);
 					const groupIndex = getIndexFromSelectedGroup(groupKey);
 					const inGroup = settings.allPluginsList.filter((plugin) => {
 						return (
@@ -333,16 +314,18 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 	}
 	// ByGroup
 	else if (settings.filters === Filters.ByGroup) {
-		const groupIndex = Object.keys(Groups).indexOf(
+		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup as string
-		);
+		); //marche pas?
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
 				return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
 			});
 			listItems = groupedItems;
 			sortByName(listItems);
-		}else{sortByName(listItems);}
+		} else {
+			sortByName(listItems);
+		}
 	}
 	// MostSwitched
 	else if (settings.filters === Filters.MostSwitched) {
@@ -357,6 +340,7 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 
 	return listItems;
 };
+
 export const itemToggleClass = (
 	modal: QPSModal,
 	pluginItem: PluginInfo,
@@ -384,7 +368,6 @@ export const itemToggleClass = (
 	}
 };
 
-// un param inutilisé
 export function handleContextMenu(
 	evt: MouseEvent,
 	modal: QPSModal,
@@ -517,7 +500,7 @@ function addRemoveItemGroupMenuItems(
 }
 
 const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
-	const groupIndex = Object.keys(Groups).indexOf(groupKey);
+	const groupIndex = getIndexFromSelectedGroup(groupKey);
 	const lengthGroup = settings.allPluginsList.filter(
 		(i) => i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
 	).length;
@@ -576,7 +559,6 @@ const addToGroupSubMenu = (
 					.setDisabled(groupIndices.indexOf(groupIndex) !== -1)
 					.onClick(() => {
 						if (groupIndices.length === 6) return;
-						// const groupIndex = Object.keys(Groups).indexOf(key);
 						groupIndices?.push(groupIndex);
 						modal.onOpen();
 					})
@@ -669,7 +651,10 @@ export const showHotkeysFor = async function (
 	tab.searchComponent.inputEl.blur();
 };
 
-export const getCondition = function (modal: QPSModal, pluginItem: PluginInfo) {
+export const getCondition = function (
+	modal: QPSModal | CPModal,
+	pluginItem: PluginInfo | Record<string, string>
+) {
 	const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)
 		?.app?.commands.commands;
 	return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id);
@@ -726,43 +711,3 @@ export const searchDivButtons = (
 // 			return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
 // 		});
 // };
-
-export const editGroupName = (
-	modal: any,
-	el: HTMLSpanElement,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	const currentValue =
-		settings.groups[groupNumber].name !== ""
-			? settings.groups[groupNumber]?.name
-			: "";
-	el.innerHTML = `<input type="text" value="${currentValue}" />`;
-
-	const input = el.querySelector("input");
-	input?.focus();
-	selectValue(input);
-
-	// input?.addEventListener("blur", () => {
-	// 	setTimeout(() => {
-	// 		if (modal.isDblClick) return;
-	// 		input?.value
-	// 			? (settings.groups[groupNumber].name = input.value)
-	// 			: (settings.groups[groupNumber].name = `Group${groupNumber}`);
-	// 		el.textContent = `${settings.groups[groupNumber].name}`;
-	// 		modal.onOpen();
-	// 	}, 200);
-	// });
-
-	// input?.addEventListener("keydown", (event) => {
-	// 	if (event.key === "Enter") {
-	// 		if (modal.isDblClick) return;
-	// 		input?.value
-	// 			? (settings.groups[groupNumber].name = input.value)
-	// 			: (settings.groups[groupNumber].name = Groups[groupNumber]);
-	// 		el.textContent = `${settings.groups[groupNumber].name}`;
-	// 		modal.onOpen();
-	// 	}
-	// });
-};

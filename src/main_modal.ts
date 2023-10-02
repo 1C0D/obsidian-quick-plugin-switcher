@@ -16,7 +16,6 @@ import { Groups, PluginInfo, QPSSettings } from "./types";
 import { removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
-	handleContextMenu,
 	modeSort,
 	mostSwitchedResetButton,
 	filterByGroup,
@@ -28,9 +27,11 @@ import {
 	showHotkeysFor,
 	getCondition,
 	searchDivButtons,
+	handleContextMenu,
 } from "./modal_components";
 import {
 	conditionalEnable,
+	createInput,
 	delayedReEnable,
 	getCirclesItem,
 	getEmojiForGroup,
@@ -227,15 +228,15 @@ export class QPSModal extends Modal {
 				cls: "qps-item-line",
 			});
 			itemTogglePluginButton(this, pluginItem, itemContainer);
-			const text = itemTextComponent(pluginItem, itemContainer);
+			const input = itemTextComponent(pluginItem, itemContainer);
 			itemToggleClass(this, pluginItem, itemContainer);
-			text.readOnly = true;
+			input.readOnly = true;
 			// create groups circles
 			const indices = pluginItem.groupInfo.groupIndices;
 			if (indices.length) {
 				if (indices.length < 3) {
-					const content = getCirclesItem(pluginItem, indices);
-					text.insertAdjacentHTML("afterend", content);
+					const content = getCirclesItem(indices);
+					input.insertAdjacentHTML("afterend", content);
 				}
 
 				if (indices.length >= 3 && indices.length < 5) {
@@ -243,11 +244,11 @@ export class QPSModal extends Modal {
 					const [valeur0, valeur1, ...part2] = indices;
 					const part1 = [valeur0, valeur1];
 
-					const content1 = getCirclesItem(pluginItem, part1);
-					text.insertAdjacentHTML("afterend", content1);
+					const content1 = getCirclesItem(part1);
+					input.insertAdjacentHTML("afterend", content1);
 
-					const content2 = getCirclesItem(pluginItem, part2);
-					text.insertAdjacentHTML("afterend", content2);
+					const content2 = getCirclesItem(part2);
+					input.insertAdjacentHTML("afterend", content2);
 				} else if (indices.length>=5) {
 					// 3 circles
 					const [valeur0, valeur1, valeur2, valeur3, ...part3] =
@@ -255,14 +256,14 @@ export class QPSModal extends Modal {
 					const part1 = [valeur0, valeur1];
 					const part2 = [valeur2, valeur3];
 
-					const content1 = getCirclesItem(pluginItem, part1);
-					text.insertAdjacentHTML("afterend", content1);
+					const content1 = getCirclesItem(part1);
+					input.insertAdjacentHTML("afterend", content1);
 
-					const content2 = getCirclesItem(pluginItem, part2);
-					text.insertAdjacentHTML("afterend", content2);
+					const content2 = getCirclesItem(part2);
+					input.insertAdjacentHTML("afterend", content2);
 
-					const content3 = getCirclesItem(pluginItem, part3);
-					text.insertAdjacentHTML("afterend", content3);
+					const content3 = getCirclesItem(part3);
+					input.insertAdjacentHTML("afterend", content3);
 				}
 			}
 
@@ -317,11 +318,11 @@ export class QPSModal extends Modal {
 				}
 			});
 
-			text.addEventListener("mouseover", (evt) => {
+			input.addEventListener("mouseover", (evt) => {
 				if (this.isDblClick) return;
-				this.handleHotkeys(evt, pluginItem, text);
+				this.handleHotkeys(evt, pluginItem, input);
 			});
-			text.addEventListener("contextmenu", (evt) => {
+			input.addEventListener("contextmenu", (evt) => {
 				if (this.isDblClick) return;
 				handleContextMenu(evt, this, plugin, pluginItem);
 			});
@@ -424,8 +425,7 @@ export class QPSModal extends Modal {
 						item.setTitle("All").onClick(() => {
 							rmvAllGroupsFromPlugin(
 								this,
-								pluginItem,
-								groupIndices
+								pluginItem
 							);
 						})
 					);
@@ -465,31 +465,6 @@ export class QPSModal extends Modal {
 	};
 
 	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-export class NewVersion extends Modal {
-	constructor(app: App, public plugin: QuickPluginSwitcher) {
-		super(app);
-		this.plugin = plugin;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		const content = `
-        <b>Warning:</b><br>
-        For this new feature(request) adding a delay to plugin(s) at start,
-        default values need to be restored. Sorry for the inconvenience.<br><br>
-        `;
-		contentEl.createDiv("", (el: HTMLDivElement) => {
-			el.innerHTML = content;
-		});
-	}
-
-	async onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
@@ -536,12 +511,7 @@ const editGroupName = (
 			? settings.groups[groupNumber]?.name
 			: "";
 
-	const input = document.createElement("input");
-	input.type = "text";
-	input.value = currentValue;
-	span.replaceWith(input);
-	input?.focus();
-	selectValue(input);
+	const input = createInput(span, currentValue);
 
 	input?.addEventListener("blur", () => {
 		setTimeout(() => {
@@ -582,12 +552,7 @@ const groupMenu = (
 	menu.addItem((item) =>
 		item.setTitle("delay group").onClick(() => {
 			const currentValue = settings.groups[groupNumber].time || 0;
-			const input = document.createElement("input");
-			input.type = "text";
-			input.value = currentValue;
-			span.replaceWith(input);
-			input?.focus();
-			selectValue(input);
+			const input = createInput(span, currentValue);
 
 			input?.addEventListener("blur", () => {
 				setTimeout(() => {

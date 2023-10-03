@@ -31,7 +31,6 @@ import {
 	rmvAllGroupsFromPlugin,
 } from "./modal_utils";
 
-
 export class CPModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
@@ -57,13 +56,15 @@ export class CPModal extends Modal {
 			cls: "qps-community-search",
 		});
 		this.groups = contentEl.createEl("div", {
-			cls: "qps-community-groups",
+			cls: ["qps-community-groups","qps-comm-group"],
 		});
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
 	}
 
 	async onOpen() {
-		this.plugin.settings.search = "";
+		const { plugin, contentEl } = this;
+		contentEl.empty();
+		plugin.settings.search = "";
 		this.pluginsList = await getPluginList();
 		this.pluginStats = await fetchAndStorePluginStats();
 		this.draw(this, this.pluginsList, this.pluginStats);
@@ -227,19 +228,23 @@ export class CPModal extends Modal {
 						cls: "qps-community-item-downloads",
 					},
 					(el: HTMLElement) => {
-						const preSpan = el.createSpan();
 						el.createSpan(
-							{
-								text: formatNumber(
-									pluginInfo.downloads,
-									1
-								).toString(),
-							},
-							(el) => {
-								updatedAddGroups(this, el, item);
+							{cls:"downloads-span"}, el=> {
+								const preSpan = el.createSpan();
+								const span = el.createSpan(
+									{
+										text: formatNumber(
+											pluginInfo.downloads,
+											1
+										).toString(),
+										cls: "downloads-text-span",
+									},
+									(ele) => {}
+								);
+									updatedAddGroups(this, span, item);
+								setIcon(preSpan, "download-cloud");
 							}
 						);
-						setIcon(preSpan, "download-cloud");
 					}
 				);
 				itemContainer.addEventListener("mouseover", (evt) => {
@@ -283,7 +288,7 @@ async function fetchIt(url: string, storageDataName: string) {
 		const response = await fetch(url);
 		const data = await response.json();
 		localStorage.setItem(storageDataName, JSON.stringify(data));
-		console.log("data from url");
+		// console.log("data from url");
 		return data;
 	} catch (error) {
 		console.error("Error fetching plugin data:", error);
@@ -379,24 +384,26 @@ const editGroupName = (
 	const input = createInput(span, currentValue);
 
 	input?.addEventListener("blur", () => {
-		setTimeout(() => {
+		setTimeout(async () => {
 			if (modal.isDblClick) return;
 			input?.value
 				? (settings.groups[groupNumber].name = input.value)
 				: (settings.groups[groupNumber].name = `Group${groupNumber}`);
 			input.textContent = `${settings.groups[groupNumber].name}`;
-			modal.onOpen();
+			await modal.plugin.saveSettings();
+			modal.draw(modal, modal.pluginsList, modal.pluginStats);
 		}, 200);
 	});
 
-	input?.addEventListener("keydown", (event) => {
+	input?.addEventListener("keydown", async (event) => {
 		if (event.key === "Enter") {
 			if (modal.isDblClick) return;
 			input?.value
 				? (settings.groups[groupNumber].name = input.value)
 				: (settings.groups[groupNumber].name = GroupsComm[groupNumber]);
 			input.textContent = `${settings.groups[groupNumber].name}`;
-			modal.onOpen();
+			await modal.plugin.saveSettings();
+			modal.draw(modal, modal.pluginsList, modal.pluginStats);
 		}
 	});
 };
@@ -415,29 +422,39 @@ const handleHotkeys = async (
 	for (let i = 1; i <= numberOfGroups; i++) {
 		keyToGroupMap[i.toString()] = i;
 	}
-	console.log("keyToGroupMap", keyToGroupMap);
 	// handle groups shortcuts
 	const handleKeyDown = async (event: KeyboardEvent) => {
 		const { plugin } = modal;
 		const { settings } = plugin;
-		if (modal.isDblClick) return;
+		// if (modal.isDblClick) return;
 		const keyPressed = event.key;
+		console.log("keyPressed", keyPressed);
 		const key = pluginItem.id;
 		const taggedItem = settings.pluginsTagged[key];
+		const tagged = settings.pluginsTagged;
+		console.log("tagged", tagged);
+		console.log("taggedItem", taggedItem);
+		if (!taggedItem) {
+			settings.pluginsTagged[key] = { groupInfo: { groupIndices: [] } };
+			await modal.plugin.saveSettings();
+			modal.onOpen();
+			// modal.draw(modal, modal.pluginsList, modal.pluginStats);
+		}
+		console.log("taggedItem", taggedItem);
 		if (!taggedItem) return;
 		const { groupInfo } = taggedItem;
+		if (!groupInfo) return;
 		const indices = groupInfo.groupIndices;
-		if (
-			indices &&
-			keyPressed in keyToGroupMap &&
-			!(pluginItem.id === "quick-plugin-switcher")
-		) {
+		console.log("indices", indices);
+		if (indices && keyPressed in keyToGroupMap) {
 			const groupIndex = keyToGroupMap[keyPressed];
 			if (indices.length === 6) return;
 			const index = indices.indexOf(groupIndex);
 			if (index === -1) {
+				console.log("indices", indices);
 				indices.push(groupIndex);
-				modal.onOpen();
+				await modal.plugin.saveSettings();
+				modal.draw(modal, modal.pluginsList, modal.pluginStats);
 			}
 		} else if (
 			indices &&
@@ -453,7 +470,7 @@ const handleHotkeys = async (
 				if (!groupNotEmpty(groupIndex, modal)) {
 					settings.selectedGroup = "SelectGroup";
 				}
-				modal.onOpen();
+				modal.draw(modal, modal.pluginsList, modal.pluginStats);
 			} else {
 				const menu = new Menu();
 				menu.addItem((item) => item.setTitle("Remove item group(s)"));

@@ -408,7 +408,7 @@ export function handleContextMenu(
 					.setDisabled(pluginItem.groupInfo.groupIndices.length === 0)
 					.onClick(async () => {
 						const groupIndices = pluginItem.groupInfo.groupIndices;
-						rmvAllGroupsFromPlugin(modal, pluginItem, groupIndices);
+						rmvAllGroupsFromPlugin(modal, pluginItem);
 					});
 			});
 			addRemoveItemGroupMenuItems(modal, submenu, plugin, pluginItem);

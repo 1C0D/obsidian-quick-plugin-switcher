@@ -1,9 +1,4 @@
-import {
-	GroupData,
-	PluginCommInfo,
-	PluginInfo,
-	PluginsTaggedInfo,
-} from "./types";
+import { GroupData, PluginCommInfo, PluginInfo } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
 import { Notice } from "obsidian";
@@ -113,10 +108,10 @@ export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
 
 //desktop only
 export async function openDirectoryInFileManager(
-	shell: any,
 	modal: QPSModal,
 	pluginItem: PluginInfo
 ) {
+	let shell = window.electron.shell;
 	const filePath = (modal.app as any).vault.adapter.getFullPath(
 		pluginItem.dir
 	);
@@ -154,7 +149,7 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export function groupNotEmpty(groupIndex: number, modal: QPSModal | CPModal) {
+export function groupNotEmpty(groupIndex: number, modal: QPSModal) {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -173,7 +168,7 @@ export async function rmvAllGroupsFromPlugin(
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInfo | PluginCommInfo
 ) {
-	const {plugin} =modal
+	const { plugin } = modal;
 	const { settings } = plugin;
 
 	if ("repo" in pluginItem) {
@@ -184,14 +179,10 @@ export async function rmvAllGroupsFromPlugin(
 		groupInfo.groupIndices = [];
 		await plugin.saveSettings();
 		if ("draw" in modal) {
-			modal.draw(modal, this.pluginsList, this.pluginStats);
+			modal.draw(modal, modal.pluginsList, modal.pluginStats);
 		}
 	} else {
 		if (pluginItem.groupInfo) {
-			console.log(
-				"pluginItem.groupInfo.groupIndices",
-				pluginItem.groupInfo.groupIndices
-			);
 			pluginItem.groupInfo.groupIndices = [];
 			modal.onOpen();
 		}
@@ -207,3 +198,19 @@ export function createInput(el: HTMLElement, currentValue: string) {
 	selectValue(input);
 	return input;
 }
+
+export function GroupsKeysObject(numberOfGroups: number) {
+	const keyToGroupObject: Record<string, number> = {};
+	// Generate keyToGroupObject based on the number of groups available
+	for (let i = 1; i <= numberOfGroups; i++) {
+		keyToGroupObject[i.toString()] = i;
+	}
+	return keyToGroupObject;
+}
+
+export const pressDelay = (modal: CPModal) => {
+	modal.pressed = true;
+	setTimeout(() => {
+		modal.pressed = false;
+	}, 100);
+};

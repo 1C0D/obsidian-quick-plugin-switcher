@@ -1,5 +1,4 @@
-// no need to import electron to fix
-import { Filters, Groups, PluginInfo, QPSSettings } from "./types";
+import { Filters, Groups, PluginCommInfo, PluginInfo, QPSSettings } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
 import { confirm } from "./secondary_modals";
@@ -9,6 +8,7 @@ import {
 	ExtraButtonComponent,
 	Menu,
 	Notice,
+	Platform,
 	TextComponent,
 } from "obsidian";
 import { DescriptionModal } from "./secondary_modals";
@@ -25,13 +25,6 @@ import {
 } from "./modal_utils";
 import { removeItem } from "./utils";
 import { CPModal } from "./community-plugins_modal";
-export let shell: any = null;
-try {
-	const electron = require("electron");
-	shell = electron.shell;
-} catch {
-	console.debug("electron not found");
-}
 
 //addHeader /////////////////////////////////
 
@@ -376,13 +369,13 @@ export function handleContextMenu(
 ) {
 	evt.preventDefault();
 	const menu = new Menu();
-	if (shell) {
+	if (Platform.isDesktopApp) {
 		menu.addItem((item) =>
 			item
 				.setTitle("Plugin folder (f)")
 				.setIcon("folder-open")
 				.onClick(() => {
-					openDirectoryInFileManager(shell, modal, pluginItem);
+					openDirectoryInFileManager(modal, pluginItem);
 				})
 		);
 	}
@@ -660,30 +653,37 @@ export const getCondition = function (
 	return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id);
 };
 
-export async function openGitHubRepo(plugin: PluginInfo) {
-	try {
-		const response = await fetch(
-			"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-		);
-		const pluginsData: Array<any> = await response.json();
+export async function openGitHubRepo(plugin: PluginInfo|PluginCommInfo) {
+	if ("repo" in plugin) {
+		const repoURL = `https://github.com/${plugin.repo}`;
+		window.open(repoURL, "_blank"); // open
+	} else {
+		try {
+			const response = await fetch(
+				"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+			);
+			const pluginsData: Array<any> = await response.json();
 
-		const pluginData = pluginsData.find((item) => item.id === plugin.id);
-		if (pluginData && pluginData.repo) {
-			const repoURL = `https://github.com/${pluginData.repo}`;
-			window.open(repoURL, "_blank"); // open browser in new tab
-		} else {
-			console.debug("Repo not found for the plugin.");
-			try {
-				const repoURL = `https://github.com/${plugin.author}/${plugin.id}`;
-				window.open(repoURL, "_blank");
-			} catch {
-				const repoURL = `https://github.com/${plugin.author}`;
-				window.open(repoURL, "_blank");
+			const pluginData = pluginsData.find(
+				(item) => item.id === plugin.id
+			);
+			if (pluginData && pluginData.repo) {
+				const repoURL = `https://github.com/${pluginData.repo}`;
+				window.open(repoURL, "_blank"); // open browser in new tab
+			} else {
 				console.debug("Repo not found for the plugin.");
+				try {
+					const repoURL = `https://github.com/${plugin.author}/${plugin.id}`;
+					window.open(repoURL, "_blank");
+				} catch {
+					const repoURL = `https://github.com/${plugin.author}`;
+					window.open(repoURL, "_blank");
+					console.debug("Repo not found for the plugin.");
+				}
 			}
+		} catch (error) {
+			console.error("Error fetching plugin data:", error);
 		}
-	} catch (error) {
-		console.error("Error fetching plugin data:", error);
 	}
 }
 
@@ -700,14 +700,3 @@ export const searchDivButtons = (
 		(el) => powerButton(modal, el)
 	);
 };
-
-// export const notEmpty = (modal: QPSModal, plugin: Plugin) => {
-// 	const { settings } = plugin;
-// 	settings.selectedGroup === "SelectGroup" ||
-// 		settings.allPluginsList.some((plugin) => {
-// 			const groupIndex = getIndexFromSelectedGroup(
-// 				settings.selectedGroup as string
-// 			);
-// 			return plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
-// 		});
-// };

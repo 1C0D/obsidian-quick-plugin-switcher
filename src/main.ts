@@ -1,3 +1,4 @@
+// timer switch to fix error disabling plugin
 import { around } from "monkey-around";
 import { Plugin } from "obsidian";
 import { QPSModal } from "./main_modal";
@@ -7,10 +8,10 @@ import QPSSettingTab from "./settings";
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
-	reset: boolean = false;
-	lengthAll: number = 0;
-	lengthDisabled: number = 0;
-	lengthEnabled: number = 0;
+	reset = false;
+	lengthAll = 0;
+	lengthDisabled = 0;
+	lengthEnabled = 0;
 
 	async onload() {
 		await this.loadSettings();

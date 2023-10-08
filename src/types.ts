@@ -1,3 +1,9 @@
+declare global {
+	interface Window {
+		electron: any;
+	}
+}
+
 export const Filters: GroupData = {
 	All: "all",
 	Enabled: "enabled",
@@ -85,6 +91,10 @@ export interface PluginInfo {
 	delayed: boolean;
 	time: number;
 }
+
+export type KeyToSettingsMapType = {
+	[key: string]: () => Promise<void> | void;
+};
 
 // community plugins
 export interface PluginCommInfo {

@@ -3,7 +3,8 @@
 // sticky header
 // settings groups length
 // group menu voir plus tard
-//
+// destkop only
+// ajouté pressed pour éviter répetitions
 
 import {
 	App,
@@ -19,17 +20,21 @@ import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
 import {
 	GroupData,
 	GroupsComm,
+	KeyToSettingsMapType,
 	PackageInfoData,
 	PluginCommInfo,
 } from "./types";
 import {
+	GroupsKeysObject,
 	createInput,
 	getCirclesItem,
 	getEmojiForGroup,
 	getGroupTitle,
-	groupNotEmpty,
+	pressDelay,
 	rmvAllGroupsFromPlugin,
 } from "./modal_utils";
+import { openGitHubRepo } from "./modal_components";
+import { ReadMeModal } from "./secondary_modals";
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -40,6 +45,7 @@ export class CPModal extends Modal {
 	isDblClick = false;
 	pluginsList: PluginCommInfo[];
 	pluginStats: PackageInfoData;
+	pressed = false;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -56,7 +62,7 @@ export class CPModal extends Modal {
 			cls: "qps-community-search",
 		});
 		this.groups = contentEl.createEl("div", {
-			cls: ["qps-community-groups","qps-comm-group"],
+			cls: ["qps-community-groups", "qps-comm-group"],
 		});
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
 	}
@@ -177,10 +183,10 @@ export class CPModal extends Modal {
 						if (this.isDblClick) return;
 						editGroupName(this, span, i);
 					});
-					// span.addEventListener("contextmenu", (evt) => {
-					// 	if (this.isDblClick) return;
-					// 	groupMenu(this, evt, span, i);
-					// });
+					span.addEventListener("contextmenu", (evt) => {
+						if (this.isDblClick) return;
+						groupMenu(this, evt, span, i);
+					});
 				}
 			);
 		}
@@ -219,43 +225,40 @@ export class CPModal extends Modal {
 				text: `By ${item.author} `,
 			});
 
-			const pluginId = item.id;
-			const pluginInfo = pluginStats[pluginId];
-			// console.log("pluginInfo", pluginInfo);
+			// const pluginId = item.id;
+			const pluginInfo = pluginStats[item.id];
 			if (pluginInfo) {
-				const downloads = itemContainer.createDiv(
+				// const downloads =
+				itemContainer.createDiv(
 					{
 						cls: "qps-community-item-downloads",
 					},
 					(el: HTMLElement) => {
-						el.createSpan(
-							{cls:"downloads-span"}, el=> {
-								const preSpan = el.createSpan();
-								const span = el.createSpan(
-									{
-										text: formatNumber(
-											pluginInfo.downloads,
-											1
-										).toString(),
-										cls: "downloads-text-span",
-									},
-									(ele) => {}
-								);
-									updatedAddGroups(this, span, item);
-								setIcon(preSpan, "download-cloud");
-							}
-						);
+						el.createSpan({ cls: "downloads-span" }, (el) => {
+							const preSpan = el.createSpan();
+							const span = el.createSpan({
+								text: formatNumber(
+									pluginInfo.downloads,
+									1
+								).toString(),
+								cls: "downloads-text-span",
+							});
+							addGroupCircles(this, span, item);
+							setIcon(preSpan, "download-cloud");
+						});
 					}
 				);
-				itemContainer.addEventListener("mouseover", (evt) => {
-					handleHotkeys(this, evt, item, itemContainer);
-				});
 
 				const lastUpdated = new Date(pluginInfo.updated);
 				const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-				const updatedSince = itemContainer.createDiv({
+				// const updatedSince =
+				itemContainer.createDiv({
 					cls: "qps-community-item-updated",
 					text: `Updated ${timeSinceUpdate}`,
+				});
+
+				itemContainer.addEventListener("mouseover", (evt) => {
+					handleHotkeys(this, evt, item, itemContainer);
 				});
 			}
 
@@ -271,6 +274,18 @@ async function getPluginList(): Promise<PluginCommInfo[]> {
 	const repoURL =
 		"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
 	return await fetchIt(repoURL, "communityPluginsData");
+}
+
+export async function getReadMe(item: PluginCommInfo) {
+	const repo = item.repo;
+	const repoURL = `https://api.github.com/repos/${repo}/contents/README.md`;
+	try {
+		const response = await fetch(repoURL);
+		return await response.json();
+	} catch (error) {
+		console.error("Error fetching ReadMe", error);
+	}
+	return null
 }
 
 async function fetchAndStorePluginStats(): Promise<PackageInfoData> {
@@ -408,6 +423,29 @@ const editGroupName = (
 	});
 };
 
+const groupMenu = (
+	modal: any,
+	evt: MouseEvent,
+	span: HTMLSpanElement,
+	groupNumber: number
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	// const inGroup = settings.allPluginsList.filter(
+	// 	(i: PluginInfo) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
+	// );
+
+	const menu = new Menu();
+	menu.addItem((item) => {
+		item.setTitle("clear group items");
+	});
+	menu.addItem((item) => {
+		item.setTitle("install plugins in group");
+	});
+
+	menu.showAtMouseEvent(evt);
+};
+
 const handleHotkeys = async (
 	modal: CPModal,
 	evt: MouseEvent,
@@ -417,69 +455,62 @@ const handleHotkeys = async (
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroupsComm;
-	const keyToGroupMap: Record<string, number> = {};
-	// Generate keyToGroupMap based on the number of groups available
-	for (let i = 1; i <= numberOfGroups; i++) {
-		keyToGroupMap[i.toString()] = i;
-	}
+	const keyToGroupObject = GroupsKeysObject(numberOfGroups);
 	// handle groups shortcuts
+	const KeyToSettingsMap: KeyToSettingsMapType = {
+		g: () => openGitHubRepo(pluginItem),
+		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
+	};
 	const handleKeyDown = async (event: KeyboardEvent) => {
 		const { plugin } = modal;
 		const { settings } = plugin;
-		// if (modal.isDblClick) return;
 		const keyPressed = event.key;
-		console.log("keyPressed", keyPressed);
-		const key = pluginItem.id;
-		const taggedItem = settings.pluginsTagged[key];
-		const tagged = settings.pluginsTagged;
-		console.log("tagged", tagged);
-		console.log("taggedItem", taggedItem);
+		if (modal.pressed) return;
+		pressDelay(modal);
+		const itemID = pluginItem.id;
+		const taggedItem = settings.pluginsTagged[itemID];
 		if (!taggedItem) {
-			settings.pluginsTagged[key] = { groupInfo: { groupIndices: [] } };
+			settings.pluginsTagged[itemID] = {
+				groupInfo: { groupIndices: [] },
+			};
 			await modal.plugin.saveSettings();
-			modal.onOpen();
-			// modal.draw(modal, modal.pluginsList, modal.pluginStats);
+			modal.draw(modal, modal.pluginsList, modal.pluginStats);
 		}
-		console.log("taggedItem", taggedItem);
-		if (!taggedItem) return;
+		if (!taggedItem) {
+			return;
+		}
 		const { groupInfo } = taggedItem;
-		if (!groupInfo) return;
-		const indices = groupInfo.groupIndices;
-		console.log("indices", indices);
-		if (indices && keyPressed in keyToGroupMap) {
-			const groupIndex = keyToGroupMap[keyPressed];
-			if (indices.length === 6) return;
-			const index = indices.indexOf(groupIndex);
+		const groupIndices = groupInfo.groupIndices;
+		if (keyPressed in keyToGroupObject) {
+			const groupIndex = keyToGroupObject[keyPressed];
+			if (groupIndices.length === 6) return;
+			const index = groupIndices.indexOf(groupIndex);
 			if (index === -1) {
-				console.log("indices", indices);
-				indices.push(groupIndex);
-				await modal.plugin.saveSettings();
+				groupIndices.push(groupIndex);
+				await plugin.saveSettings();
 				modal.draw(modal, modal.pluginsList, modal.pluginStats);
 			}
+		} else if (keyPressed in KeyToSettingsMap) {
+			KeyToSettingsMap[keyPressed]();
 		} else if (
-			indices &&
-			(keyPressed === "Delete" ||
-				keyPressed === "Backspace" ||
-				(keyPressed === "0" &&
-					!(pluginItem.id === "quick-plugin-switcher")))
+			keyPressed === "Delete" ||
+			keyPressed === "Backspace" ||
+			keyPressed === "0"
 		) {
-			if (!indices.length) return;
-			if (indices.length === 1 && groupInfo) {
-				const groupIndex = indices[0];
+			if (groupIndices.length === 1) {
 				groupInfo.groupIndices = [];
-				if (!groupNotEmpty(groupIndex, modal)) {
-					settings.selectedGroup = "SelectGroup";
-				}
 				modal.draw(modal, modal.pluginsList, modal.pluginStats);
-			} else {
+			} else if (groupIndices.length > 1) {
 				const menu = new Menu();
-				menu.addItem((item) => item.setTitle("Remove item group(s)"));
+				menu.addItem((item) =>
+					item.setTitle("Remove item group(s)").setDisabled(true)
+				);
 				menu.addItem((item) =>
 					item.setTitle("All").onClick(() => {
 						rmvAllGroupsFromPlugin(modal, pluginItem);
 					})
 				);
-				for (const groupIndex of indices) {
+				for (const groupIndex of groupIndices) {
 					const { emoji } = getEmojiForGroup(groupIndex);
 					menu.addItem((item) =>
 						item
@@ -490,10 +521,6 @@ const handleHotkeys = async (
 										groupInfo.groupIndices,
 										groupIndex
 									);
-								// if (groupEmpty(groupIndex, modal)) {
-								// 	modal.plugin.settings.selectedGroup =
-								// 		"SelectGroup";
-								// }
 								modal.draw(
 									modal,
 									modal.pluginsList,
@@ -518,7 +545,7 @@ const handleHotkeys = async (
 	itemContainer.addEventListener("mouseleave", handleMouseLeave);
 };
 
-const updatedAddGroups = (
+const addGroupCircles = (
 	modal: CPModal,
 	el: HTMLElement,
 	item: PluginCommInfo
@@ -562,141 +589,3 @@ const updatedAddGroups = (
 		}
 	}
 };
-
-// const groupMenu = (
-// 	modal: any,
-// 	evt: MouseEvent,
-// 	span: HTMLSpanElement,
-// 	groupNumber: number
-// ) => {
-// 	const { plugin } = modal;
-// 	const { settings } = plugin;
-// 	const inGroup = settings.allPluginsList.filter(
-// 		(i: PluginInfo) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
-// 	);
-
-// 	const menu = new Menu();
-// 	menu.addItem((item) =>
-// 		item.setTitle("delay group").onClick(() => {
-// 			const currentValue = settings.groups[groupNumber].time || 0;
-// 			const input = createInput(span,currentValue)
-
-// 			input?.addEventListener("blur", () => {
-// 				setTimeout(() => {
-// 					if (modal.isDblClick) return;
-// 					parseInt(input?.value)
-// 						? (settings.groups[groupNumber].time = parseInt(
-// 								input.value
-// 						  ))
-// 						: (settings.groups[groupNumber].time = 0);
-// 					span.textContent = `${input.value}`;
-// 					modal.onOpen();
-// 				}, 100);
-// 			});
-
-// 			input?.addEventListener("keydown", (event) => {
-// 				if (event.key === "Enter") {
-// 					if (modal.isDblClick) return;
-// 					parseInt(input?.value)
-// 						? (settings.groups[groupNumber].time = parseInt(
-// 								input.value
-// 						  ))
-// 						: (settings.groups[groupNumber].time = 0);
-// 					span.textContent = `${settings.groups[groupNumber].time}`;
-// 					modal.onOpen();
-// 				}
-// 			});
-// 		})
-// 	);
-
-// 	menu.addItem((item) =>
-// 		item
-// 			.setTitle("apply")
-// 			.setDisabled(
-// 				!inGroup.length || settings.groups[groupNumber].time === 0
-// 			)
-// 			.onClick(async () => {
-// 				for (const plugin of inGroup) {
-// 					plugin.time = settings.groups[groupNumber].time;
-// 					plugin.delayed = true;
-// 					settings.groups[groupNumber].applied = true;
-// 					if (plugin.enabled) {
-// 						await (modal.app as any).plugins.disablePluginAndSave(
-// 							plugin.id
-// 						);
-// 						await (modal.app as any).plugins.enablePlugin(
-// 							plugin.id
-// 						);
-// 					}
-// 					modal.plugin.saveSettings();
-// 					modal.onOpen();
-// 				}
-// 			})
-// 	);
-// 	menu.addItem((item) =>
-// 		item
-// 			.setTitle("reset")
-// 			.setDisabled(
-// 				!inGroup.length || settings.groups[groupNumber].time === 0
-// 			)
-// 			.onClick(async () => {
-// 				for (const plugin of inGroup) {
-// 					plugin.time = 0;
-// 					plugin.delayed = false;
-// 					settings.groups[groupNumber].applied = false;
-// 					if (plugin.enabled) {
-// 						await (modal.app as any).plugins.enablePluginAndSave(
-// 							plugin.id
-// 						);
-// 					}
-// 					modal.onOpen();
-// 				}
-// 				plugin.saveSettings();
-// 			})
-// 	);
-// 	menu.addSeparator();
-// 	const toEnable = inGroup.filter((i: PluginInfo) => i.enabled === false);
-// 	menu.addItem((item) =>
-// 		item
-// 			.setTitle("enable all plugins in group")
-// 			.setDisabled(!inGroup.length || !toEnable.length)
-// 			.onClick(async () => {
-// 				await Promise.all(
-// 					toEnable.map(async (i: PluginInfo) => {
-// 						conditionalEnable(this, i);
-// 						i.enabled = true;
-// 						modal.plugin.saveSettings();
-// 					})
-// 				);
-// 				if (toEnable) {
-// 					plugin.getLength();
-// 					new Notice("All plugins enabled.");
-// 					await modal.plugin.saveSettings();
-// 					modal.onOpen();
-// 				}
-// 			})
-// 	);
-
-// 	const toDisable = inGroup.filter((i: PluginInfo) => i.enabled === true);
-// 	menu.addItem((item) =>
-// 		item
-// 			.setTitle("disable all plugins in group")
-// 			.setDisabled(!inGroup.length || !toDisable.length)
-// 			.onClick(async () => {
-// 				await Promise.all(
-// 					toDisable.map(async (i: PluginInfo) => {
-// 						(modal.app as any).plugins.disablePluginAndSave(i.id);
-// 						i.enabled = false;
-// 					})
-// 				);
-// 				if (toDisable) {
-// 					plugin.getLength();
-// 					new Notice("All plugins disabled.");
-// 					await modal.plugin.saveSettings();
-// 					modal.onOpen();
-// 				}
-// 			})
-// 	);
-
-// 	menu.showAtMouseEvent(evt);
-// };

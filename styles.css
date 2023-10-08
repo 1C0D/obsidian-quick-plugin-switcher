@@ -245,7 +245,7 @@
   color: rgb(3, 3, 3)
 }
 
-/* groups end ------------------------- */
+/* groups ------ end -------------------- */
 
 .qps-items,
 .qps-community-items {
@@ -319,3 +319,43 @@
 .downloads-text-span {
   margin-right: 20px;
 }
+
+/* read me modal  ---------------*/
+.modal.read-me-modal {
+  background-color: var(--modal-background);
+  flex: 1 1 auto;
+  min-height: 100px;
+  width: var(--dialog-width);
+  max-width: var(--dialog-max-width);
+  max-height: var(--dialog-max-height);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  overflow-wrap: break-word;
+}
+
+.qps-read-me {
+  font-size: 1.25rem
+}
+
+.qps-read-me img {
+  max-width: 100%;
+  height: auto;
+}
+
+.qps-read-me table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.qps-read-me th,
+.qps-read-me td {
+  border: 1px solid #434343;
+  padding: 8px;
+  text-align: left;
+}
+
+.qps-read-me th {
+  background-color: #222222;
+}
+/* read me modal ------- end --------*/

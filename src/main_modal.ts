@@ -7,12 +7,13 @@ import {
 	Menu,
 	Modal,
 	Notice,
+	Platform,
 	SearchComponent,
 	Setting,
 	ToggleComponent,
 	setIcon,
 } from "obsidian";
-import { Groups, PluginInfo, QPSSettings } from "./types";
+import { Groups, KeyToSettingsMapType, PluginInfo, QPSSettings } from "./types";
 import { removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
@@ -21,7 +22,6 @@ import {
 	filterByGroup,
 	itemToggleClass,
 	itemTextComponent,
-	shell,
 	openGitHubRepo,
 	openPluginSettings,
 	showHotkeysFor,
@@ -30,6 +30,7 @@ import {
 	handleContextMenu,
 } from "./modal_components";
 import {
+	GroupsKeysObject,
 	conditionalEnable,
 	createInput,
 	delayedReEnable,
@@ -39,7 +40,6 @@ import {
 	groupNotEmpty,
 	openDirectoryInFileManager,
 	rmvAllGroupsFromPlugin,
-	selectValue,
 	togglePlugin,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
@@ -182,7 +182,6 @@ export class QPSModal extends Modal {
 			);
 		}
 	}
-	// --------------------------------------
 
 	setHotKeysdesc(): void {
 		const nameEl = this.hotkeysDesc.createSpan(
@@ -232,77 +231,28 @@ export class QPSModal extends Modal {
 			itemToggleClass(this, pluginItem, itemContainer);
 			input.readOnly = true;
 			// create groups circles
-			const indices = pluginItem.groupInfo.groupIndices;
-			if (indices.length) {
-				if (indices.length < 3) {
-					const content = getCirclesItem(indices);
-					input.insertAdjacentHTML("afterend", content);
-				}
-
-				if (indices.length >= 3 && indices.length < 5) {
-					// 2 circles
-					const [valeur0, valeur1, ...part2] = indices;
-					const part1 = [valeur0, valeur1];
-
-					const content1 = getCirclesItem(part1);
-					input.insertAdjacentHTML("afterend", content1);
-
-					const content2 = getCirclesItem(part2);
-					input.insertAdjacentHTML("afterend", content2);
-				} else if (indices.length>=5) {
-					// 3 circles
-					const [valeur0, valeur1, valeur2, valeur3, ...part3] =
-						indices;
-					const part1 = [valeur0, valeur1];
-					const part2 = [valeur2, valeur3];
-
-					const content1 = getCirclesItem(part1);
-					input.insertAdjacentHTML("afterend", content1);
-
-					const content2 = getCirclesItem(part2);
-					input.insertAdjacentHTML("afterend", content2);
-
-					const content3 = getCirclesItem(part3);
-					input.insertAdjacentHTML("afterend", content3);
-				}
-			}
+			addGroupCircles(input, pluginItem);
 
 			// create temp input in input to modify delayed entering time
 			itemContainer.addEventListener("dblclick", async (evt) => {
 				if (pluginItem.id === "quick-plugin-switcher") return;
 				const { plugin } = this;
-				const currentValue = pluginItem.time;
-				const container = itemContainer;
-				itemContainer.innerHTML = `<input type="text" value="${currentValue}" />`;
+				const currentValue = pluginItem.time.toString();
 				this.isDblClick = true;
-
-				const input = itemContainer.querySelector("input");
-				input?.focus();
-				//select value
-				selectValue(input);
+				const input = createInput(itemContainer, currentValue);
 
 				if (!pluginItem.delayed) {
 					input?.addEventListener("keydown", async (event) => {
 						if (event.key === "Enter") {
 							setTimeout(async () => {
-								this.addDelay(
-									pluginItem,
-									input,
-									itemContainer,
-									container
-								);
+								this.addDelay(pluginItem, input);
 								this.isDblClick = false;
 							}, 100);
 						}
 					});
 					input?.addEventListener("blur", () => {
 						setTimeout(async () => {
-							this.addDelay(
-								pluginItem,
-								input,
-								itemContainer,
-								container
-							);
+							this.addDelay(pluginItem, input);
 							this.isDblClick = false;
 						}, 100);
 					});
@@ -313,7 +263,6 @@ export class QPSModal extends Modal {
 					);
 					this.isDblClick = false;
 					await plugin.saveSettings();
-					itemContainer = container;
 					this.onOpen();
 				}
 			});
@@ -329,12 +278,7 @@ export class QPSModal extends Modal {
 		}
 	}
 
-	addDelay = async (
-		pluginItem: PluginInfo,
-		input: HTMLInputElement,
-		itemContainer: HTMLDivElement,
-		container: HTMLDivElement
-	) => {
+	addDelay = async (pluginItem: PluginInfo, input: HTMLInputElement) => {
 		pluginItem.delayed = true;
 		pluginItem.time = parseInt(input.value) || 0;
 
@@ -345,7 +289,6 @@ export class QPSModal extends Modal {
 			delayedReEnable(this, pluginItem);
 		}
 		await this.plugin.saveSettings();
-		itemContainer = container;
 		this.onOpen();
 	};
 
@@ -357,19 +300,12 @@ export class QPSModal extends Modal {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const numberOfGroups = settings.numberOfGroups;
-		const keyToGroupMap: Record<string, number> = {};
-		// Generate keyToGroupMap based on the number of groups available
-		for (let i = 1; i <= numberOfGroups; i++) {
-			keyToGroupMap[i.toString()] = i;
-		}
-
+		const keyToGroupObject = GroupsKeysObject(numberOfGroups);
 		const pluginSettings = (this.app as any).setting.openTabById(
 			pluginItem.id
 		);
 		const condition = getCondition(this, pluginItem);
-		type KeyToSettingsMapType = {
-			[key: string]: () => Promise<void> | void;
-		};
+
 		const KeyToSettingsMap: KeyToSettingsMapType = {
 			g: () => openGitHubRepo(pluginItem),
 			s: () => openPluginSettings(this, pluginSettings),
@@ -377,9 +313,9 @@ export class QPSModal extends Modal {
 			i: () =>
 				new DescriptionModal(plugin.app, plugin, pluginItem).open(),
 		};
-		if (shell)
+		if (Platform.isDesktopApp)
 			KeyToSettingsMap["f"] = () =>
-				openDirectoryInFileManager(shell, this, pluginItem);
+				openDirectoryInFileManager(this, pluginItem);
 
 		// handle groups shortcuts
 		const handleKeyDown = async (event: KeyboardEvent) => {
@@ -388,12 +324,12 @@ export class QPSModal extends Modal {
 			if (this.isDblClick) return;
 			const keyPressed = event.key;
 			const groupIndices = pluginItem.groupInfo.groupIndices;
-
+			
 			if (
-				keyPressed in keyToGroupMap &&
+				keyPressed in keyToGroupObject &&
 				!(pluginItem.id === "quick-plugin-switcher")
 			) {
-				const groupIndex = keyToGroupMap[keyPressed];
+				const groupIndex = keyToGroupObject[keyPressed];
 				if (groupIndices.length === 6) return;
 				const index = groupIndices.indexOf(groupIndex);
 				if (index === -1) {
@@ -403,10 +339,10 @@ export class QPSModal extends Modal {
 			} else if (keyPressed in KeyToSettingsMap) {
 				KeyToSettingsMap[keyPressed]();
 			} else if (
-				keyPressed === "Delete" ||
-				keyPressed === "Backspace" ||
-				(keyPressed === "0" &&
-					!(pluginItem.id === "quick-plugin-switcher"))
+				(keyPressed === "Delete" ||
+					keyPressed === "Backspace" ||
+					keyPressed === "0") &&
+				!(pluginItem.id === "quick-plugin-switcher")
 			) {
 				if (!groupIndices.length) return;
 				if (groupIndices.length === 1) {
@@ -423,10 +359,7 @@ export class QPSModal extends Modal {
 					);
 					menu.addItem((item) =>
 						item.setTitle("All").onClick(() => {
-							rmvAllGroupsFromPlugin(
-								this,
-								pluginItem
-							);
+							rmvAllGroupsFromPlugin(this, pluginItem);
 						})
 					);
 					for (const groupIndex of groupIndices) {
@@ -440,10 +373,6 @@ export class QPSModal extends Modal {
 											pluginItem.groupInfo.groupIndices,
 											groupIndex
 										);
-									// if (groupEmpty(groupIndex, this)) {
-									// 	this.plugin.settings.selectedGroup =
-									// 		"SelectGroup";
-									// }
 									this.onOpen();
 								})
 						);
@@ -686,4 +615,39 @@ const itemTogglePluginButton = (
 		.onChange(async () => {
 			await togglePlugin(modal, pluginItem);
 		});
+};
+
+const addGroupCircles = (input: HTMLElement, item: PluginInfo) => {
+	const indices = item.groupInfo.groupIndices;
+	if (!indices.length) return;
+	if (indices.length < 3) {
+		const content = getCirclesItem(indices);
+		input.insertAdjacentHTML("afterend", content);
+	}
+
+	if (indices.length >= 3 && indices.length < 5) {
+		// 2 circles
+		const [valeur0, valeur1, ...part2] = indices;
+		const part1 = [valeur0, valeur1];
+
+		const content1 = getCirclesItem(part1);
+		input.insertAdjacentHTML("afterend", content1);
+
+		const content2 = getCirclesItem(part2);
+		input.insertAdjacentHTML("afterend", content2);
+	} else if (indices.length >= 5) {
+		// 3 circles
+		const [valeur0, valeur1, valeur2, valeur3, ...part3] = indices;
+		const part1 = [valeur0, valeur1];
+		const part2 = [valeur2, valeur3];
+
+		const content1 = getCirclesItem(part1);
+		input.insertAdjacentHTML("afterend", content1);
+
+		const content2 = getCirclesItem(part2);
+		input.insertAdjacentHTML("afterend", content2);
+
+		const content3 = getCirclesItem(part3);
+		input.insertAdjacentHTML("afterend", content3);
+	}
 };

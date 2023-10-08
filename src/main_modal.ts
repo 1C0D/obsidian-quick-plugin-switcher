@@ -184,9 +184,10 @@ export class QPSModal extends Modal {
 	}
 
 	setHotKeysdesc(): void {
+		const numberOfGroups = this.plugin.settings.numberOfGroups;
 		const nameEl = this.hotkeysDesc.createSpan(
 			{
-				text: "(1-6)➕ (0)❌ (f)📁 ",
+				text: `(1-${numberOfGroups})➕ (0)❌ (f)📁 `,
 			},
 			(el) => {
 				el.createSpan({ text: "(g)" }, (el) => {

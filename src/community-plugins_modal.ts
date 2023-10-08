@@ -4,7 +4,7 @@
 // settings groups length
 // group menu voir plus tard
 // destkop only
-// ajouté pressed pour éviter répetitions
+// context menu
 
 import {
 	App,
@@ -41,6 +41,7 @@ export class CPModal extends Modal {
 	items: HTMLElement;
 	search: HTMLElement;
 	groups: HTMLElement;
+	hotkeysDesc: HTMLElement;
 	// hotkeysDesc: HTMLElement;
 	isDblClick = false;
 	pluginsList: PluginCommInfo[];
@@ -64,6 +65,7 @@ export class CPModal extends Modal {
 		this.groups = contentEl.createEl("div", {
 			cls: ["qps-community-groups", "qps-comm-group"],
 		});
+		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
 	}
 
@@ -93,6 +95,7 @@ export class CPModal extends Modal {
 			pluginStats
 		);
 		this.addGroups(this.groups, GroupsComm);
+		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
 		await this.addItems(this, pluginsList, pluginStats);
 	}
 
@@ -192,6 +195,24 @@ export class CPModal extends Modal {
 		}
 	}
 
+	setHotKeysdesc(): void {
+		const numberOfGroups = this.plugin.settings.numberOfGroupsComm;
+		const nameEl = this.hotkeysDesc.createSpan(
+			{
+				text: `(1-${numberOfGroups})➕ (0)❌ `,
+			},
+			(el) => {
+				el.createSpan({ text: "(g)" }, (el) => {
+					let gitHubIcon = el.createSpan({ cls: "git-hub-icon" });
+					setIcon(gitHubIcon, "github");
+				});
+				el.createSpan({
+					text: ` (i)whole_desc`,
+				});
+			}
+		);
+	}
+
 	async addItems(
 		modal: CPModal,
 		listItems: PluginCommInfo[],
@@ -201,7 +222,7 @@ export class CPModal extends Modal {
 		listItems = filter(modal, listItems);
 		sortItemsByDownloads(listItems, pluginStats);
 
-		for (const item of listItems.slice(0, 14)) {
+		for (const item of listItems.slice(0, 28)) {
 			const itemContainer = modal.items.createEl("div", {
 				cls: "qps-comm-block",
 			});

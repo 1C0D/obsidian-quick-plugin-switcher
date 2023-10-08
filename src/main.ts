@@ -1,4 +1,7 @@
 // timer switch to fix error disabling plugin
+// bugs hotkeys comm plugins
+// install 
+
 import { around } from "monkey-around";
 import { Plugin } from "obsidian";
 import { QPSModal } from "./main_modal";

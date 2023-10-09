@@ -1,11 +1,12 @@
 // ajout getlength ds addHeader
-// do search à revoir
-// sticky header
+// do search à revoir et meilleure algo?
+// search focus perdu après qu'on referme whole desc
+// sticky header, focus ?
 // settings groups length
 // group menu voir plus tard
 // destkop only
 // context menu
-
+// futur?: utiliser une map au lieu d'un array pour pluginList? this.pluginsList = new Map(await getPluginList().map(plugin => [plugin.id, plugin]));
 import {
 	App,
 	DropdownComponent,
@@ -42,11 +43,11 @@ export class CPModal extends Modal {
 	search: HTMLElement;
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
-	// hotkeysDesc: HTMLElement;
 	isDblClick = false;
 	pluginsList: PluginCommInfo[];
 	pluginStats: PackageInfoData;
 	pressed = false;
+	mousePosition: any;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -67,6 +68,13 @@ export class CPModal extends Modal {
 		});
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
+
+		this.plugin.registerDomEvent(document, "mousemove", (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
+
+		this.plugin.registerDomEvent(document, "keydown", (e) => handleKeyDown(e,this)
+		);
 	}
 
 	async onOpen() {
@@ -106,7 +114,7 @@ export class CPModal extends Modal {
 	): void => {
 		const { plugin } = this;
 		const { settings } = plugin;
-		//dropdown with filters
+		//dropdown filters
 		new DropdownComponent(contentEl)
 			.addOptions({
 				all: `All(${pluginsList.length})`,
@@ -120,7 +128,6 @@ export class CPModal extends Modal {
 			.onChange(async (value) => {
 				settings.communityFilters = value;
 				await plugin.saveSettings();
-				// modal.onOpen();
 				this.draw(this, pluginsList, pluginStats);
 			});
 	};
@@ -207,88 +214,83 @@ export class CPModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (i)whole_desc`,
+					text: ` (i)readme`,
 				});
 			}
 		);
 	}
 
-	async addItems(
-		modal: CPModal,
-		listItems: PluginCommInfo[],
-		// listTaggedItem: PluginsTaggedInfo,
-		pluginStats: PackageInfoData
-	) {
-		listItems = filter(modal, listItems);
-		sortItemsByDownloads(listItems, pluginStats);
+async addItems(
+	modal: CPModal,
+	listItems: PluginCommInfo[],
+	pluginStats: PackageInfoData
+) {
+	listItems = filter(modal, listItems);
+	sortItemsByDownloads(listItems, pluginStats);
 
-		for (const item of listItems.slice(0, 28)) {
-			const itemContainer = modal.items.createEl("div", {
-				cls: "qps-comm-block",
-			});
+	for (const item of listItems) { //.slice(0, 28)
+		const itemContainer = modal.items.createEl("div", {
+			cls: "qps-comm-block",
+		});
+		//name
+		itemContainer.createDiv(
+			{
+				cls: "qps-community-item-name",
+				text: item.name,
+			},
+			(el: HTMLElement) => {
+				if (isInstalled(item))
+					el.createSpan({
+						cls: "installed-span",
+						text: "installed",
+					});
+			}
+		);
+		//author
+		itemContainer.createDiv({
+			cls: "qps-community-item-author",
+			text: `By ${item.author} `,
+		});
 
-			const name = itemContainer.createDiv(
+		const pluginInfo = pluginStats[item.id];
+		if (pluginInfo) {
+			// downloads
+			itemContainer.createDiv(
 				{
-					cls: "qps-community-item-name",
-					text: item.name,
+					cls: "qps-community-item-downloads",
 				},
 				(el: HTMLElement) => {
-					if (isInstalled(item))
-						el.createSpan({
-							cls: "installed-span",
-							text: "installed",
+					el.createSpan({ cls: "downloads-span" }, (el) => {
+						const preSpan = el.createSpan();
+						const span = el.createSpan({
+							text: formatNumber(
+								pluginInfo.downloads,
+								1
+							).toString(),
+							cls: "downloads-text-span",
 						});
+						addGroupCircles(this, span, item);
+						setIcon(preSpan, "download-cloud");
+					});
 				}
 			);
 
-			const author = itemContainer.createDiv({
-				cls: "qps-community-item-author",
-				text: `By ${item.author} `,
-			});
-
-			// const pluginId = item.id;
-			const pluginInfo = pluginStats[item.id];
-			if (pluginInfo) {
-				// const downloads =
-				itemContainer.createDiv(
-					{
-						cls: "qps-community-item-downloads",
-					},
-					(el: HTMLElement) => {
-						el.createSpan({ cls: "downloads-span" }, (el) => {
-							const preSpan = el.createSpan();
-							const span = el.createSpan({
-								text: formatNumber(
-									pluginInfo.downloads,
-									1
-								).toString(),
-								cls: "downloads-text-span",
-							});
-							addGroupCircles(this, span, item);
-							setIcon(preSpan, "download-cloud");
-						});
-					}
-				);
-
-				const lastUpdated = new Date(pluginInfo.updated);
-				const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-				// const updatedSince =
-				itemContainer.createDiv({
-					cls: "qps-community-item-updated",
-					text: `Updated ${timeSinceUpdate}`,
-				});
-
-				itemContainer.addEventListener("mouseover", (evt) => {
-					handleHotkeys(this, evt, item, itemContainer);
-				});
-			}
-
-			const desc = itemContainer.createDiv({
-				cls: "qps-community-item-desc",
-				text: item.description,
+			const lastUpdated = new Date(pluginInfo.updated);
+			const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
+			// Updated
+			itemContainer.createDiv({
+				cls: "qps-community-item-updated",
+				text: `Updated ${timeSinceUpdate}`,
 			});
 		}
+
+		// desc
+		itemContainer.createDiv({
+			cls: "qps-community-item-desc",
+			text: item.description,
+		});
 	}
+}
 }
 
 async function getPluginList(): Promise<PluginCommInfo[]> {
@@ -306,7 +308,7 @@ export async function getReadMe(item: PluginCommInfo) {
 	} catch (error) {
 		console.error("Error fetching ReadMe", error);
 	}
-	return null
+	return null;
 }
 
 async function fetchAndStorePluginStats(): Promise<PackageInfoData> {
@@ -344,9 +346,8 @@ function doSearch(value: string, pluginsList: PluginCommInfo[]) {
 	for (const i of pluginsList) {
 		if (
 			i.name.toLowerCase().includes(value.toLowerCase()) ||
-			(value.length > 1 &&
-				value[value.length - 1] === " " &&
-				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
+			i.description.toLowerCase().includes(value.toLowerCase()) ||
+			i.author.toLowerCase().includes(value.toLowerCase())
 		) {
 			listItems.push(i);
 		}
@@ -467,9 +468,34 @@ const groupMenu = (
 	menu.showAtMouseEvent(evt);
 };
 
+function handleKeyDown(event:KeyboardEvent, modal: CPModal) {
+	const key = event.key;
+	if (modal.mousePosition) {
+		const elementFromPoint = document.elementFromPoint(
+			modal.mousePosition.x,
+			modal.mousePosition.y
+		);
+		const targetBlock = elementFromPoint?.closest(
+			".qps-comm-block"
+		) as HTMLElement;
+
+		if (targetBlock) {
+			const itemName = targetBlock.firstChild?.textContent;
+			const cleanItemName = itemName?.replace(/installed$/, "").trim();
+			const matchingItem = modal.pluginsList.find(
+				(item) => item.name === cleanItemName
+			);
+
+			if (matchingItem) {
+				handleHotkeys(modal, event, matchingItem, targetBlock);
+			}
+		}
+	}
+}
+
 const handleHotkeys = async (
 	modal: CPModal,
-	evt: MouseEvent,
+	evt: KeyboardEvent,
 	pluginItem: PluginCommInfo,
 	itemContainer: HTMLElement
 ) => {
@@ -482,88 +508,74 @@ const handleHotkeys = async (
 		g: () => openGitHubRepo(pluginItem),
 		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
 	};
-	const handleKeyDown = async (event: KeyboardEvent) => {
-		const { plugin } = modal;
-		const { settings } = plugin;
-		const keyPressed = event.key;
-		if (modal.pressed) return;
-		pressDelay(modal);
-		const itemID = pluginItem.id;
-		const taggedItem = settings.pluginsTagged[itemID];
-		if (!taggedItem) {
-			settings.pluginsTagged[itemID] = {
-				groupInfo: { groupIndices: [] },
-			};
-			await modal.plugin.saveSettings();
+	const keyPressed = evt.key;
+	const itemID = pluginItem.id;
+	const taggedItem = settings.pluginsTagged[itemID];
+	if (!taggedItem) {
+		settings.pluginsTagged[itemID] = {
+			groupInfo: { groupIndices: [] },
+		};
+		await modal.plugin.saveSettings();
+		modal.draw(modal, modal.pluginsList, modal.pluginStats);
+	}
+	if (!taggedItem || modal.pressed) {
+		return;
+	}
+	pressDelay(modal);
+	const { groupInfo } = taggedItem;
+	const groupIndices = groupInfo.groupIndices;
+	if (keyPressed in keyToGroupObject) {
+		const groupIndex = keyToGroupObject[keyPressed];
+		if (groupIndices.length === 6) return;
+		const index = groupIndices.indexOf(groupIndex);
+		if (index === -1) {
+			groupIndices.push(groupIndex);
+			await plugin.saveSettings();
 			modal.draw(modal, modal.pluginsList, modal.pluginStats);
 		}
-		if (!taggedItem) {
-			return;
-		}
-		const { groupInfo } = taggedItem;
-		const groupIndices = groupInfo.groupIndices;
-		if (keyPressed in keyToGroupObject) {
-			const groupIndex = keyToGroupObject[keyPressed];
-			if (groupIndices.length === 6) return;
-			const index = groupIndices.indexOf(groupIndex);
-			if (index === -1) {
-				groupIndices.push(groupIndex);
-				await plugin.saveSettings();
-				modal.draw(modal, modal.pluginsList, modal.pluginStats);
-			}
-		} else if (keyPressed in KeyToSettingsMap) {
-			KeyToSettingsMap[keyPressed]();
-		} else if (
-			keyPressed === "Delete" ||
-			keyPressed === "Backspace" ||
-			keyPressed === "0"
-		) {
-			if (groupIndices.length === 1) {
-				groupInfo.groupIndices = [];
-				modal.draw(modal, modal.pluginsList, modal.pluginStats);
-			} else if (groupIndices.length > 1) {
-				const menu = new Menu();
+	} else if (keyPressed in KeyToSettingsMap) {
+		KeyToSettingsMap[keyPressed]();
+	} else if (
+		keyPressed === "Delete" ||
+		keyPressed === "Backspace" ||
+		keyPressed === "0"
+	) {
+		if (groupIndices.length === 1) {
+			groupInfo.groupIndices = [];
+			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+		} else if (groupIndices.length > 1) {
+			const menu = new Menu();
+			menu.addItem((item) =>
+				item.setTitle("Remove item group(s)").setDisabled(true)
+			);
+			menu.addItem((item) =>
+				item.setTitle("All").onClick(() => {
+					rmvAllGroupsFromPlugin(modal, pluginItem);
+				})
+			);
+			for (const groupIndex of groupIndices) {
+				const { emoji } = getEmojiForGroup(groupIndex);
 				menu.addItem((item) =>
-					item.setTitle("Remove item group(s)").setDisabled(true)
-				);
-				menu.addItem((item) =>
-					item.setTitle("All").onClick(() => {
-						rmvAllGroupsFromPlugin(modal, pluginItem);
-					})
-				);
-				for (const groupIndex of groupIndices) {
-					const { emoji } = getEmojiForGroup(groupIndex);
-					menu.addItem((item) =>
-						item
-							.setTitle(`${emoji} group ${groupIndex}`)
-							.onClick(() => {
-								if (groupInfo)
-									groupInfo.groupIndices = removeItem(
-										groupInfo.groupIndices,
-										groupIndex
-									);
-								modal.draw(
-									modal,
-									modal.pluginsList,
-									modal.pluginStats
+					item
+						.setTitle(`${emoji} group ${groupIndex}`)
+						.onClick(() => {
+							if (groupInfo)
+								groupInfo.groupIndices = removeItem(
+									groupInfo.groupIndices,
+									groupIndex
 								);
-							})
-					);
-				}
-
-				menu.showAtMouseEvent(evt);
+							modal.draw(
+								modal,
+								modal.pluginsList,
+								modal.pluginStats
+							);
+						})
+				);
 			}
-		}
-		await modal.plugin.saveSettings();
-		document.removeEventListener("keydown", handleKeyDown);
-	};
 
-	const handleMouseLeave = (event: MouseEvent) => {
-		document.removeEventListener("keydown", handleKeyDown);
-		itemContainer.removeEventListener("mouseleave", handleMouseLeave);
-	};
-	document.addEventListener("keydown", handleKeyDown);
-	itemContainer.addEventListener("mouseleave", handleMouseLeave);
+			menu.showAtPosition(modal.mousePosition);
+		}
+	}
 };
 
 const addGroupCircles = (

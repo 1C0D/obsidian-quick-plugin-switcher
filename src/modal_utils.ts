@@ -212,5 +212,5 @@ export const pressDelay = (modal: CPModal) => {
 	modal.pressed = true;
 	setTimeout(() => {
 		modal.pressed = false;
-	}, 100);
+	}, 1);
 };

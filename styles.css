@@ -322,16 +322,24 @@
 
 /* read me modal  ---------------*/
 .modal.read-me-modal {
+  margin:0;
+  padding:0;
+  padding-top:25px;
   background-color: var(--modal-background);
   flex: 1 1 auto;
   min-height: 100px;
   width: var(--dialog-width);
+  height: var(--dialog-max-height);
   max-width: var(--dialog-max-width);
-  max-height: var(--dialog-max-height);
   display: flex;
   flex-direction: column;
   overflow: auto;
   overflow-wrap: break-word;
+}
+
+.modal.read-me-modal iframe {
+  height: 80vh;
+  width: 100%;
 }
 
 .qps-read-me {

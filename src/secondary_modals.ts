@@ -163,26 +163,32 @@ export class ReadMeModal extends Modal {
 	async onOpen() {
 		const { contentEl, pluginItem } = this;
 		contentEl.empty();
-		contentEl
-			.createEl("p", {
-				text: pluginItem.name,
-			})
-			.createEl("p", {
-				text: "By: " + pluginItem.author,
-			});
+		// contentEl
+		// 	.createEl("p", {
+		// 		text: pluginItem.name,
+		// 	})
+		// 	.createEl("p", {
+		// 		text: "By: " + pluginItem.author,
+		// 	});
+
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
-		const data = await getReadMe(pluginItem);
-		const content = Buffer.from(data.content, "base64").toString("utf-8");
-		const updatedContent = content
-			.replace(/\/blob\//g, "/raw/")
-			.replace(
-				/\]\(\.\//g,
-				`](https://github.com/${pluginItem.repo}/raw/master/`
-			);
-		var MarkdownIt = require("markdown-it"),
-			md = new MarkdownIt();
-		var htmlContent = md.render("---\n" + updatedContent);
-		div.innerHTML = htmlContent;
+		// easy solution
+		div.innerHTML = `<iframe style='filter: invert(0);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
+
+		// much harder, how to render html portions?
+		
+		// const data = await getReadMe(pluginItem);
+		// const content = Buffer.from(data.content, "base64").toString("utf-8");
+		// const updatedContent = content
+		// 	.replace(/\/blob\//g, "/raw/")
+		// 	.replace(
+		// 		/\]\(\.\//g,
+		// 		`](https://github.com/${pluginItem.repo}/raw/master/`
+		// 	);
+		// var MarkdownIt = require("markdown-it"),
+		// 	md = new MarkdownIt();
+		// var htmlContent = md.render("---\n" + updatedContent);
+		// div.innerHTML = htmlContent;
 	}
 
 	onClose() {

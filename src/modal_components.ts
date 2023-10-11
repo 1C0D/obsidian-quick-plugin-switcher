@@ -361,78 +361,6 @@ export const itemToggleClass = (
 	}
 };
 
-export function handleContextMenu(
-	evt: MouseEvent,
-	modal: QPSModal,
-	plugin: Plugin,
-	pluginItem: PluginInfo
-) {
-	evt.preventDefault();
-	const menu = new Menu();
-	if (Platform.isDesktopApp) {
-		menu.addItem((item) =>
-			item
-				.setTitle("Plugin folder (f)")
-				.setIcon("folder-open")
-				.onClick(() => {
-					openDirectoryInFileManager(modal, pluginItem);
-				})
-		);
-	}
-	menu.addItem((item) => {
-		item.setTitle("Plugin features").setIcon("package-plus");
-		const submenu = (item as any).setSubmenu() as Menu;
-		pluginFeatureSubmenu(submenu, pluginItem, modal);
-	});
-
-	if (pluginItem.id !== "quick-plugin-switcher") {
-		menu.addSeparator();
-		menu.addItem((item) => {
-			item.setTitle("Add to group").setIcon("user");
-			const submenu = (item as any).setSubmenu() as Menu;
-			addToGroupSubMenu(submenu, pluginItem, modal);
-		});
-		menu.addItem((item) => {
-			item.setTitle("Remove from group").setIcon("user-minus");
-			const submenu = (item as any).setSubmenu() as Menu;
-			submenu.addItem((subitem) => {
-				subitem
-					.setTitle("All groups")
-					.setDisabled(pluginItem.groupInfo.groupIndices.length === 0)
-					.onClick(async () => {
-						const groupIndices = pluginItem.groupInfo.groupIndices;
-						rmvAllGroupsFromPlugin(modal, pluginItem);
-					});
-			});
-			addRemoveItemGroupMenuItems(modal, submenu, plugin, pluginItem);
-		}).addSeparator();
-		menu.addItem((item) => {
-			item.setTitle("Clear items groups").setIcon("user-minus");
-
-			const submenu = (item as any).setSubmenu() as Menu;
-			submenu.addItem((subitem) => {
-				subitem.setTitle("All groups").onClick(async () => {
-					const confirmReset = await confirm(
-						"Detach all groups from all plugins?",
-						300
-					);
-					if (confirmReset) {
-						for (const i of plugin.settings.allPluginsList) {
-							i.groupInfo.groupIndices = [];
-						}
-						modal.onOpen();
-						new Notice("Done", 1000);
-					} else {
-						new Notice("Operation cancelled", 1000);
-					}
-				});
-			});
-			addRemoveGroupMenuItems(modal, submenu, plugin);
-		});
-	}
-	menu.showAtMouseEvent(evt);
-}
-
 function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
 	for (const key in obj) {
 		if (key.startsWith(prefix)) {
@@ -700,3 +628,105 @@ export const searchDivButtons = (
 		(el) => powerButton(modal, el)
 	);
 };
+
+export function handleContextMenu(evt: MouseEvent, modal: QPSModal) {
+	if (modal.mousePosition) {
+		const elementFromPoint = document.elementFromPoint(
+			modal.mousePosition.x,
+			modal.mousePosition.y
+		);
+		const targetBlock = elementFromPoint?.closest(
+			".qps-item-line"
+		) as HTMLElement;
+
+		if (targetBlock) {
+			const itemName = (targetBlock.children[1] as HTMLInputElement)
+				.value;
+			const matchingItem = modal.plugin.settings.allPluginsList.find(
+				(item) => item.name === itemName
+			);
+
+			if (matchingItem) {
+				const {plugin} = modal
+				evt.preventDefault();
+				const menu = new Menu();
+				if (Platform.isDesktopApp) {
+					menu.addItem((item) =>
+						item
+							.setTitle("Plugin folder (f)")
+							.setIcon("folder-open")
+							.onClick(() => {
+								openDirectoryInFileManager(modal, matchingItem);
+							})
+					);
+				}
+				menu.addItem((item) => {
+					item.setTitle("Plugin features").setIcon("package-plus");
+					const submenu = (item as any).setSubmenu() as Menu;
+					pluginFeatureSubmenu(submenu, matchingItem, modal);
+				});
+
+				if (matchingItem.id !== "quick-plugin-switcher") {
+					menu.addSeparator();
+					menu.addItem((item) => {
+						item.setTitle("Add to group").setIcon("user");
+						const submenu = (item as any).setSubmenu() as Menu;
+						addToGroupSubMenu(submenu, matchingItem, modal);
+					});
+					menu.addItem((item) => {
+						item.setTitle("Remove from group").setIcon(
+							"user-minus"
+						);
+						const submenu = (item as any).setSubmenu() as Menu;
+						submenu.addItem((subitem) => {
+							subitem
+								.setTitle("All groups")
+								.setDisabled(
+									matchingItem.groupInfo.groupIndices
+										.length === 0
+								)
+								.onClick(async () => {
+									const groupIndices =
+										matchingItem.groupInfo.groupIndices;
+									rmvAllGroupsFromPlugin(modal, matchingItem);
+								});
+						});
+						addRemoveItemGroupMenuItems(
+							modal,
+							submenu,
+							plugin,
+							matchingItem
+						);
+					}).addSeparator();
+					menu.addItem((item) => {
+						item.setTitle("Clear items groups").setIcon(
+							"user-minus"
+						);
+
+						const submenu = (item as any).setSubmenu() as Menu;
+						submenu.addItem((subitem) => {
+							subitem.setTitle("All groups").onClick(async () => {
+								const confirmReset = await confirm(
+									"Detach all groups from all plugins?",
+									300
+								);
+								if (confirmReset) {
+									for (const i of plugin.settings
+										.allPluginsList) {
+										i.groupInfo.groupIndices = [];
+									}
+									modal.onOpen();
+									new Notice("Done", 1000);
+								} else {
+									new Notice("Operation cancelled", 1000);
+								}
+							});
+						});
+						addRemoveGroupMenuItems(modal, submenu, plugin);
+					});
+				}
+				menu.showAtMouseEvent(evt);
+			}
+		}
+	}
+}

@@ -1,5 +1,6 @@
 // todo: fix add delay group disabling plugin
 // by group pas de tri alpha avant
+// listeners à checker. mieux cibler? toggle ?
 
 import {
 	App,
@@ -39,6 +40,7 @@ import {
 	getGroupTitle,
 	groupNotEmpty,
 	openDirectoryInFileManager,
+	pressDelay,
 	rmvAllGroupsFromPlugin,
 	togglePlugin,
 } from "./modal_utils";
@@ -51,6 +53,8 @@ export class QPSModal extends Modal {
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
+	mousePosition: any;
+	pressed = false;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -67,6 +71,19 @@ export class QPSModal extends Modal {
 		this.groups = contentEl.createEl("div", { cls: "qps-groups" });
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
 		this.items = contentEl.createEl("div", { cls: "qps-items" });
+
+		this.modalEl.addEventListener("mousemove", (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
+
+		document.addEventListener("keydown", (event) => {
+			handleKeyDown(event, this);
+		});
+
+		this.modalEl.addEventListener("contextmenu", (evt) => {
+			if (this.isDblClick) return;
+			handleContextMenu(evt, this);
+		});
 	}
 
 	onOpen() {
@@ -267,15 +284,6 @@ export class QPSModal extends Modal {
 					this.onOpen();
 				}
 			});
-
-			input.addEventListener("mouseover", (evt) => {
-				if (this.isDblClick) return;
-				this.handleHotkeys(evt, pluginItem, input);
-			});
-			input.addEventListener("contextmenu", (evt) => {
-				if (this.isDblClick) return;
-				handleContextMenu(evt, this, plugin, pluginItem);
-			});
 		}
 	}
 
@@ -293,110 +301,21 @@ export class QPSModal extends Modal {
 		this.onOpen();
 	};
 
-	handleHotkeys = async (
-		evt: MouseEvent,
-		pluginItem: PluginInfo,
-		itemContainer: HTMLInputElement
-	) => {
-		const { plugin } = this;
-		const { settings } = plugin;
-		const numberOfGroups = settings.numberOfGroups;
-		const keyToGroupObject = GroupsKeysObject(numberOfGroups);
-		const pluginSettings = (this.app as any).setting.openTabById(
-			pluginItem.id
-		);
-		const condition = getCondition(this, pluginItem);
-
-		const KeyToSettingsMap: KeyToSettingsMapType = {
-			g: () => openGitHubRepo(pluginItem),
-			s: () => openPluginSettings(this, pluginSettings),
-			h: () => showHotkeysFor(pluginItem, condition),
-			i: () =>
-				new DescriptionModal(plugin.app, plugin, pluginItem).open(),
-		};
-		if (Platform.isDesktopApp)
-			KeyToSettingsMap["f"] = () =>
-				openDirectoryInFileManager(this, pluginItem);
-
-		// handle groups shortcuts
-		const handleKeyDown = async (event: KeyboardEvent) => {
-			const { plugin } = this;
-			const { settings } = plugin;
-			if (this.isDblClick) return;
-			const keyPressed = event.key;
-			const groupIndices = pluginItem.groupInfo.groupIndices;
-			
-			if (
-				keyPressed in keyToGroupObject &&
-				!(pluginItem.id === "quick-plugin-switcher")
-			) {
-				const groupIndex = keyToGroupObject[keyPressed];
-				if (groupIndices.length === 6) return;
-				const index = groupIndices.indexOf(groupIndex);
-				if (index === -1) {
-					groupIndices?.push(groupIndex);
-					this.onOpen();
-				}
-			} else if (keyPressed in KeyToSettingsMap) {
-				KeyToSettingsMap[keyPressed]();
-			} else if (
-				(keyPressed === "Delete" ||
-					keyPressed === "Backspace" ||
-					keyPressed === "0") &&
-				!(pluginItem.id === "quick-plugin-switcher")
-			) {
-				if (!groupIndices.length) return;
-				if (groupIndices.length === 1) {
-					const groupIndex = groupIndices[0];
-					pluginItem.groupInfo.groupIndices = [];
-					if (!groupNotEmpty(groupIndex, this)) {
-						settings.selectedGroup = "SelectGroup";
-					}
-					this.onOpen();
-				} else {
-					const menu = new Menu();
-					menu.addItem((item) =>
-						item.setTitle("Remove item group(s)")
-					);
-					menu.addItem((item) =>
-						item.setTitle("All").onClick(() => {
-							rmvAllGroupsFromPlugin(this, pluginItem);
-						})
-					);
-					for (const groupIndex of groupIndices) {
-						const { emoji } = getEmojiForGroup(groupIndex);
-						menu.addItem((item) =>
-							item
-								.setTitle(`${emoji} group ${groupIndex}`)
-								.onClick(() => {
-									pluginItem.groupInfo.groupIndices =
-										removeItem(
-											pluginItem.groupInfo.groupIndices,
-											groupIndex
-										);
-									this.onOpen();
-								})
-						);
-					}
-
-					menu.showAtMouseEvent(evt);
-				}
-			}
-			await this.plugin.saveSettings();
-			document.removeEventListener("keydown", handleKeyDown);
-		};
-
-		const handleMouseLeave = (event: MouseEvent) => {
-			document.removeEventListener("keydown", handleKeyDown);
-			itemContainer.removeEventListener("mouseleave", handleMouseLeave);
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		itemContainer.addEventListener("mouseleave", handleMouseLeave);
-	};
-
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		document.removeEventListener("mousemove", (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
+
+		document.removeEventListener("keydown", (event) => {
+			handleKeyDown(event, this);
+		});
+
+		this.modalEl.removeEventListener("contextmenu", (evt) => {
+			if (this.isDblClick) return;
+			handleContextMenu(evt, this);
+		});
 	}
 }
 
@@ -650,5 +569,128 @@ const addGroupCircles = (input: HTMLElement, item: PluginInfo) => {
 
 		const content3 = getCirclesItem(part3);
 		input.insertAdjacentHTML("afterend", content3);
+	}
+};
+
+function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
+	const key = event.key;
+	if (modal.mousePosition) {
+		const elementFromPoint = document.elementFromPoint(
+			modal.mousePosition.x,
+			modal.mousePosition.y
+		);
+		const targetBlock = elementFromPoint?.closest(
+			".qps-item-line"
+		) as HTMLElement;
+
+		if (targetBlock) {
+			let itemName = (targetBlock.children[1] as HTMLInputElement).value;
+			if (itemName.startsWith("ᴰ")) {
+				itemName = itemName.substring(1);
+			}
+			const matchingItem = modal.plugin.settings.allPluginsList.find(
+				(item) => item.name === itemName
+			);
+
+			if (matchingItem) {
+				handleHotkeys(modal, event, matchingItem);
+			}
+		}
+	}
+}
+
+const handleHotkeys = async (
+	modal: QPSModal,
+	evt: KeyboardEvent,
+	pluginItem: PluginInfo
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	const numberOfGroups = settings.numberOfGroups;
+	const keyToGroupObject = GroupsKeysObject(numberOfGroups);
+	const pluginSettings = (modal.app as any).setting.openTabById(
+		pluginItem.id
+	);
+	const condition = getCondition(modal, pluginItem);
+
+	const KeyToSettingsMap: KeyToSettingsMapType = {
+		g: () => openGitHubRepo(pluginItem),
+		s: () => openPluginSettings(modal, pluginSettings),
+		h: () => showHotkeysFor(pluginItem, condition),
+		i: () => new DescriptionModal(plugin.app, plugin, pluginItem).open(),
+	};
+	if (Platform.isDesktopApp)
+		KeyToSettingsMap["f"] = () =>
+			openDirectoryInFileManager(modal, pluginItem);
+
+	const keyPressed = evt.key;
+	const itemID = pluginItem.id;
+	const taggedItem = settings.pluginsTagged[itemID];
+	if (!taggedItem) {
+		settings.pluginsTagged[itemID] = {
+			groupInfo: { groupIndices: [] },
+		};
+		await modal.plugin.saveSettings();
+		modal.onOpen();
+	}
+	if (!taggedItem || modal.pressed) {
+		return;
+	}
+	pressDelay(modal);
+
+	if (modal.isDblClick) return;
+	const groupIndices = pluginItem.groupInfo.groupIndices;
+
+	if (
+		keyPressed in keyToGroupObject &&
+		!(pluginItem.id === "quick-plugin-switcher")
+	) {
+		const groupIndex = keyToGroupObject[keyPressed];
+		if (groupIndices.length === 6) return;
+		const index = groupIndices.indexOf(groupIndex);
+		if (index === -1) {
+			groupIndices?.push(groupIndex);
+			modal.onOpen();
+		}
+	} else if (keyPressed in KeyToSettingsMap) {
+		KeyToSettingsMap[keyPressed]();
+	} else if (
+		(keyPressed === "Delete" ||
+			keyPressed === "Backspace" ||
+			keyPressed === "0") &&
+		!(pluginItem.id === "quick-plugin-switcher")
+	) {
+		if (!groupIndices.length) return;
+		if (groupIndices.length === 1) {
+			const groupIndex = groupIndices[0];
+			pluginItem.groupInfo.groupIndices = [];
+			if (!groupNotEmpty(groupIndex, modal)) {
+				settings.selectedGroup = "SelectGroup";
+			}
+			modal.onOpen();
+		} else {
+			const menu = new Menu();
+			menu.addItem((item) => item.setTitle("Remove item group(s)"));
+			menu.addItem((item) =>
+				item.setTitle("All").onClick(() => {
+					rmvAllGroupsFromPlugin(modal, pluginItem);
+				})
+			);
+			for (const groupIndex of groupIndices) {
+				const { emoji } = getEmojiForGroup(groupIndex);
+				menu.addItem((item) =>
+					item
+						.setTitle(`${emoji} group ${groupIndex}`)
+						.onClick(() => {
+							pluginItem.groupInfo.groupIndices = removeItem(
+								pluginItem.groupInfo.groupIndices,
+								groupIndex
+							);
+							modal.onOpen();
+						})
+				);
+			}
+			menu.showAtPosition(modal.mousePosition);
+		}
 	}
 };

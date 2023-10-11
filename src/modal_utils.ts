@@ -208,7 +208,7 @@ export function GroupsKeysObject(numberOfGroups: number) {
 	return keyToGroupObject;
 }
 
-export const pressDelay = (modal: CPModal) => {
+export const pressDelay = (modal: CPModal|QPSModal) => {
 	modal.pressed = true;
 	setTimeout(() => {
 		modal.pressed = false;

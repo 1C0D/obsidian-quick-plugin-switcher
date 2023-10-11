@@ -69,12 +69,18 @@ export class CPModal extends Modal {
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
 
-		this.plugin.registerDomEvent(document, "mousemove", (event) => {
+		document.addEventListener("mousemove", (event) => {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
-		this.plugin.registerDomEvent(document, "keydown", (e) => handleKeyDown(e,this)
-		);
+		document.addEventListener("keydown", (event) => {
+			handleKeyDown(event, this);
+		});
+
+		this.modalEl.addEventListener("contextmenu", (evt) => {
+			if (this.isDblClick) return;
+			handleContextMenu(evt, this);
+		});
 	}
 
 	async onOpen() {
@@ -220,77 +226,95 @@ export class CPModal extends Modal {
 		);
 	}
 
-async addItems(
-	modal: CPModal,
-	listItems: PluginCommInfo[],
-	pluginStats: PackageInfoData
-) {
-	listItems = filter(modal, listItems);
-	sortItemsByDownloads(listItems, pluginStats);
+	async addItems(
+		modal: CPModal,
+		listItems: PluginCommInfo[],
+		pluginStats: PackageInfoData
+	) {
+		listItems = filter(modal, listItems);
+		sortItemsByDownloads(listItems, pluginStats);
 
-	for (const item of listItems) { //.slice(0, 28)
-		const itemContainer = modal.items.createEl("div", {
-			cls: "qps-comm-block",
-		});
-		//name
-		itemContainer.createDiv(
-			{
-				cls: "qps-community-item-name",
-				text: item.name,
-			},
-			(el: HTMLElement) => {
-				if (isInstalled(item))
-					el.createSpan({
-						cls: "installed-span",
-						text: "installed",
-					});
-			}
-		);
-		//author
-		itemContainer.createDiv({
-			cls: "qps-community-item-author",
-			text: `By ${item.author} `,
-		});
-
-		const pluginInfo = pluginStats[item.id];
-		if (pluginInfo) {
-			// downloads
+		for (const item of listItems) {
+			//.slice(0, 28)
+			const itemContainer = modal.items.createEl("div", {
+				cls: "qps-comm-block",
+			});
+			//name
 			itemContainer.createDiv(
 				{
-					cls: "qps-community-item-downloads",
+					cls: "qps-community-item-name",
+					text: item.name,
 				},
 				(el: HTMLElement) => {
-					el.createSpan({ cls: "downloads-span" }, (el) => {
-						const preSpan = el.createSpan();
-						const span = el.createSpan({
-							text: formatNumber(
-								pluginInfo.downloads,
-								1
-							).toString(),
-							cls: "downloads-text-span",
+					if (isInstalled(item))
+						el.createSpan({
+							cls: "installed-span",
+							text: "installed",
 						});
-						addGroupCircles(this, span, item);
-						setIcon(preSpan, "download-cloud");
-					});
 				}
 			);
-
-			const lastUpdated = new Date(pluginInfo.updated);
-			const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-			// Updated
+			//author
 			itemContainer.createDiv({
-				cls: "qps-community-item-updated",
-				text: `Updated ${timeSinceUpdate}`,
+				cls: "qps-community-item-author",
+				text: `By ${item.author} `,
+			});
+
+			const pluginInfo = pluginStats[item.id];
+			if (pluginInfo) {
+				// downloads
+				itemContainer.createDiv(
+					{
+						cls: "qps-community-item-downloads",
+					},
+					(el: HTMLElement) => {
+						el.createSpan({ cls: "downloads-span" }, (el) => {
+							const preSpan = el.createSpan();
+							const span = el.createSpan({
+								text: formatNumber(
+									pluginInfo.downloads,
+									1
+								).toString(),
+								cls: "downloads-text-span",
+							});
+							addGroupCircles(this, span, item);
+							setIcon(preSpan, "download-cloud");
+						});
+					}
+				);
+
+				const lastUpdated = new Date(pluginInfo.updated);
+				const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
+				// Updated
+				itemContainer.createDiv({
+					cls: "qps-community-item-updated",
+					text: `Updated ${timeSinceUpdate}`,
+				});
+			}
+
+			// desc
+			itemContainer.createDiv({
+				cls: "qps-community-item-desc",
+				text: item.description,
 			});
 		}
+	}
 
-		// desc
-		itemContainer.createDiv({
-			cls: "qps-community-item-desc",
-			text: item.description,
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+		document.removeEventListener("mousemove", (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
+
+		document.removeEventListener("keydown", (event) => {
+			handleKeyDown(event, this);
+		});
+
+		this.modalEl.removeEventListener("contextmenu", (evt) => {
+			if (this.isDblClick) return;
+			handleContextMenu(evt, this);
 		});
 	}
-}
 }
 
 async function getPluginList(): Promise<PluginCommInfo[]> {
@@ -302,6 +326,19 @@ async function getPluginList(): Promise<PluginCommInfo[]> {
 export async function getReadMe(item: PluginCommInfo) {
 	const repo = item.repo;
 	const repoURL = `https://api.github.com/repos/${repo}/contents/README.md`;
+	try {
+		const response = await fetch(repoURL);
+		return await response.json();
+	} catch (error) {
+		console.error("Error fetching ReadMe", error);
+	}
+	return null;
+}
+
+export async function getManifest(item: PluginCommInfo) {
+	const repo = item.repo;
+	// const repoURL = `https://api.github.com/repos/${repo}/contents/manifest.json`;
+	const repoURL = `https://raw.githubusercontent.com/${repo}/master/manifest.json`;
 	try {
 		const response = await fetch(repoURL);
 		return await response.json();
@@ -468,7 +505,7 @@ const groupMenu = (
 	menu.showAtMouseEvent(evt);
 };
 
-function handleKeyDown(event:KeyboardEvent, modal: CPModal) {
+function handleKeyDown(event: KeyboardEvent, modal: CPModal) {
 	const key = event.key;
 	if (modal.mousePosition) {
 		const elementFromPoint = document.elementFromPoint(
@@ -622,3 +659,45 @@ const addGroupCircles = (
 		}
 	}
 };
+
+export function handleContextMenu(evt: MouseEvent, modal: CPModal) {
+	if (modal.mousePosition) {
+		const elementFromPoint = document.elementFromPoint(
+			modal.mousePosition.x,
+			modal.mousePosition.y
+		);
+		const targetBlock = elementFromPoint?.closest(
+			".qps-comm-block"
+		) as HTMLElement;
+
+		if (targetBlock) {
+			const itemName = targetBlock.firstChild?.textContent;
+			const cleanItemName = itemName?.replace(/installed$/, "").trim();
+			const matchingItem = modal.pluginsList.find(
+				(item) => item.name === cleanItemName
+			);
+
+			if (matchingItem) {
+				console.log("matchingItem", matchingItem);
+				const { plugin } = modal;
+				evt.preventDefault();
+				const menu = new Menu();
+				menu.addItem((item) => {
+					item.setTitle("install")
+						.setIcon("arrow-down-to-dot")
+						.onClick(async () => {
+							const manifest = await getManifest(matchingItem);
+							console.log("manifest", manifest);
+							console.log("matchingItem.repo", matchingItem.repo)
+							await this.app.plugins.installPlugin(
+								matchingItem.repo,
+								"latest",
+								manifest
+							);
+						});
+				});
+				menu.showAtMouseEvent(evt);
+			}
+		}
+	}
+}

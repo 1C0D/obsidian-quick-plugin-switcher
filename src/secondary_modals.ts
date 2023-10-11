@@ -1,7 +1,7 @@
 import { App, Modal, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginCommInfo, PluginInfo } from "./types";
-import { CPModal, getReadMe } from "./community-plugins_modal";
+import { CPModal } from "./community-plugins_modal";
 
 type ConfirmCallback = (confirmed: boolean) => void;
 
@@ -162,7 +162,11 @@ export class ReadMeModal extends Modal {
 
 	async onOpen() {
 		const { contentEl, pluginItem } = this;
-		contentEl.empty();
+		contentEl.empty();		
+		const div = contentEl.createDiv({ cls: "qps-read-me" });
+		// easy way
+		div.innerHTML = `<iframe style='filter: invert(0);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
+		
 		// contentEl
 		// 	.createEl("p", {
 		// 		text: pluginItem.name,
@@ -170,13 +174,7 @@ export class ReadMeModal extends Modal {
 		// 	.createEl("p", {
 		// 		text: "By: " + pluginItem.author,
 		// 	});
-
-		const div = contentEl.createDiv({ cls: "qps-read-me" });
-		// easy solution
-		div.innerHTML = `<iframe style='filter: invert(0);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
-
 		// much harder, how to render html portions?
-		
 		// const data = await getReadMe(pluginItem);
 		// const content = Buffer.from(data.content, "base64").toString("utf-8");
 		// const updatedContent = content

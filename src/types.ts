@@ -47,8 +47,9 @@ export interface QPSSettings {
 	pluginsTagged: PluginsTaggedInfo;
 	wasEnabled: string[];
 	filters: keyof typeof Filters;
-	communityFilters: keyof typeof CommFilters;
+	filtersComm: keyof typeof CommFilters;
 	selectedGroup: string;
+	selectedGroupComm: string;
 	search: string;
 	numberOfGroups: number;
 	numberOfGroupsComm: number;
@@ -66,11 +67,12 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	pluginsTagged: {},
 	wasEnabled: [],
 	filters: Filters.All,
-	communityFilters: CommFilters.All,
+	filtersComm: CommFilters.All,
 	selectedGroup: "SelectGroup",
+	selectedGroupComm: "SelectGroup",
 	search: "",
 	numberOfGroups: 3,
-	numberOfGroupsComm: 3,
+	numberOfGroupsComm: 4,
 	groups: {},
 	groupsComm: {},
 	showHotKeys: true,

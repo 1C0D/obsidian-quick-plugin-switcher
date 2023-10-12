@@ -165,7 +165,7 @@ export class ReadMeModal extends Modal {
 		contentEl.empty();		
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
 		// easy way
-		div.innerHTML = `<iframe style='filter: invert(0);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
+		div.innerHTML = `<iframe style='filter: invert(0) brightness(90%);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
 		
 		// contentEl
 		// 	.createEl("p", {

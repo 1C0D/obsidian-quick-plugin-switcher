@@ -29,6 +29,8 @@ import {
 	getCondition,
 	searchDivButtons,
 	handleContextMenu,
+	doSearch,
+	addSearch,
 } from "./modal_components";
 import {
 	GroupsKeysObject,
@@ -86,15 +88,20 @@ export class QPSModal extends Modal {
 		});
 	}
 
-	onOpen() {
+	async onOpen() {
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		settings.search = "";
 		contentEl.empty();
 		this.container();
-		getGroupTitle(plugin, Groups);
+		getGroupTitle(plugin, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
-		this.addSearch(this.search, settings.allPluginsList, "Search plugins");
+		await addSearch(
+			this,
+			this.search,
+			settings.allPluginsList,
+			"Search plugins"
+		);
 		searchDivButtons(this, this.search);
 		this.addGroups(this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
@@ -116,42 +123,16 @@ export class QPSModal extends Modal {
 				byGroup: `By Group`,
 			})
 			.setValue(settings.filters as string)
-			.onChange(async (value: QPSSettings["filters"]) => {
+			.onChange(async (value) => {
 				settings.filters = value;
-				plugin.getLength();
+				// plugin.getLength();//not needed apparently
 				await plugin.saveSettings();
 				this.onOpen();
 			});
 
-		// mostSwitched reset button
 		mostSwitchedResetButton(this, contentEl);
 
-		// byGroup
 		filterByGroup(this, contentEl);
-	};
-
-	addSearch = async (
-		contentEl: HTMLElement,
-		pluginsList: any[],
-		placeholder: string
-	) => {
-		const { plugin } = this;
-		const { settings } = plugin;
-
-		new Setting(contentEl)
-			.addSearch(async (search: SearchComponent) => {
-				search
-					.setValue(settings.search)
-					.setPlaceholder(placeholder)
-					.onChange(async (value: string) => {
-						settings.search = value;
-						// to update list
-						const listItems = doSearch(value, pluginsList);
-						this.items.empty();
-						this.addItems(listItems);
-					});
-			})
-			.setClass("qps-search-component");
 	};
 
 	addGroups(contentEl: HTMLElement): void {
@@ -317,22 +298,6 @@ export class QPSModal extends Modal {
 			handleContextMenu(evt, this);
 		});
 	}
-}
-
-function doSearch(value: string, pluginsList: PluginInfo[]) {
-	const listItems: PluginInfo[] = [];
-	// search process
-	for (const i of pluginsList) {
-		if (
-			i.name.toLowerCase().includes(value.toLowerCase()) ||
-			(value.length > 1 &&
-				value[value.length - 1] === " " &&
-				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
-		) {
-			listItems.push(i);
-		}
-	}
-	return listItems;
 }
 
 function circleCSSModif(

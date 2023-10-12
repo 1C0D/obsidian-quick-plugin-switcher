@@ -29,9 +29,12 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 	listItems.sort((a, b) => b.switched - a.switched);
 };
 
-export const getGroupTitle = (plugin: Plugin, Groups: GroupData) => {
+export const getGroupTitle = (
+	plugin: Plugin,
+	Groups: GroupData,
+	numberOfGroups: number
+) => {
 	const { settings } = plugin;
-	const numberOfGroups = settings.numberOfGroups;
 	const currentGroupKeys = Object.keys(Groups);
 
 	// delete groups if new value < previous value (when moving slider in prefs)
@@ -149,13 +152,26 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export function groupNotEmpty(groupIndex: number, modal: QPSModal) {
+export function groupNotEmpty(groupIndex: number, modal: QPSModal | CPModal) {
 	const { plugin } = modal;
 	const { settings } = plugin;
+	if (modal instanceof QPSModal) {
+		return settings.allPluginsList.some(
+			(plugin) =>
+				plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+		);
+	} else {
+		for (const pluginKey in settings.pluginsTagged) {
+			const plugin = settings.pluginsTagged[pluginKey];
+			const groupIndices = plugin.groupInfo.groupIndices || [];
 
-	return settings.allPluginsList.some(
-		(plugin) => plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
-	);
+			if (groupIndices.includes(groupIndex)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 }
 
 export function getIndexFromSelectedGroup(str: string) {
@@ -208,7 +224,7 @@ export function GroupsKeysObject(numberOfGroups: number) {
 	return keyToGroupObject;
 }
 
-export const pressDelay = (modal: CPModal|QPSModal) => {
+export const pressDelay = (modal: CPModal | QPSModal) => {
 	modal.pressed = true;
 	setTimeout(() => {
 		modal.pressed = false;

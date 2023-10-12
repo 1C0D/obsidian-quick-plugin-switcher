@@ -1,4 +1,12 @@
-import { Filters, Groups, PluginCommInfo, PluginInfo, QPSSettings } from "./types";
+import {
+	Filters,
+	GroupData,
+	Groups,
+	GroupsComm,
+	PluginCommInfo,
+	PluginInfo,
+	QPSSettings,
+} from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
 import { confirm } from "./secondary_modals";
@@ -9,6 +17,8 @@ import {
 	Menu,
 	Notice,
 	Platform,
+	SearchComponent,
+	Setting,
 	TextComponent,
 } from "obsidian";
 import { DescriptionModal } from "./secondary_modals";
@@ -47,34 +57,112 @@ export const mostSwitchedResetButton = (
 	}
 };
 
-export const filterByGroup = (modal: QPSModal, contentEl: HTMLElement) => {
+export const filterByGroup = (
+	modal: QPSModal | CPModal,
+	contentEl: HTMLElement
+) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
-	if (settings.filters === Filters.ByGroup) {
+
+	const getDropdownOptions = (
+		groups: GroupData,
+		length: number,
+		filterType: string
+	) => {
 		const dropdownOptions: { [key: string]: string } = {};
-		// set dropdownOptions
-		for (const groupKey in Groups) {
+		for (const groupKey in groups) {
 			const groupIndex = getIndexFromSelectedGroup(groupKey);
 			if (groupKey === "SelectGroup") {
-				dropdownOptions[groupKey] =
-					Groups[groupKey] + `(${plugin.lengthAll})`;
+				dropdownOptions[groupKey] = groups[groupKey] + `(${length})`;
 			} else if (groupNotEmpty(groupIndex, modal)) {
 				dropdownOptions[groupKey] =
-					getEmojiForGroup(groupIndex).emoji + Groups[groupKey];
+					getEmojiForGroup(groupIndex).emoji + groups[groupKey];
 			}
 		}
-		// if a group is empty get back dropdown to SelectGroup
-
 		new DropdownComponent(contentEl)
 			.addOptions(dropdownOptions)
 			.setValue(settings.selectedGroup as string)
-			.onChange(async (value: QPSSettings["selectedGroup"]) => {
+			.onChange(async (value) => {
 				settings.selectedGroup = value;
 				await plugin.saveSettings();
-				modal.onOpen();
+				if (modal instanceof QPSModal) {
+					modal.onOpen();
+				} else {
+					modal.draw(modal, modal.pluginsList, modal.pluginStats);
+				}
 			});
+	};
+
+	if (modal instanceof QPSModal) {
+		if (settings.filters === Filters.ByGroup) {
+			getDropdownOptions(Groups, plugin.lengthAll, "selectedGroup");
+		}
+	} else {
+		if (settings.filtersComm === Filters.ByGroup) {
+			getDropdownOptions(
+				GroupsComm,
+				modal.pluginsList.length,
+				"selectedGroupComm"
+			);
+		}
 	}
 };
+
+export async function addSearch(
+	modal: CPModal | QPSModal,
+	contentEl: HTMLElement,
+	pluginsList: any[],
+	placeholder: string
+){
+	const { plugin } = modal;
+	const { settings } = plugin;
+
+	new Setting(contentEl)
+		.addSearch(async (search: SearchComponent) => {
+			search
+				.setValue(settings.search)
+				.setPlaceholder(placeholder)
+				.onChange(async (value: string) => {
+					settings.search = value;
+					// to update list
+					modal.items.empty();
+					if (modal instanceof CPModal) {
+						const listItems = doSearchComm(value, pluginsList);
+						modal.addItems(modal, listItems, modal.pluginStats);
+					} else {
+						const listItems = doSearch(value, pluginsList);
+						modal.addItems(listItems);
+					}
+				});
+		})
+		.setClass("qps-search-component");
+};
+
+export function doSearch(value: string, pluginsList: PluginInfo[]) {
+	const listItems: PluginInfo[] = [];
+	// search process
+	for (const i of pluginsList) {
+		if (
+			i.name.toLowerCase().includes(value.toLowerCase()) ||
+			(value.length > 1 &&
+				value[value.length - 1] === " " &&
+				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
+		) {
+			listItems.push(i);
+		}
+	}
+	return listItems;
+}
+
+function doSearchComm(value: string, pluginsList: PluginCommInfo[]) {
+	const lowerCaseValue = value.toLowerCase();
+	return pluginsList.filter(
+		(item) =>
+			item.name.toLowerCase().includes(lowerCaseValue) ||
+			item.description.toLowerCase().includes(lowerCaseValue) ||
+			item.author.toLowerCase().includes(lowerCaseValue)
+	);
+}
 
 export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
@@ -309,7 +397,7 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 	else if (settings.filters === Filters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup as string
-		); //marche pas?
+		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
 				return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
@@ -581,7 +669,7 @@ export const getCondition = function (
 	return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id);
 };
 
-export async function openGitHubRepo(plugin: PluginInfo|PluginCommInfo) {
+export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
 	if ("repo" in plugin) {
 		const repoURL = `https://github.com/${plugin.repo}`;
 		window.open(repoURL, "_blank"); // open
@@ -647,7 +735,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal) {
 			);
 
 			if (matchingItem) {
-				const {plugin} = modal
+				const { plugin } = modal;
 				evt.preventDefault();
 				const menu = new Menu();
 				if (Platform.isDesktopApp) {

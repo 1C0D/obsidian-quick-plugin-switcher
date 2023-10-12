@@ -1,7 +1,8 @@
+// ajout filter group
+// uninstall by group
 // ajout getlength ds addHeader
 // do search à revoir et meilleure algo?
 // search focus perdu après qu'on referme whole desc
-// sticky header, focus ?
 // settings groups length
 // group menu voir plus tard
 // destkop only
@@ -12,8 +13,6 @@ import {
 	DropdownComponent,
 	Menu,
 	Modal,
-	SearchComponent,
-	Setting,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -31,10 +30,11 @@ import {
 	getCirclesItem,
 	getEmojiForGroup,
 	getGroupTitle,
+	getIndexFromSelectedGroup,
 	pressDelay,
 	rmvAllGroupsFromPlugin,
 } from "./modal_utils";
-import { openGitHubRepo } from "./modal_components";
+import { addSearch, filterByGroup, openGitHubRepo } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
 
 export class CPModal extends Modal {
@@ -87,8 +87,12 @@ export class CPModal extends Modal {
 		const { plugin, contentEl } = this;
 		contentEl.empty();
 		plugin.settings.search = "";
-		this.pluginsList = await getPluginList();
-		this.pluginStats = await fetchAndStorePluginStats();
+		this.pluginsList = await fetchData(
+			"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+		);
+		this.pluginStats = await fetchData(
+			"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json"
+		);
 		this.draw(this, this.pluginsList, this.pluginStats);
 	}
 
@@ -98,15 +102,16 @@ export class CPModal extends Modal {
 		pluginStats: PackageInfoData
 	) {
 		const { plugin, contentEl } = this;
+		const { settings } = plugin;
 		contentEl.empty();
 		this.container();
-		getGroupTitle(plugin, GroupsComm);
+		getGroupTitle(plugin, GroupsComm, settings.numberOfGroupsComm);
 		this.addHeader(this.header, pluginsList, pluginStats);
-		await this.addSearch(
+		await addSearch(
+			this,
 			this.search,
 			pluginsList,
 			"Search community plugins",
-			pluginStats
 		);
 		this.addGroups(this.groups, GroupsComm);
 		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
@@ -130,37 +135,14 @@ export class CPModal extends Modal {
 				})`,
 				byGroup: `By Group`,
 			})
-			.setValue(settings.communityFilters as string)
+			.setValue(settings.filtersComm as string)
 			.onChange(async (value) => {
-				settings.communityFilters = value;
+				settings.filtersComm = value;
 				await plugin.saveSettings();
 				this.draw(this, pluginsList, pluginStats);
 			});
-	};
 
-	addSearch = async (
-		contentEl: HTMLElement,
-		pluginsList: PluginCommInfo[],
-		placeholder: string,
-		pluginStats: PackageInfoData
-	) => {
-		const { plugin } = this;
-		const { settings } = plugin;
-
-		new Setting(contentEl)
-			.addSearch(async (search: SearchComponent) => {
-				search
-					.setValue(settings.search)
-					.setPlaceholder(placeholder)
-					.onChange(async (value: string) => {
-						settings.search = value;
-						// to update list
-						const listItems = doSearch(value, pluginsList);
-						this.items.empty();
-						this.addItems(this, listItems, pluginStats);
-					});
-			})
-			.setClass("qps-search-component");
+		filterByGroup(this, contentEl);
 	};
 
 	addGroups(contentEl: HTMLElement, Groups: GroupData): void {
@@ -190,10 +172,8 @@ export class CPModal extends Modal {
 						text: `${groupKey}`,
 					});
 					const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
-					const postSpan = span.insertAdjacentHTML(
-						"beforeend",
-						groupNumberText
-					);
+					// postSpan
+					span.insertAdjacentHTML("beforeend", groupNumberText);
 
 					span.addEventListener("dblclick", (e) => {
 						if (this.isDblClick) return;
@@ -201,7 +181,7 @@ export class CPModal extends Modal {
 					});
 					span.addEventListener("contextmenu", (evt) => {
 						if (this.isDblClick) return;
-						groupMenu(this, evt, span, i);
+						groupMenu(this, evt, i);
 					});
 				}
 			);
@@ -317,10 +297,15 @@ export class CPModal extends Modal {
 	}
 }
 
-async function getPluginList(): Promise<PluginCommInfo[]> {
-	const repoURL =
-		"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
-	return await fetchIt(repoURL, "communityPluginsData");
+async function fetchData(url: string) {
+	try {
+		const response = await fetch(url);
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		console.error(`Error fetching data from ${url}:`, error);
+		return null;
+	}
 }
 
 export async function getReadMe(item: PluginCommInfo) {
@@ -337,7 +322,6 @@ export async function getReadMe(item: PluginCommInfo) {
 
 export async function getManifest(item: PluginCommInfo) {
 	const repo = item.repo;
-	// const repoURL = `https://api.github.com/repos/${repo}/contents/manifest.json`;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/master/manifest.json`;
 	try {
 		const response = await fetch(repoURL);
@@ -348,49 +332,7 @@ export async function getManifest(item: PluginCommInfo) {
 	return null;
 }
 
-async function fetchAndStorePluginStats(): Promise<PackageInfoData> {
-	const communityPluginStatsUrl =
-		"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
-	const pluginStats = await fetchIt(
-		communityPluginStatsUrl,
-		"communityPluginStats"
-	);
-	return pluginStats;
-}
 
-async function fetchIt(url: string, storageDataName: string) {
-	try {
-		const response = await fetch(url);
-		const data = await response.json();
-		localStorage.setItem(storageDataName, JSON.stringify(data));
-		// console.log("data from url");
-		return data;
-	} catch (error) {
-		console.error("Error fetching plugin data:", error);
-		const storedData = localStorage.getItem(storageDataName);
-		if (storedData) {
-			console.log("data from localStorage");
-			return JSON.parse(storedData);
-		}
-
-		return null;
-	}
-}
-
-function doSearch(value: string, pluginsList: PluginCommInfo[]) {
-	const listItems: PluginCommInfo[] = [];
-
-	for (const i of pluginsList) {
-		if (
-			i.name.toLowerCase().includes(value.toLowerCase()) ||
-			i.description.toLowerCase().includes(value.toLowerCase()) ||
-			i.author.toLowerCase().includes(value.toLowerCase())
-		) {
-			listItems.push(i);
-		}
-	}
-	return listItems;
-}
 
 function getInstalled() {
 	return Object.keys(this.app.plugins.manifests);
@@ -413,24 +355,33 @@ function sortItemsByDownloads(listItems: PluginCommInfo[], pluginStats: any) {
 	});
 }
 
-function filter(modal: CPModal, listItems: PluginCommInfo[]): PluginCommInfo[] {
-	if (modal.plugin.settings.communityFilters === "installed") {
-		const installedPlugins = getInstalled.call(this);
-		listItems = listItems.filter((item) =>
-			installedPlugins.includes(item.id)
+function filter(modal: CPModal, listItems: PluginCommInfo[]) {
+	const { settings } = modal.plugin;
+	const { filtersComm } = settings;
+	const installedPlugins = getInstalled();
+	if (filtersComm === "installed") {
+		return listItems.filter((item) => installedPlugins.includes(item.id));
+	} else if (filtersComm === "notInstalled") {
+		return listItems.filter((item) => !installedPlugins.includes(item.id));
+	} else if (filtersComm === "byGroup") {
+		const groupIndex = getIndexFromSelectedGroup(
+			settings.selectedGroup as string
 		);
+		if (groupIndex !== 0) {
+			const groupedItems = listItems.filter((i) => {
+				const { pluginsTagged } = settings;
+				const taggedItem = pluginsTagged[i.id];
+				if (taggedItem) {
+					const { groupInfo } = taggedItem;
+					const { groupIndices } = groupInfo;
+					return groupIndices?.indexOf(groupIndex) !== -1;
+				}else return false
+			});
+			return groupedItems;
+		} else return listItems;
+	} else {
+		return listItems;
 	}
-	if (modal.plugin.settings.communityFilters === "notInstalled") {
-		const installedPlugins = getInstalled.call(this);
-		listItems = listItems.filter(
-			(item) => !installedPlugins.includes(item.id)
-		);
-
-		// const notInstalledCount = listItems.length;
-		// console.log("Nombre de plugins non installés : ", notInstalledCount);
-	}
-
-	return listItems;
 }
 
 function circleCSSModif(
@@ -482,24 +433,16 @@ const editGroupName = (
 	});
 };
 
-const groupMenu = (
-	modal: any,
-	evt: MouseEvent,
-	span: HTMLSpanElement,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	// const inGroup = settings.allPluginsList.filter(
-	// 	(i: PluginInfo) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
-	// );
-
+const groupMenu = (modal: any, evt: MouseEvent, groupNumber: number) => {
 	const menu = new Menu();
 	menu.addItem((item) => {
 		item.setTitle("clear group items");
 	});
 	menu.addItem((item) => {
 		item.setTitle("install plugins in group");
+		item.onClick(async () => {
+			await installAllPluginsInGroup(modal, groupNumber);
+		});
 	});
 
 	menu.showAtMouseEvent(evt);
@@ -547,9 +490,10 @@ const handleHotkeys = async (
 	};
 	const keyPressed = evt.key;
 	const itemID = pluginItem.id;
-	const taggedItem = settings.pluginsTagged[itemID];
+	const { pluginsTagged } = settings;
+	const taggedItem = pluginsTagged[itemID];
 	if (!taggedItem) {
-		settings.pluginsTagged[itemID] = {
+		pluginsTagged[itemID] = {
 			groupInfo: { groupIndices: [] },
 		};
 		await modal.plugin.saveSettings();
@@ -560,7 +504,7 @@ const handleHotkeys = async (
 	}
 	pressDelay(modal);
 	const { groupInfo } = taggedItem;
-	const groupIndices = groupInfo.groupIndices;
+	const { groupIndices } = groupInfo;
 	if (keyPressed in keyToGroupObject) {
 		const groupIndex = keyToGroupObject[keyPressed];
 		if (groupIndices.length === 6) return;
@@ -598,7 +542,7 @@ const handleHotkeys = async (
 						.onClick(() => {
 							if (groupInfo)
 								groupInfo.groupIndices = removeItem(
-									groupInfo.groupIndices,
+									groupIndices,
 									groupIndex
 								);
 							modal.draw(
@@ -678,21 +622,55 @@ export function handleContextMenu(evt: MouseEvent, modal: CPModal) {
 			);
 
 			if (matchingItem) {
-				console.log("matchingItem", matchingItem);
 				const { plugin } = modal;
 				evt.preventDefault();
 				const menu = new Menu();
 				menu.addItem((item) => {
-					item.setTitle("install")
-						.setIcon("arrow-down-to-dot")
+					item.setTitle("install plugin")
+						.setDisabled(isInstalled(matchingItem))
+						.setIcon("log-in")
 						.onClick(async () => {
+							const pluginInfo =
+								modal.pluginStats[matchingItem.id];
+							let latestVersion;
+
+							for (
+								let i = Object.keys(pluginInfo).length - 1;
+								i >= 0;
+								i--
+							) {
+								const version = Object.keys(pluginInfo)[i];
+								if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
+									latestVersion = version;
+									break;
+								}
+							}
+
 							const manifest = await getManifest(matchingItem);
-							console.log("manifest", manifest);
-							console.log("matchingItem.repo", matchingItem.repo)
 							await this.app.plugins.installPlugin(
 								matchingItem.repo,
-								"latest",
+								latestVersion,
 								manifest
+							);
+							modal.draw(
+								modal,
+								modal.pluginsList,
+								modal.pluginStats
+							);
+						});
+				});
+				menu.addItem((item) => {
+					item.setTitle("uninstall plugin")
+						.setDisabled(!isInstalled(matchingItem))
+						.setIcon("log-out")
+						.onClick(async () => {
+							await this.app.plugins.uninstallPlugin(
+								matchingItem.id
+							);
+							modal.draw(
+								modal,
+								modal.pluginsList,
+								modal.pluginStats
 							);
 						});
 				});
@@ -700,4 +678,51 @@ export function handleContextMenu(evt: MouseEvent, modal: CPModal) {
 			}
 		}
 	}
+}
+
+async function installAllPluginsInGroup(modal: CPModal, groupNumber: number) {
+	const { plugin } = modal;
+	const { settings } = plugin;
+
+	const pluginsWithGroup: PluginCommInfo[] = [];
+
+	Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
+		const plugin = settings.pluginsTagged[pluginKey];
+		const groupIndices = plugin.groupInfo.groupIndices || [];
+
+		if (groupIndices.includes(groupNumber)) {
+			const matchingPlugin = modal.pluginsList.find(
+				(plugin) => plugin.id === pluginKey
+			);
+			if (matchingPlugin) {
+				pluginsWithGroup.push(matchingPlugin);
+			}
+		}
+	});
+
+	if (!pluginsWithGroup.length) return;
+	console.log("pluginsWithGroup", pluginsWithGroup);
+
+	for (const plugin of pluginsWithGroup) {
+		const manifest = await getManifest(plugin);
+		console.log("manifest", manifest);
+		const pluginInfo = modal.pluginStats[plugin.id];
+		let latestVersion;
+
+		for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
+			const version = Object.keys(pluginInfo)[i];
+			if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
+				latestVersion = version;
+				break;
+			}
+		}
+
+		await this.app.plugins.installPlugin(
+			plugin.repo,
+			latestVersion,
+			manifest
+		);
+	}
+
+	await modal.draw(modal, modal.pluginsList, modal.pluginStats);
 }

@@ -24,6 +24,7 @@ import {
 import { DescriptionModal } from "./secondary_modals";
 import {
 	conditionalEnable,
+	createInput,
 	getEmojiForGroup,
 	getIndexFromSelectedGroup,
 	groupNotEmpty,
@@ -113,7 +114,7 @@ export async function addSearch(
 	contentEl: HTMLElement,
 	pluginsList: any[],
 	placeholder: string
-){
+) {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
@@ -127,6 +128,7 @@ export async function addSearch(
 					// to update list
 					modal.items.empty();
 					if (modal instanceof CPModal) {
+						// todo underline ************
 						const listItems = doSearchComm(value, pluginsList);
 						modal.addItems(modal, listItems, modal.pluginStats);
 					} else {
@@ -136,37 +138,25 @@ export async function addSearch(
 				});
 		})
 		.setClass("qps-search-component");
-};
+}
 
 export function doSearch(value: string, pluginsList: PluginInfo[]) {
-	const listItems: PluginInfo[] = [];
-	// search process
-	for (const i of pluginsList) {
-		if (
-			i.name.toLowerCase().includes(value.toLowerCase()) ||
-			(value.length > 1 &&
-				value[value.length - 1] === " " &&
-				i.name.toLowerCase().startsWith(value.trim().toLowerCase()))
-		) {
-			listItems.push(i);
-		}
-	}
-	return listItems;
+	return pluginsList.filter((i) =>
+		i.name.toLowerCase().includes(value.toLowerCase())
+	);
 }
 
 function doSearchComm(value: string, pluginsList: PluginCommInfo[]) {
 	const lowerCaseValue = value.toLowerCase();
-	return pluginsList.filter(
-		(item) =>
-			item.name.toLowerCase().includes(lowerCaseValue) ||
-			item.description.toLowerCase().includes(lowerCaseValue) ||
-			item.author.toLowerCase().includes(lowerCaseValue)
+	return pluginsList.filter((item) =>
+		[item.name, item.description, item.author].some((prop) =>
+			prop.toLowerCase().includes(lowerCaseValue)
+		)
 	);
 }
 
-export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
+export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
-	const { settings } = plugin;
 	new ButtonComponent(el)
 		.setIcon("download-cloud")
 		.setCta()
@@ -175,6 +165,19 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 			// modal.close() //à voir
 			new CPModal(app, plugin).open();
 		});
+};
+
+export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	// new ButtonComponent(el)
+	// 	.setIcon("download-cloud")
+	// 	.setCta()
+	// 	.setTooltip("community plugins")
+	// 	.buttonEl.addEventListener("click", (evt: MouseEvent) => {
+	// 		// modal.close() //à voir
+	// 		new CPModal(app, plugin).open();
+	// 	});
 	new ButtonComponent(el)
 		.setIcon("power")
 		.setCta()
@@ -420,6 +423,55 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 	}
 
 	return listItems;
+};
+
+export const editGroupName = (
+	modal: CPModal | QPSModal,
+	span: HTMLSpanElement,
+	groupNumber: number
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+
+	const currentValue =
+		(modal instanceof CPModal
+			? settings.groupsComm[groupNumber]?.name || ""
+			: settings.groups[groupNumber]?.name) || "";
+
+	const updateGroupName = (value: string) => {
+		if (modal instanceof CPModal) {
+			settings.groupsComm[groupNumber].name =
+				value || GroupsComm[groupNumber];
+			span.textContent = settings.groupsComm[groupNumber].name;
+		} else {
+			settings.groups[groupNumber].name = value || Groups[groupNumber];
+			span.textContent = settings.groups[groupNumber].name;
+		}
+	};
+
+	const handleBlurOrEnter = () => {
+		setTimeout(() => {
+			if (!modal.isDblClick) {
+				updateGroupName(input.value);
+				if (modal instanceof CPModal) {
+					modal.draw(modal, modal.pluginsList, modal.pluginStats);
+				} else {
+					modal.onOpen();
+				}
+			}
+		}, 200);
+	};
+
+	const input = createInput(span, currentValue);
+
+	if (input) {
+		input.addEventListener("blur", handleBlurOrEnter);
+		input.addEventListener("keydown", (event) => {
+			if (event.key === "Enter") {
+				handleBlurOrEnter();
+			}
+		});
+	}
 };
 
 export const itemToggleClass = (
@@ -713,108 +765,267 @@ export const searchDivButtons = (
 		{
 			cls: "qps-toggle-plugins",
 		},
-		(el) => powerButton(modal, el)
+		(el) => {
+			commButton(modal, el);
+			powerButton(modal, el);
+		}
 	);
 };
 
+export function handleDblClick(evt: MouseEvent, modal: QPSModal) {
+	const elementFromPoint = getElementFromMousePosition(evt, modal);
+	const targetGroup = elementFromPoint?.closest(
+		".qps-groups-name"
+	) as HTMLElement;
+
+	const groupName = targetGroup!.textContent;
+	const groupNumber = parseInt(groupName?.match(/\((\d+)\)$/)?.[1] as string);
+	editGroupName(modal, targetGroup, groupNumber);
+}
+
 export function handleContextMenu(evt: MouseEvent, modal: QPSModal) {
+	const elementFromPoint = getElementFromMousePosition(evt, modal);
+	const targetItemLine = elementFromPoint?.closest(
+		".qps-item-line"
+	) as HTMLElement;
+
+	const targetGroup = elementFromPoint?.closest(
+		".qps-groups-name"
+	) as HTMLElement;
+
+	const groupName = targetGroup!.textContent;
+	const groupNumber = parseInt(groupName?.match(/\((\d+)\)$/)?.[1] as string);
+	groupMenu(modal, evt, targetGroup, groupNumber);
+
+	if (targetItemLine) {
+		const itemName = (targetItemLine.children[1] as HTMLInputElement).value;
+		const matchingItem = modal.plugin.settings.allPluginsList.find(
+			(item) => item.name === itemName
+		);
+
+		if (matchingItem) {
+			const { plugin } = modal;
+			evt.preventDefault();
+			const menu = new Menu();
+			if (Platform.isDesktopApp) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Plugin folder (f)")
+						.setIcon("folder-open")
+						.onClick(() => {
+							openDirectoryInFileManager(modal, matchingItem);
+						})
+				);
+			}
+			menu.addItem((item) => {
+				item.setTitle("Plugin features").setIcon("package-plus");
+				const submenu = (item as any).setSubmenu() as Menu;
+				pluginFeatureSubmenu(submenu, matchingItem, modal);
+			});
+
+			if (matchingItem.id !== "quick-plugin-switcher") {
+				menu.addSeparator();
+				menu.addItem((item) => {
+					item.setTitle("Add to group").setIcon("user");
+					const submenu = (item as any).setSubmenu() as Menu;
+					addToGroupSubMenu(submenu, matchingItem, modal);
+				});
+				menu.addItem((item) => {
+					item.setTitle("Remove from group").setIcon("user-minus");
+					const submenu = (item as any).setSubmenu() as Menu;
+					submenu.addItem((subitem) => {
+						subitem
+							.setTitle("All groups")
+							.setDisabled(
+								matchingItem.groupInfo.groupIndices.length === 0
+							)
+							.onClick(async () => {
+								matchingItem.groupInfo.groupIndices;
+								rmvAllGroupsFromPlugin(modal, matchingItem);
+							});
+					});
+					addRemoveItemGroupMenuItems(
+						modal,
+						submenu,
+						plugin,
+						matchingItem
+					);
+				}).addSeparator();
+				menu.addItem((item) => {
+					item.setTitle("Clear items groups").setIcon("user-minus");
+
+					const submenu = (item as any).setSubmenu() as Menu;
+					submenu.addItem((subitem) => {
+						subitem.setTitle("All groups").onClick(async () => {
+							const confirmReset = await confirm(
+								"Detach all groups from all plugins?",
+								300
+							);
+							if (confirmReset) {
+								for (const i of plugin.settings
+									.allPluginsList) {
+									i.groupInfo.groupIndices = [];
+								}
+								modal.onOpen();
+								new Notice("Done", 1000);
+							} else {
+								new Notice("Operation cancelled", 1000);
+							}
+						});
+					});
+					addRemoveGroupMenuItems(modal, submenu, plugin);
+				});
+			}
+			menu.showAtMouseEvent(evt);
+		}
+	}
+}
+
+function getElementFromMousePosition(evt: MouseEvent, modal: QPSModal) {
 	if (modal.mousePosition) {
 		const elementFromPoint = document.elementFromPoint(
 			modal.mousePosition.x,
 			modal.mousePosition.y
 		);
-		const targetBlock = elementFromPoint?.closest(
-			".qps-item-line"
-		) as HTMLElement;
-
-		if (targetBlock) {
-			const itemName = (targetBlock.children[1] as HTMLInputElement)
-				.value;
-			const matchingItem = modal.plugin.settings.allPluginsList.find(
-				(item) => item.name === itemName
-			);
-
-			if (matchingItem) {
-				const { plugin } = modal;
-				evt.preventDefault();
-				const menu = new Menu();
-				if (Platform.isDesktopApp) {
-					menu.addItem((item) =>
-						item
-							.setTitle("Plugin folder (f)")
-							.setIcon("folder-open")
-							.onClick(() => {
-								openDirectoryInFileManager(modal, matchingItem);
-							})
-					);
-				}
-				menu.addItem((item) => {
-					item.setTitle("Plugin features").setIcon("package-plus");
-					const submenu = (item as any).setSubmenu() as Menu;
-					pluginFeatureSubmenu(submenu, matchingItem, modal);
-				});
-
-				if (matchingItem.id !== "quick-plugin-switcher") {
-					menu.addSeparator();
-					menu.addItem((item) => {
-						item.setTitle("Add to group").setIcon("user");
-						const submenu = (item as any).setSubmenu() as Menu;
-						addToGroupSubMenu(submenu, matchingItem, modal);
-					});
-					menu.addItem((item) => {
-						item.setTitle("Remove from group").setIcon(
-							"user-minus"
-						);
-						const submenu = (item as any).setSubmenu() as Menu;
-						submenu.addItem((subitem) => {
-							subitem
-								.setTitle("All groups")
-								.setDisabled(
-									matchingItem.groupInfo.groupIndices
-										.length === 0
-								)
-								.onClick(async () => {
-									const groupIndices =
-										matchingItem.groupInfo.groupIndices;
-									rmvAllGroupsFromPlugin(modal, matchingItem);
-								});
-						});
-						addRemoveItemGroupMenuItems(
-							modal,
-							submenu,
-							plugin,
-							matchingItem
-						);
-					}).addSeparator();
-					menu.addItem((item) => {
-						item.setTitle("Clear items groups").setIcon(
-							"user-minus"
-						);
-
-						const submenu = (item as any).setSubmenu() as Menu;
-						submenu.addItem((subitem) => {
-							subitem.setTitle("All groups").onClick(async () => {
-								const confirmReset = await confirm(
-									"Detach all groups from all plugins?",
-									300
-								);
-								if (confirmReset) {
-									for (const i of plugin.settings
-										.allPluginsList) {
-										i.groupInfo.groupIndices = [];
-									}
-									modal.onOpen();
-									new Notice("Done", 1000);
-								} else {
-									new Notice("Operation cancelled", 1000);
-								}
-							});
-						});
-						addRemoveGroupMenuItems(modal, submenu, plugin);
-					});
-				}
-				menu.showAtMouseEvent(evt);
-			}
-		}
+		return elementFromPoint;
 	}
+	return null;
 }
+
+export const groupMenu = (
+	modal: any,
+	evt: MouseEvent,
+	span: HTMLSpanElement,
+	groupNumber: number
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	const inGroup = settings.allPluginsList.filter(
+		(i: PluginInfo) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
+	);
+
+	const menu = new Menu();
+	menu.addItem((item) =>
+		item.setTitle("delay group").onClick(() => {
+			const currentValue = settings.groups[groupNumber].time || 0;
+			const input = createInput(span, currentValue);
+
+			const handleBlurOrEnter = () => {
+				setTimeout(() => {
+					if (!modal.isDblClick) {
+						const value = parseInt(input?.value) || 0;
+						settings.groups[groupNumber].time = value;
+						span.textContent = `${value}`;
+						if (modal instanceof CPModal) {
+							modal.draw(
+								modal,
+								modal.pluginsList,
+								modal.pluginStats
+							);
+						} else if (modal instanceof QPSModal) {
+							modal.onOpen();
+						}
+					}
+				}, 100);
+			};
+
+			input?.addEventListener("blur", handleBlurOrEnter);
+			input?.addEventListener("keydown", (event) => {
+				if (event.key === "Enter") {
+					handleBlurOrEnter();
+				}
+			});
+		})
+	);
+
+	menu.addItem((item) =>
+		item
+			.setTitle("apply")
+			.setDisabled(
+				!inGroup.length || settings.groups[groupNumber].time === 0
+			)
+			.onClick(async () => {
+				for (const plugin of inGroup) {
+					plugin.time = settings.groups[groupNumber].time;
+					plugin.delayed = true;
+					settings.groups[groupNumber].applied = true;
+					if (plugin.enabled) {
+						await (modal.app as any).plugins.disablePluginAndSave(
+							plugin.id
+						);
+						await (modal.app as any).plugins.enablePlugin(
+							plugin.id
+						);
+					}
+					modal.plugin.saveSettings();
+					modal.onOpen();
+				}
+			})
+	);
+	menu.addItem((item) =>
+		item
+			.setTitle("reset")
+			.setDisabled(
+				!inGroup.length || settings.groups[groupNumber].time === 0
+			)
+			.onClick(async () => {
+				for (const plugin of inGroup) {
+					plugin.time = 0;
+					plugin.delayed = false;
+					settings.groups[groupNumber].applied = false;
+					if (plugin.enabled) {
+						await (modal.app as any).plugins.enablePluginAndSave(
+							plugin.id
+						);
+					}
+					modal.onOpen();
+				}
+				plugin.saveSettings();
+			})
+	);
+	menu.addSeparator();
+	const toEnable = inGroup.filter((i: PluginInfo) => i.enabled === false);
+	menu.addItem((item) =>
+		item
+			.setTitle("enable all plugins in group")
+			.setDisabled(!inGroup.length || !toEnable.length)
+			.onClick(async () => {
+				await Promise.all(
+					toEnable.map(async (i: PluginInfo) => {
+						conditionalEnable(modal, i);
+						i.enabled = true;
+						modal.plugin.saveSettings();
+					})
+				);
+				if (toEnable) {
+					plugin.getLength();
+					new Notice("All plugins enabled.");
+					await modal.plugin.saveSettings();
+					modal.onOpen();
+				}
+			})
+	);
+
+	const toDisable = inGroup.filter((i: PluginInfo) => i.enabled === true);
+	menu.addItem((item) =>
+		item
+			.setTitle("disable all plugins in group")
+			.setDisabled(!inGroup.length || !toDisable.length)
+			.onClick(async () => {
+				await Promise.all(
+					toDisable.map(async (i: PluginInfo) => {
+						(modal.app as any).plugins.disablePluginAndSave(i.id);
+						i.enabled = false;
+					})
+				);
+				if (toDisable) {
+					plugin.getLength();
+					new Notice("All plugins disabled.");
+					await modal.plugin.saveSettings();
+					modal.onOpen();
+				}
+			})
+	);
+
+	menu.showAtMouseEvent(evt);
+};

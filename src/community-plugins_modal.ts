@@ -26,15 +26,14 @@ import {
 } from "./types";
 import {
 	GroupsKeysObject,
-	createInput,
 	getCirclesItem,
 	getEmojiForGroup,
-	getGroupTitle,
+	setGroupTitle,
 	getIndexFromSelectedGroup,
 	pressDelay,
 	rmvAllGroupsFromPlugin,
 } from "./modal_utils";
-import { addSearch, filterByGroup, openGitHubRepo } from "./modal_components";
+import { addSearch, editGroupName, filterByGroup, openGitHubRepo } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
 
 export class CPModal extends Modal {
@@ -105,7 +104,7 @@ export class CPModal extends Modal {
 		const { settings } = plugin;
 		contentEl.empty();
 		this.container();
-		getGroupTitle(plugin, GroupsComm, settings.numberOfGroupsComm);
+		setGroupTitle(modal, plugin, GroupsComm, settings.numberOfGroupsComm);
 		this.addHeader(this.header, pluginsList, pluginStats);
 		await addSearch(
 			this,
@@ -113,7 +112,7 @@ export class CPModal extends Modal {
 			pluginsList,
 			"Search community plugins",
 		);
-		this.addGroups(this.groups, GroupsComm);
+		this.addGroups(this, this.groups, GroupsComm);
 		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
 		await this.addItems(this, pluginsList, pluginStats);
 	}
@@ -145,7 +144,7 @@ export class CPModal extends Modal {
 		filterByGroup(this, contentEl);
 	};
 
-	addGroups(contentEl: HTMLElement, Groups: GroupData): void {
+	addGroups(modal:CPModal, contentEl: HTMLElement, Groups: GroupData): void {
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -177,11 +176,11 @@ export class CPModal extends Modal {
 
 					span.addEventListener("dblclick", (e) => {
 						if (this.isDblClick) return;
-						editGroupName(this, span, i);
+						editGroupName(modal, span, i);
 					});
 					span.addEventListener("contextmenu", (evt) => {
 						if (this.isDblClick) return;
-						groupMenu(this, evt, i);
+						groupMenu(modal, evt, i);
 					});
 				}
 			);
@@ -394,44 +393,44 @@ function circleCSSModif(
 	el.style.backgroundColor = color;
 }
 
-const editGroupName = (
-	modal: any,
-	span: HTMLSpanElement,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	const currentValue =
-		settings.groups[groupNumber].name !== ""
-			? settings.groups[groupNumber]?.name
-			: "";
+// const editGroupName = (
+// 	modal: any,
+// 	span: HTMLSpanElement,
+// 	groupNumber: number
+// ) => {
+// 	const { plugin } = modal;
+// 	const { settings } = plugin;
+// 	const currentValue =
+// 		settings.groups[groupNumber].name !== ""
+// 			? settings.groups[groupNumber]?.name
+// 			: "";
 
-	const input = createInput(span, currentValue);
+// 	const input = createInput(span, currentValue);
 
-	input?.addEventListener("blur", () => {
-		setTimeout(async () => {
-			if (modal.isDblClick) return;
-			input?.value
-				? (settings.groups[groupNumber].name = input.value)
-				: (settings.groups[groupNumber].name = `Group${groupNumber}`);
-			input.textContent = `${settings.groups[groupNumber].name}`;
-			await modal.plugin.saveSettings();
-			modal.draw(modal, modal.pluginsList, modal.pluginStats);
-		}, 200);
-	});
+// 	input?.addEventListener("blur", () => {
+// 		setTimeout(async () => {
+// 			if (modal.isDblClick) return;
+// 			input?.value
+// 				? (settings.groups[groupNumber].name = input.value)
+// 				: (settings.groups[groupNumber].name = `Group${groupNumber}`);
+// 			input.textContent = `${settings.groups[groupNumber].name}`;
+// 			await modal.plugin.saveSettings();
+// 			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+// 		}, 200);
+// 	});
 
-	input?.addEventListener("keydown", async (event) => {
-		if (event.key === "Enter") {
-			if (modal.isDblClick) return;
-			input?.value
-				? (settings.groups[groupNumber].name = input.value)
-				: (settings.groups[groupNumber].name = GroupsComm[groupNumber]);
-			input.textContent = `${settings.groups[groupNumber].name}`;
-			await modal.plugin.saveSettings();
-			modal.draw(modal, modal.pluginsList, modal.pluginStats);
-		}
-	});
-};
+// 	input?.addEventListener("keydown", async (event) => {
+// 		if (event.key === "Enter") {
+// 			if (modal.isDblClick) return;
+// 			input?.value
+// 				? (settings.groups[groupNumber].name = input.value)
+// 				: (settings.groups[groupNumber].name = GroupsComm[groupNumber]);
+// 			input.textContent = `${settings.groups[groupNumber].name}`;
+// 			await modal.plugin.saveSettings();
+// 			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+// 		}
+// 	});
+// };
 
 const groupMenu = (modal: any, evt: MouseEvent, groupNumber: number) => {
 	const menu = new Menu();
@@ -701,11 +700,9 @@ async function installAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 	});
 
 	if (!pluginsWithGroup.length) return;
-	console.log("pluginsWithGroup", pluginsWithGroup);
 
 	for (const plugin of pluginsWithGroup) {
 		const manifest = await getManifest(plugin);
-		console.log("manifest", manifest);
 		const pluginInfo = modal.pluginStats[plugin.id];
 		let latestVersion;
 

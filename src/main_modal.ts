@@ -9,8 +9,6 @@ import {
 	Modal,
 	Notice,
 	Platform,
-	SearchComponent,
-	Setting,
 	ToggleComponent,
 	setIcon,
 } from "obsidian";
@@ -31,6 +29,9 @@ import {
 	handleContextMenu,
 	doSearch,
 	addSearch,
+	editGroupName,
+	groupMenu,
+	handleDblClick,
 } from "./modal_components";
 import {
 	GroupsKeysObject,
@@ -39,7 +40,7 @@ import {
 	delayedReEnable,
 	getCirclesItem,
 	getEmojiForGroup,
-	getGroupTitle,
+	setGroupTitle,
 	groupNotEmpty,
 	openDirectoryInFileManager,
 	pressDelay,
@@ -47,6 +48,7 @@ import {
 	togglePlugin,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
+import { CPModal } from "./community-plugins_modal";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;
@@ -86,6 +88,11 @@ export class QPSModal extends Modal {
 			if (this.isDblClick) return;
 			handleContextMenu(evt, this);
 		});
+
+		this.modalEl.addEventListener("dblclick", (evt) => {
+			if (this.isDblClick) return;
+			handleDblClick(evt, this);
+		});
 	}
 
 	async onOpen() {
@@ -94,7 +101,7 @@ export class QPSModal extends Modal {
 		settings.search = "";
 		contentEl.empty();
 		this.container();
-		getGroupTitle(plugin, Groups, settings.numberOfGroups);
+		setGroupTitle(this, plugin, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
 		await addSearch(
 			this,
@@ -103,7 +110,7 @@ export class QPSModal extends Modal {
 			"Search plugins"
 		);
 		searchDivButtons(this, this.search);
-		this.addGroups(this.groups);
+		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
 		this.addItems(settings.allPluginsList);
 	}
@@ -135,7 +142,8 @@ export class QPSModal extends Modal {
 		filterByGroup(this, contentEl);
 	};
 
-	addGroups(contentEl: HTMLElement): void {
+	addGroups(modal: QPSModal, contentEl: HTMLElement): void {
+		// later? listeners on group container ?
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -147,7 +155,7 @@ export class QPSModal extends Modal {
 					cls: "qps-group-span-container",
 				},
 				(cont) => {
-					const preSpan = cont.createEl(
+					cont.createEl(
 						"span",
 						{
 							cls: "qps-circle-title-group",
@@ -163,18 +171,11 @@ export class QPSModal extends Modal {
 					});
 
 					const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
-					const postSpan = span.insertAdjacentHTML(
-						"beforeend",
-						groupNumberText
-					);
+					span.insertAdjacentHTML("beforeend", groupNumberText);
 
 					span.addEventListener("dblclick", (e) => {
 						if (this.isDblClick) return;
-						editGroupName(this, span, i);
-					});
-					span.addEventListener("contextmenu", (evt) => {
-						if (this.isDblClick) return;
-						groupMenu(this, evt, span, i);
+						editGroupName(modal, span, i);
 					});
 				}
 			);
@@ -183,7 +184,7 @@ export class QPSModal extends Modal {
 
 	setHotKeysdesc(): void {
 		const numberOfGroups = this.plugin.settings.numberOfGroups;
-		const nameEl = this.hotkeysDesc.createSpan(
+		this.hotkeysDesc.createSpan(
 			{
 				text: `(1-${numberOfGroups})➕ (0)❌ (f)📁 `,
 			},
@@ -297,6 +298,11 @@ export class QPSModal extends Modal {
 			if (this.isDblClick) return;
 			handleContextMenu(evt, this);
 		});
+
+		this.modalEl.removeEventListener("dblclick", (evt) => {
+			if (this.isDblClick) return;
+			handleDblClick(evt, this);
+		});
 	}
 }
 
@@ -312,181 +318,6 @@ function circleCSSModif(
 		settings.groups[groupIndex].time ? settings.groups[groupIndex].time : ""
 	).toString();
 }
-
-const editGroupName = (
-	modal: any,
-	span: HTMLSpanElement,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	const currentValue =
-		settings.groups[groupNumber].name !== ""
-			? settings.groups[groupNumber]?.name
-			: "";
-
-	const input = createInput(span, currentValue);
-
-	input?.addEventListener("blur", () => {
-		setTimeout(() => {
-			if (modal.isDblClick) return;
-			input?.value
-				? (settings.groups[groupNumber].name = input.value)
-				: (settings.groups[groupNumber].name = `Group${groupNumber}`);
-			input.textContent = `${settings.groups[groupNumber].name}`;
-			modal.onOpen();
-		}, 200);
-	});
-
-	input?.addEventListener("keydown", (event) => {
-		if (event.key === "Enter") {
-			if (modal.isDblClick) return;
-			input?.value
-				? (settings.groups[groupNumber].name = input.value)
-				: (settings.groups[groupNumber].name = Groups[groupNumber]);
-			input.textContent = `${settings.groups[groupNumber].name}`;
-			modal.onOpen();
-		}
-	});
-};
-
-const groupMenu = (
-	modal: any,
-	evt: MouseEvent,
-	span: HTMLSpanElement,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	const inGroup = settings.allPluginsList.filter(
-		(i: PluginInfo) => i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
-	);
-
-	const menu = new Menu();
-	menu.addItem((item) =>
-		item.setTitle("delay group").onClick(() => {
-			const currentValue = settings.groups[groupNumber].time || 0;
-			const input = createInput(span, currentValue);
-
-			input?.addEventListener("blur", () => {
-				setTimeout(() => {
-					if (modal.isDblClick) return;
-					parseInt(input?.value)
-						? (settings.groups[groupNumber].time = parseInt(
-								input.value
-						  ))
-						: (settings.groups[groupNumber].time = 0);
-					span.textContent = `${input.value}`;
-					modal.onOpen();
-				}, 100);
-			});
-
-			input?.addEventListener("keydown", (event) => {
-				if (event.key === "Enter") {
-					if (modal.isDblClick) return;
-					parseInt(input?.value)
-						? (settings.groups[groupNumber].time = parseInt(
-								input.value
-						  ))
-						: (settings.groups[groupNumber].time = 0);
-					span.textContent = `${settings.groups[groupNumber].time}`;
-					modal.onOpen();
-				}
-			});
-		})
-	);
-
-	menu.addItem((item) =>
-		item
-			.setTitle("apply")
-			.setDisabled(
-				!inGroup.length || settings.groups[groupNumber].time === 0
-			)
-			.onClick(async () => {
-				for (const plugin of inGroup) {
-					plugin.time = settings.groups[groupNumber].time;
-					plugin.delayed = true;
-					settings.groups[groupNumber].applied = true;
-					if (plugin.enabled) {
-						await (modal.app as any).plugins.disablePluginAndSave(
-							plugin.id
-						);
-						await (modal.app as any).plugins.enablePlugin(
-							plugin.id
-						);
-					}
-					modal.plugin.saveSettings();
-					modal.onOpen();
-				}
-			})
-	);
-	menu.addItem((item) =>
-		item
-			.setTitle("reset")
-			.setDisabled(
-				!inGroup.length || settings.groups[groupNumber].time === 0
-			)
-			.onClick(async () => {
-				for (const plugin of inGroup) {
-					plugin.time = 0;
-					plugin.delayed = false;
-					settings.groups[groupNumber].applied = false;
-					if (plugin.enabled) {
-						await (modal.app as any).plugins.enablePluginAndSave(
-							plugin.id
-						);
-					}
-					modal.onOpen();
-				}
-				plugin.saveSettings();
-			})
-	);
-	menu.addSeparator();
-	const toEnable = inGroup.filter((i: PluginInfo) => i.enabled === false);
-	menu.addItem((item) =>
-		item
-			.setTitle("enable all plugins in group")
-			.setDisabled(!inGroup.length || !toEnable.length)
-			.onClick(async () => {
-				await Promise.all(
-					toEnable.map(async (i: PluginInfo) => {
-						conditionalEnable(this, i);
-						i.enabled = true;
-						modal.plugin.saveSettings();
-					})
-				);
-				if (toEnable) {
-					plugin.getLength();
-					new Notice("All plugins enabled.");
-					await modal.plugin.saveSettings();
-					modal.onOpen();
-				}
-			})
-	);
-
-	const toDisable = inGroup.filter((i: PluginInfo) => i.enabled === true);
-	menu.addItem((item) =>
-		item
-			.setTitle("disable all plugins in group")
-			.setDisabled(!inGroup.length || !toDisable.length)
-			.onClick(async () => {
-				await Promise.all(
-					toDisable.map(async (i: PluginInfo) => {
-						(modal.app as any).plugins.disablePluginAndSave(i.id);
-						i.enabled = false;
-					})
-				);
-				if (toDisable) {
-					plugin.getLength();
-					new Notice("All plugins disabled.");
-					await modal.plugin.saveSettings();
-					modal.onOpen();
-				}
-			})
-	);
-
-	menu.showAtMouseEvent(evt);
-};
 
 const itemTogglePluginButton = (
 	modal: QPSModal,

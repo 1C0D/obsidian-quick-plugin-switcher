@@ -29,7 +29,8 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 	listItems.sort((a, b) => b.switched - a.switched);
 };
 
-export const getGroupTitle = (
+export const setGroupTitle = (
+	modal: QPSModal | CPModal,
 	plugin: Plugin,
 	Groups: GroupData,
 	numberOfGroups: number
@@ -44,19 +45,32 @@ export const getGroupTitle = (
 	}
 
 	for (let i = 1; i <= numberOfGroups; i++) {
-		if (settings.groups[i]?.name === undefined)
-			settings.groups[i] = {
-				name: "",
-				delayed: false,
-				time: 0,
-				applied: false,
-			};
-
-		const groupKey =
-			plugin.settings.groups[i]?.name !== ""
-				? plugin.settings.groups[i]?.name
-				: `Group${i}`;
-		Groups[`Group${i}`] = `${groupKey}`;
+		if (modal instanceof CPModal) {
+			if (settings.groupsComm[i]?.name === undefined) {
+				settings.groupsComm[i] = {
+					name: "",
+				};
+			}
+			const groupKey =
+				plugin.settings.groupsComm[i]?.name !== ""
+					? plugin.settings.groupsComm[i]?.name
+					: `Group${i}`;
+			Groups[`Group${i}`] = `${groupKey}`;
+		} else {
+			if (settings.groups[i]?.name === undefined) {
+				settings.groups[i] = {
+					name: "",
+					delayed: false,
+					time: 0,
+					applied: false,
+				};
+			}
+			const groupKey =
+				plugin.settings.groups[i]?.name !== ""
+					? plugin.settings.groups[i]?.name
+					: `Group${i}`;
+			Groups[`Group${i}`] = `${groupKey}`;
+		}
 	}
 };
 
@@ -138,13 +152,13 @@ export const delayedReEnable = async (
 		.then((pluginItem.enabled = true));
 };
 
-export const conditionalEnable = async (_this: any, pluginItem: PluginInfo) => {
+export const conditionalEnable = async (modal: QPSModal, pluginItem: PluginInfo) => {
 	if (pluginItem.delayed && pluginItem.time > 0) {
-		await (_this.app as any).plugins.enablePlugin(pluginItem.id);
-		await _this.plugin.saveSettings();
+		await(modal.app as any).plugins.enablePlugin(pluginItem.id);
+		await modal.plugin.saveSettings();
 	} else {
 		pluginItem.switched++; // besoin que là?
-		await (_this.app as any).plugins.enablePluginAndSave(pluginItem.id);
+		await(modal.app as any).plugins.enablePluginAndSave(pluginItem.id);
 	}
 };
 

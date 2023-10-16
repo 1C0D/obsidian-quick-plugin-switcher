@@ -41,7 +41,6 @@ import {
 	openGitHubRepo,
 } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
-import { QPSModal } from "./main_modal";
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -79,8 +78,8 @@ export class CPModal extends Modal {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
-		document.addEventListener("keydown", (event) => {
-			handleKeyDown(event, this);
+		document.addEventListener("keydown", async (event) => {
+			await handleKeyDown(event, this);
 		});
 
 		this.modalEl.addEventListener("contextmenu", (evt) => {
@@ -100,25 +99,26 @@ export class CPModal extends Modal {
 		plugin.settings.search = "";
 		this.pluginsList = await fetchData(commPlugins);
 		this.pluginStats = await fetchData(commPluginStats);
-		this.draw(this);
+		await this.draw();
 	}
 
-	async draw(modal: CPModal) {
+	async draw() {
+		console.log("drawned");
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		contentEl.empty();
 		this.container();
-		setGroupTitle(modal, plugin, GroupsComm, settings.numberOfGroupsComm);
+		setGroupTitle(this, plugin, GroupsComm, settings.numberOfGroupsComm);
 		this.addHeader(this.header);
 		await addSearch(
 			this,
 			this.search,
-			modal.pluginsList,
+			this.pluginsList,
 			"Search community plugins"
 		);
 		this.addGroups(this, this.groups, GroupsComm);
 		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
-		await this.addItems(this, modal.pluginsList);
+		await this.addItems(this, this.pluginsList);
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -138,7 +138,7 @@ export class CPModal extends Modal {
 			.onChange(async (value) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
-				this.draw(this);
+				this.draw();
 			});
 
 		filterByGroup(this, contentEl);
@@ -279,8 +279,8 @@ export class CPModal extends Modal {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
-		document.removeEventListener("keydown", (event) => {
-			handleKeyDown(event, this);
+		document.removeEventListener("keydown", async (event) => {
+			await handleKeyDown(event, this);
 		});
 
 		this.modalEl.removeEventListener("contextmenu", (evt) => {
@@ -425,7 +425,7 @@ function circleCSSModif(
 // 	});
 // };
 
-function handleKeyDown(event: KeyboardEvent, modal: CPModal) {
+const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 	const elementFromPoint = getElementFromMousePosition(event, modal);
 	const targetBlock = elementFromPoint?.closest(
 		".qps-comm-block"
@@ -435,19 +435,20 @@ function handleKeyDown(event: KeyboardEvent, modal: CPModal) {
 		const matchingItem = findMatchingItem(modal, targetBlock);
 
 		if (matchingItem) {
-			handleHotkeysCPM(modal, event, matchingItem as PluginCommInfo);
+			await handleHotkeysCPM(
+				modal,
+				event,
+				matchingItem as PluginCommInfo
+			);
 		}
 	}
-}
+};
 
 const handleHotkeysCPM = async (
 	modal: CPModal,
 	evt: KeyboardEvent,
 	pluginItem: PluginCommInfo
 ) => {
-	if (modal.pressed) {
-		return;
-	}
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroupsComm;
@@ -468,7 +469,6 @@ const handleHotkeysCPM = async (
 		await modal.plugin.saveSettings();
 	}
 	taggedItem = pluginsTagged[itemID];
-	pressDelay(modal);
 	const { groupInfo } = taggedItem;
 	const { groupIndices } = groupInfo;
 	const key = parseInt(keyPressed);
@@ -478,7 +478,7 @@ const handleHotkeysCPM = async (
 		if (index === -1) {
 			groupIndices.push(key);
 			await plugin.saveSettings();
-			modal.draw(modal);
+			await modal.draw();
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -488,10 +488,14 @@ const handleHotkeysCPM = async (
 		keyPressed === "0"
 	) {
 		if (groupIndices.length === 1) {
-			groupInfo.groupIndices = [];
+			delete pluginsTagged[itemID];
 			await plugin.saveSettings();
-			modal.draw(modal);
+			await modal.draw();
 		} else if (groupIndices.length > 1) {
+			if (modal.pressed) {
+				return;
+			}
+			pressDelay(modal);
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item.setTitle("Remove item group(s)").setDisabled(true)
@@ -506,13 +510,15 @@ const handleHotkeysCPM = async (
 				menu.addItem((item) =>
 					item
 						.setTitle(`${emoji} group ${groupIndex}`)
-						.onClick(() => {
-							if (groupInfo)
+						.onClick(async () => {
+							if (groupInfo) {
 								groupInfo.groupIndices = removeItem(
 									groupIndices,
 									groupIndex
 								);
-							modal.draw(modal);
+								await plugin.saveSettings();
+								await modal.draw();
+							}
 						})
 				);
 			}
@@ -529,7 +535,6 @@ const addGroupCircles = (
 ) => {
 	const { settings } = modal.plugin;
 	const key = item.id;
-	// maybe doesn't exist ?
 	const taggedItem = settings.pluginsTagged[key];
 	if (!taggedItem) return;
 	const indices = taggedItem.groupInfo.groupIndices;

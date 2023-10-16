@@ -14,7 +14,7 @@ export const reset = async (modal: QPSModal) => {
 	if (confirmed) {
 		plugin.reset = true; //if true, reset done in modal>addItems()
 		plugin.getLength();
-		modal.onOpen();
+		await modal.onOpen();
 		new Notice("Done", 1000);
 	} else {
 		new Notice("Operation cancelled", 1000);
@@ -120,7 +120,7 @@ export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
 		: await (modal.app as any).plugins.disablePluginAndSave(pluginItem.id);
 	plugin.getLength();
 	await plugin.saveSettings();
-	modal.onOpen();
+	await modal.onOpen();
 };
 
 //desktop only
@@ -259,20 +259,21 @@ export async function rmvAllGroupsFromPlugin(
 	const { settings } = plugin;
 
 	if ("repo" in pluginItem) {
-		const key = pluginItem.id;
-		const taggedItem = settings.pluginsTagged[key];
+		console.log("ici")
+		const itemID = pluginItem.id;
+		const { pluginsTagged } = settings;
+		const taggedItem = pluginsTagged[itemID];
 		if (!taggedItem) return;
-		const { groupInfo } = taggedItem;
-		groupInfo.groupIndices = [];
+		delete pluginsTagged[itemID];
 		await plugin.saveSettings();
 		if (modal instanceof CPModal) {
-			modal.draw(modal);
+			await modal.draw();
 		}
 	} else {
 		if (pluginItem.groupInfo) {
 			pluginItem.groupInfo.groupIndices = [];
 			await plugin.saveSettings();
-			modal.onOpen();
+			await modal.onOpen();
 		}
 	}
 }

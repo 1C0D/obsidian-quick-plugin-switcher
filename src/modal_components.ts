@@ -55,7 +55,7 @@ export const mostSwitchedResetButton = (
 			.setTooltip("Reset mostSwitched values")
 			.onClick(async () => {
 				reset(modal);
-				modal.onOpen();
+				await modal.onOpen();
 			});
 	}
 };
@@ -89,9 +89,9 @@ export const filterByGroup = (
 				settings.selectedGroup = value;
 				await plugin.saveSettings();
 				if (modal instanceof QPSModal) {
-					modal.onOpen();
+					await modal.onOpen();
 				} else {
-					modal.draw(modal);
+					await modal.draw();
 				}
 			});
 	};
@@ -223,7 +223,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 									i.enabled = false;
 								}
 								plugin.getLength();
-								modal.onOpen();
+								await modal.onOpen();
 								await plugin.saveSettings();
 								new Notice("All plugins disabled", 1500);
 							} else if (settings.wasEnabled.length > 0) {
@@ -242,7 +242,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 									}
 								}
 								plugin.getLength();
-								modal.onOpen();
+								await modal.onOpen();
 								settings.wasEnabled = [];
 								new Notice("All plugins re-enabled", 1500);
 								await modal.plugin.saveSettings();
@@ -326,7 +326,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 										await Promise.all(toDisable);
 										if (toDisable) {
 											plugin.getLength();
-											modal.onOpen();
+											await modal.onOpen();
 											new Notice(
 												"All plugins disabled",
 												1500
@@ -344,7 +344,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 												false;
 										});
 										plugin.getLength();
-										modal.onOpen();
+										await modal.onOpen();
 										new Notice(
 											"All plugins re-enabled",
 											1500
@@ -457,13 +457,13 @@ export const editGroupName = (
 	};
 
 	const handleBlurOrEnter = () => {
-		setTimeout(() => {
+		setTimeout(async () => {
 			if (!modal.isDblClick) {
 				updateGroupName(input.value);
 				if (modal instanceof CPModal) {
-					modal.draw(modal);
+					await modal.draw();
 				} else {
-					modal.onOpen();
+					await modal.onOpen();
 				}
 			}
 		}, 200);
@@ -561,7 +561,7 @@ function addRemoveItemGroupMenuItems(
 							break;
 						}
 					}
-					modal.onOpen();
+					await modal.onOpen();
 				});
 			});
 		}
@@ -599,7 +599,7 @@ function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu) {
 						}
 					}
 					await plugin.saveSettings();
-					modal.onOpen();
+					await modal.onOpen();
 					if (pluginsRemoved) {
 						new Notice(`All plugins removed from ${groupValue}`);
 					} else {
@@ -624,10 +624,10 @@ const addToGroupSubMenu = (
 				item
 					.setTitle(value)
 					.setDisabled(groupIndices.indexOf(groupIndex) !== -1)
-					.onClick(() => {
+					.onClick(async () => {
 						if (groupIndices.length === 6) return;
 						groupIndices?.push(groupIndex);
-						modal.onOpen();
+						await modal.onOpen();
 					})
 			);
 		}
@@ -858,7 +858,7 @@ export function contextMenuCPM(
 					latestVersion,
 					manifest
 				);
-				modal.draw(modal);
+				await modal.draw();
 			});
 	});
 	menu.addItem((item) => {
@@ -867,7 +867,7 @@ export function contextMenuCPM(
 			.setIcon("log-out")
 			.onClick(async () => {
 				await this.app.plugins.uninstallPlugin(matchingItem.id);
-				modal.draw(modal);
+				await modal.draw();
 			});
 	});
 	menu.showAtMouseEvent(evt);
@@ -970,15 +970,15 @@ const groupMenuQPS = (
 			const input = createInput(span, currentValue);
 
 			const handleBlurOrEnter = () => {
-				setTimeout(() => {
+				setTimeout(async() => {
 					if (!modal.isDblClick) {
 						const value = parseInt(input?.value) || 0;
 						settings.groups[groupNumber].time = value;
 						span.textContent = `${value}`;
 						if (modal instanceof CPModal) {
-							modal.draw(modal);
+							await modal.draw();
 						} else if (modal instanceof QPSModal) {
-							modal.onOpen();
+							await modal.onOpen();
 						}
 					}
 				}, 100);
@@ -1013,7 +1013,7 @@ const groupMenuQPS = (
 						);
 					}
 					modal.plugin.saveSettings();
-					modal.onOpen();
+					await modal.onOpen();
 				}
 			})
 	);
@@ -1033,7 +1033,7 @@ const groupMenuQPS = (
 							plugin.id
 						);
 					}
-					modal.onOpen();
+					await modal.onOpen();
 				}
 				plugin.saveSettings();
 			})
@@ -1057,7 +1057,7 @@ const groupMenuQPS = (
 					plugin.getLength();
 					new Notice("All plugins enabled.");
 					await modal.plugin.saveSettings();
-					modal.onOpen();
+					await modal.onOpen();
 				}
 			})
 	);
@@ -1081,7 +1081,7 @@ const groupMenuQPS = (
 					plugin.getLength();
 					new Notice("All plugins disabled.");
 					await modal.plugin.saveSettings();
-					modal.onOpen();
+					await modal.onOpen();
 				}
 			})
 	);
@@ -1128,7 +1128,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 		await this.app.plugins.uninstallPlugin(plugin.id);
 	}
 
-	await modal.draw(modal);
+	await await modal.draw();
 }
 
 async function installAllPluginsInGroup(
@@ -1171,7 +1171,7 @@ async function installAllPluginsInGroup(
 		}
 	}
 
-	await modal.draw(modal);
+	await await modal.draw();
 }
 
 export const findMatchingItem = (
@@ -1215,7 +1215,7 @@ const createClearGroupsMenuItem = (modal: QPSModal, menu: Menu) => {
 						i.groupInfo.groupIndices = [];
 					}
 					await plugin.saveSettings();
-					modal.onOpen();
+					await modal.onOpen();
 					new Notice("Done", 1000);
 				} else {
 					new Notice("Operation cancelled", 1000);

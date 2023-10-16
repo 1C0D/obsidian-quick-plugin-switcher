@@ -55,6 +55,7 @@ export class QPSModal extends Modal {
 	isDblClick = false;
 	mousePosition: any;
 	pressed = false;
+	searchInit = true
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -94,7 +95,9 @@ export class QPSModal extends Modal {
 	async onOpen() {
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
-		settings.search = "";
+		if (this.searchInit) settings.search = "";
+		else this.searchInit = true
+
 		contentEl.empty();
 		this.container();
 		setGroupTitle(this, plugin, Groups, settings.numberOfGroups);
@@ -130,6 +133,7 @@ export class QPSModal extends Modal {
 				settings.filters = value;
 				// plugin.getLength();//not needed apparently
 				await plugin.saveSettings();
+				this.searchInit =false
 				this.onOpen();
 			});
 
@@ -323,6 +327,7 @@ const itemTogglePluginButton = (
 		.setValue(pluginItem.enabled)
 		.setDisabled(disable) //quick-plugin-switcher disabled
 		.onChange(async () => {
+			modal.searchInit = false;
 			await togglePlugin(modal, pluginItem);
 		});
 };
@@ -408,7 +413,7 @@ const handleHotkeysQPS = async (
 			groupInfo: { groupIndices: [] },
 		};
 		await modal.plugin.saveSettings();
-		modal.onOpen();
+		await modal.onOpen();
 	}
 	if (!taggedItem || modal.pressed) {
 		return;
@@ -428,7 +433,7 @@ const handleHotkeysQPS = async (
 		if (index === -1) {
 			groupIndices?.push(key);
 			await plugin.saveSettings();
-			modal.onOpen();
+			await modal.onOpen();
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -446,7 +451,7 @@ const handleHotkeysQPS = async (
 				settings.selectedGroup = "SelectGroup";
 			}
 			await plugin.saveSettings();
-			modal.onOpen();
+			await modal.onOpen();
 		} else {
 			const menu = new Menu();
 			menu.addItem((item) => item.setTitle("Remove item group(s)"));
@@ -466,7 +471,7 @@ const handleHotkeysQPS = async (
 								groupIndex
 							);
 							await plugin.saveSettings();
-							modal.onOpen();
+							await modal.onOpen();
 						})
 				);
 			}

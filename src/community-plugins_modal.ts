@@ -8,13 +8,7 @@
 // destkop only
 // context menu
 // futur?: utiliser une map au lieu d'un array pour pluginList? this.pluginsList = new Map(await getPluginList().map(plugin => [plugin.id, plugin]));
-import {
-	App,
-	DropdownComponent,
-	Menu,
-	Modal,
-	setIcon,
-} from "obsidian";
+import { App, DropdownComponent, Menu, Modal, setIcon } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
 import {
@@ -23,18 +17,31 @@ import {
 	KeyToSettingsMapType,
 	PackageInfoData,
 	PluginCommInfo,
+	commPluginStats,
+	commPlugins,
 } from "./types";
 import {
-	GroupsKeysObject,
 	getCirclesItem,
 	getEmojiForGroup,
 	setGroupTitle,
 	getIndexFromSelectedGroup,
 	pressDelay,
 	rmvAllGroupsFromPlugin,
+	getInstalled,
+	isInstalled,
 } from "./modal_utils";
-import { addSearch, editGroupName, filterByGroup, openGitHubRepo } from "./modal_components";
+import {
+	addSearch,
+	doSearch,
+	filterByGroup,
+	findMatchingItem,
+	getElementFromMousePosition,
+	handleContextMenu,
+	handleDblClick,
+	openGitHubRepo,
+} from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
+import { QPSModal } from "./main_modal";
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -80,57 +87,50 @@ export class CPModal extends Modal {
 			if (this.isDblClick) return;
 			handleContextMenu(evt, this);
 		});
+
+		this.modalEl.addEventListener("dblclick", (evt) => {
+			if (this.isDblClick) return;
+			handleDblClick(evt, this);
+		});
 	}
 
 	async onOpen() {
 		const { plugin, contentEl } = this;
 		contentEl.empty();
 		plugin.settings.search = "";
-		this.pluginsList = await fetchData(
-			"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-		);
-		this.pluginStats = await fetchData(
-			"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json"
-		);
-		this.draw(this, this.pluginsList, this.pluginStats);
+		this.pluginsList = await fetchData(commPlugins);
+		this.pluginStats = await fetchData(commPluginStats);
+		this.draw(this);
 	}
 
-	async draw(
-		modal: CPModal,
-		pluginsList: PluginCommInfo[],
-		pluginStats: PackageInfoData
-	) {
+	async draw(modal: CPModal) {
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		contentEl.empty();
 		this.container();
 		setGroupTitle(modal, plugin, GroupsComm, settings.numberOfGroupsComm);
-		this.addHeader(this.header, pluginsList, pluginStats);
+		this.addHeader(this.header);
 		await addSearch(
 			this,
 			this.search,
-			pluginsList,
-			"Search community plugins",
+			modal.pluginsList,
+			"Search community plugins"
 		);
 		this.addGroups(this, this.groups, GroupsComm);
 		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
-		await this.addItems(this, pluginsList, pluginStats);
+		await this.addItems(this, modal.pluginsList);
 	}
 
-	addHeader = (
-		contentEl: HTMLElement,
-		pluginsList: PluginCommInfo[],
-		pluginStats: PackageInfoData
-	): void => {
+	addHeader = (contentEl: HTMLElement): void => {
 		const { plugin } = this;
 		const { settings } = plugin;
 		//dropdown filters
 		new DropdownComponent(contentEl)
 			.addOptions({
-				all: `All(${pluginsList.length})`,
+				all: `All(${this.pluginsList.length})`,
 				installed: `Installed(${getInstalled().length})`,
 				notInstalled: `Not Installed(${
-					pluginsList.length - getInstalled().length
+					this.pluginsList.length - getInstalled().length
 				})`,
 				byGroup: `By Group`,
 			})
@@ -138,13 +138,13 @@ export class CPModal extends Modal {
 			.onChange(async (value) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
-				this.draw(this, pluginsList, pluginStats);
+				this.draw(this);
 			});
 
 		filterByGroup(this, contentEl);
 	};
 
-	addGroups(modal:CPModal, contentEl: HTMLElement, Groups: GroupData): void {
+	addGroups(modal: CPModal, contentEl: HTMLElement, Groups: GroupData): void {
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -173,15 +173,6 @@ export class CPModal extends Modal {
 					const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
 					// postSpan
 					span.insertAdjacentHTML("beforeend", groupNumberText);
-
-					span.addEventListener("dblclick", (e) => {
-						if (this.isDblClick) return;
-						editGroupName(modal, span, i);
-					});
-					span.addEventListener("contextmenu", (evt) => {
-						if (this.isDblClick) return;
-						groupMenu(modal, evt, i);
-					});
 				}
 			);
 		}
@@ -189,7 +180,7 @@ export class CPModal extends Modal {
 
 	setHotKeysdesc(): void {
 		const numberOfGroups = this.plugin.settings.numberOfGroupsComm;
-		const nameEl = this.hotkeysDesc.createSpan(
+		this.hotkeysDesc.createSpan(
 			{
 				text: `(1-${numberOfGroups})➕ (0)❌ `,
 			},
@@ -205,16 +196,19 @@ export class CPModal extends Modal {
 		);
 	}
 
-	async addItems(
-		modal: CPModal,
-		listItems: PluginCommInfo[],
-		pluginStats: PackageInfoData
-	) {
+	async addItems(modal: CPModal, listItems: PluginCommInfo[]) {
+		const { plugin, pluginStats } = modal;
+		const { settings } = plugin;
 		listItems = filter(modal, listItems);
+		const value = settings.search;
+		listItems = doSearch(
+			modal,
+			value,
+			modal.pluginsList
+		) as PluginCommInfo[];
 		sortItemsByDownloads(listItems, pluginStats);
 
 		for (const item of listItems) {
-			//.slice(0, 28)
 			const itemContainer = modal.items.createEl("div", {
 				cls: "qps-comm-block",
 			});
@@ -293,6 +287,15 @@ export class CPModal extends Modal {
 			if (this.isDblClick) return;
 			handleContextMenu(evt, this);
 		});
+
+		this.modalEl.removeEventListener("dblclick", (evt) => {
+			if (this.isDblClick) return;
+			handleDblClick(evt, this);
+		});
+
+		// this.plugin.getPluginsInfo();
+		// this.plugin.getLength();
+		// new QPSModal(this.app, this.plugin).open();
 	}
 }
 
@@ -331,16 +334,6 @@ export async function getManifest(item: PluginCommInfo) {
 	return null;
 }
 
-
-
-function getInstalled() {
-	return Object.keys(this.app.plugins.manifests);
-}
-
-function isInstalled(item: any) {
-	return getInstalled().includes(item.id);
-}
-
 function sortItemsByDownloads(listItems: PluginCommInfo[], pluginStats: any) {
 	listItems.sort((a, b) => {
 		const pluginAStats = pluginStats[a.id];
@@ -374,7 +367,7 @@ function filter(modal: CPModal, listItems: PluginCommInfo[]) {
 					const { groupInfo } = taggedItem;
 					const { groupIndices } = groupInfo;
 					return groupIndices?.indexOf(groupIndex) !== -1;
-				}else return false
+				} else return false;
 			});
 			return groupedItems;
 		} else return listItems;
@@ -432,86 +425,60 @@ function circleCSSModif(
 // 	});
 // };
 
-const groupMenu = (modal: any, evt: MouseEvent, groupNumber: number) => {
-	const menu = new Menu();
-	menu.addItem((item) => {
-		item.setTitle("clear group items");
-	});
-	menu.addItem((item) => {
-		item.setTitle("install plugins in group");
-		item.onClick(async () => {
-			await installAllPluginsInGroup(modal, groupNumber);
-		});
-	});
-
-	menu.showAtMouseEvent(evt);
-};
-
 function handleKeyDown(event: KeyboardEvent, modal: CPModal) {
-	const key = event.key;
-	if (modal.mousePosition) {
-		const elementFromPoint = document.elementFromPoint(
-			modal.mousePosition.x,
-			modal.mousePosition.y
-		);
-		const targetBlock = elementFromPoint?.closest(
-			".qps-comm-block"
-		) as HTMLElement;
+	const elementFromPoint = getElementFromMousePosition(event, modal);
+	const targetBlock = elementFromPoint?.closest(
+		".qps-comm-block"
+	) as HTMLElement;
 
-		if (targetBlock) {
-			const itemName = targetBlock.firstChild?.textContent;
-			const cleanItemName = itemName?.replace(/installed$/, "").trim();
-			const matchingItem = modal.pluginsList.find(
-				(item) => item.name === cleanItemName
-			);
+	if (targetBlock) {
+		const matchingItem = findMatchingItem(modal, targetBlock);
 
-			if (matchingItem) {
-				handleHotkeys(modal, event, matchingItem, targetBlock);
-			}
+		if (matchingItem) {
+			handleHotkeysCPM(modal, event, matchingItem as PluginCommInfo);
 		}
 	}
 }
 
-const handleHotkeys = async (
+const handleHotkeysCPM = async (
 	modal: CPModal,
 	evt: KeyboardEvent,
-	pluginItem: PluginCommInfo,
-	itemContainer: HTMLElement
+	pluginItem: PluginCommInfo
 ) => {
+	if (modal.pressed) {
+		return;
+	}
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroupsComm;
-	const keyToGroupObject = GroupsKeysObject(numberOfGroups);
 	// handle groups shortcuts
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: () => openGitHubRepo(pluginItem),
 		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
 	};
+
+	const { pluginsTagged } = settings;
 	const keyPressed = evt.key;
 	const itemID = pluginItem.id;
-	const { pluginsTagged } = settings;
-	const taggedItem = pluginsTagged[itemID];
+	let taggedItem = pluginsTagged[itemID];
 	if (!taggedItem) {
 		pluginsTagged[itemID] = {
 			groupInfo: { groupIndices: [] },
 		};
 		await modal.plugin.saveSettings();
-		modal.draw(modal, modal.pluginsList, modal.pluginStats);
 	}
-	if (!taggedItem || modal.pressed) {
-		return;
-	}
+	taggedItem = pluginsTagged[itemID];
 	pressDelay(modal);
 	const { groupInfo } = taggedItem;
 	const { groupIndices } = groupInfo;
-	if (keyPressed in keyToGroupObject) {
-		const groupIndex = keyToGroupObject[keyPressed];
+	const key = parseInt(keyPressed);
+	if (key > 0 && key <= numberOfGroups) {
 		if (groupIndices.length === 6) return;
-		const index = groupIndices.indexOf(groupIndex);
+		const index = groupIndices.indexOf(key);
 		if (index === -1) {
-			groupIndices.push(groupIndex);
+			groupIndices.push(key);
 			await plugin.saveSettings();
-			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+			modal.draw(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -522,15 +489,16 @@ const handleHotkeys = async (
 	) {
 		if (groupIndices.length === 1) {
 			groupInfo.groupIndices = [];
-			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+			await plugin.saveSettings();
+			modal.draw(modal);
 		} else if (groupIndices.length > 1) {
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item.setTitle("Remove item group(s)").setDisabled(true)
 			);
 			menu.addItem((item) =>
-				item.setTitle("All").onClick(() => {
-					rmvAllGroupsFromPlugin(modal, pluginItem);
+				item.setTitle("All").onClick(async () => {
+					await rmvAllGroupsFromPlugin(modal, pluginItem);
 				})
 			);
 			for (const groupIndex of groupIndices) {
@@ -544,11 +512,7 @@ const handleHotkeys = async (
 									groupIndices,
 									groupIndex
 								);
-							modal.draw(
-								modal,
-								modal.pluginsList,
-								modal.pluginStats
-							);
+							modal.draw(modal);
 						})
 				);
 			}
@@ -602,124 +566,3 @@ const addGroupCircles = (
 		}
 	}
 };
-
-export function handleContextMenu(evt: MouseEvent, modal: CPModal) {
-	if (modal.mousePosition) {
-		const elementFromPoint = document.elementFromPoint(
-			modal.mousePosition.x,
-			modal.mousePosition.y
-		);
-		const targetBlock = elementFromPoint?.closest(
-			".qps-comm-block"
-		) as HTMLElement;
-
-		if (targetBlock) {
-			const itemName = targetBlock.firstChild?.textContent;
-			const cleanItemName = itemName?.replace(/installed$/, "").trim();
-			const matchingItem = modal.pluginsList.find(
-				(item) => item.name === cleanItemName
-			);
-
-			if (matchingItem) {
-				const { plugin } = modal;
-				evt.preventDefault();
-				const menu = new Menu();
-				menu.addItem((item) => {
-					item.setTitle("install plugin")
-						.setDisabled(isInstalled(matchingItem))
-						.setIcon("log-in")
-						.onClick(async () => {
-							const pluginInfo =
-								modal.pluginStats[matchingItem.id];
-							let latestVersion;
-
-							for (
-								let i = Object.keys(pluginInfo).length - 1;
-								i >= 0;
-								i--
-							) {
-								const version = Object.keys(pluginInfo)[i];
-								if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-									latestVersion = version;
-									break;
-								}
-							}
-
-							const manifest = await getManifest(matchingItem);
-							await this.app.plugins.installPlugin(
-								matchingItem.repo,
-								latestVersion,
-								manifest
-							);
-							modal.draw(
-								modal,
-								modal.pluginsList,
-								modal.pluginStats
-							);
-						});
-				});
-				menu.addItem((item) => {
-					item.setTitle("uninstall plugin")
-						.setDisabled(!isInstalled(matchingItem))
-						.setIcon("log-out")
-						.onClick(async () => {
-							await this.app.plugins.uninstallPlugin(
-								matchingItem.id
-							);
-							modal.draw(
-								modal,
-								modal.pluginsList,
-								modal.pluginStats
-							);
-						});
-				});
-				menu.showAtMouseEvent(evt);
-			}
-		}
-	}
-}
-
-async function installAllPluginsInGroup(modal: CPModal, groupNumber: number) {
-	const { plugin } = modal;
-	const { settings } = plugin;
-
-	const pluginsWithGroup: PluginCommInfo[] = [];
-
-	Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
-		const plugin = settings.pluginsTagged[pluginKey];
-		const groupIndices = plugin.groupInfo.groupIndices || [];
-
-		if (groupIndices.includes(groupNumber)) {
-			const matchingPlugin = modal.pluginsList.find(
-				(plugin) => plugin.id === pluginKey
-			);
-			if (matchingPlugin) {
-				pluginsWithGroup.push(matchingPlugin);
-			}
-		}
-	});
-
-	if (!pluginsWithGroup.length) return;
-
-	for (const plugin of pluginsWithGroup) {
-		const manifest = await getManifest(plugin);
-		const pluginInfo = modal.pluginStats[plugin.id];
-		let latestVersion;
-
-		for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
-			const version = Object.keys(pluginInfo)[i];
-			if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-				latestVersion = version;
-				break;
-			}
-		}
-
-		await this.app.plugins.installPlugin(
-			plugin.repo,
-			latestVersion,
-			manifest
-		);
-	}
-
-	await modal.draw(modal, modal.pluginsList, modal.pluginStats);
-}

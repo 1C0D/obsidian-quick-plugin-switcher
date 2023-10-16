@@ -7,7 +7,6 @@ import {
 	DropdownComponent,
 	Menu,
 	Modal,
-	Notice,
 	Platform,
 	ToggleComponent,
 	setIcon,
@@ -29,13 +28,11 @@ import {
 	handleContextMenu,
 	doSearch,
 	addSearch,
-	editGroupName,
-	groupMenu,
 	handleDblClick,
+	getElementFromMousePosition,
+	findMatchingItem,
 } from "./modal_components";
 import {
-	GroupsKeysObject,
-	conditionalEnable,
 	createInput,
 	delayedReEnable,
 	getCirclesItem,
@@ -48,7 +45,6 @@ import {
 	togglePlugin,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
-import { CPModal } from "./community-plugins_modal";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;
@@ -143,7 +139,6 @@ export class QPSModal extends Modal {
 	};
 
 	addGroups(modal: QPSModal, contentEl: HTMLElement): void {
-		// later? listeners on group container ?
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -172,11 +167,6 @@ export class QPSModal extends Modal {
 
 					const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
 					span.insertAdjacentHTML("beforeend", groupNumberText);
-
-					span.addEventListener("dblclick", (e) => {
-						if (this.isDblClick) return;
-						editGroupName(modal, span, i);
-					});
 				}
 			);
 		}
@@ -209,7 +199,11 @@ export class QPSModal extends Modal {
 		const { settings } = plugin;
 
 		const value = settings.search;
-		listItems = doSearch(value, settings.allPluginsList);
+		listItems = doSearch(
+			this,
+			value,
+			settings.allPluginsList
+		) as PluginInfo[];
 		// Sort for chosen mode
 		listItems = modeSort(plugin, listItems);
 
@@ -369,33 +363,21 @@ const addGroupCircles = (input: HTMLElement, item: PluginInfo) => {
 };
 
 function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
-	const key = event.key;
-	if (modal.mousePosition) {
-		const elementFromPoint = document.elementFromPoint(
-			modal.mousePosition.x,
-			modal.mousePosition.y
-		);
-		const targetBlock = elementFromPoint?.closest(
-			".qps-item-line"
-		) as HTMLElement;
+	// const key = event.key;
+	const elementFromPoint = getElementFromMousePosition(event, modal);
+	const targetBlock = elementFromPoint?.closest(
+		".qps-item-line"
+	) as HTMLElement;
 
-		if (targetBlock) {
-			let itemName = (targetBlock.children[1] as HTMLInputElement).value;
-			if (itemName.startsWith("ᴰ")) {
-				itemName = itemName.substring(1);
-			}
-			const matchingItem = modal.plugin.settings.allPluginsList.find(
-				(item) => item.name === itemName
-			);
-
-			if (matchingItem) {
-				handleHotkeys(modal, event, matchingItem);
-			}
+	if (targetBlock) {
+		const matchingItem = findMatchingItem(modal, targetBlock);
+		if (matchingItem) {
+			handleHotkeysQPS(modal, event, matchingItem as PluginInfo);
 		}
 	}
 }
 
-const handleHotkeys = async (
+const handleHotkeysQPS = async (
 	modal: QPSModal,
 	evt: KeyboardEvent,
 	pluginItem: PluginInfo
@@ -403,7 +385,6 @@ const handleHotkeys = async (
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroups;
-	const keyToGroupObject = GroupsKeysObject(numberOfGroups);
 	const pluginSettings = (modal.app as any).setting.openTabById(
 		pluginItem.id
 	);
@@ -436,16 +417,17 @@ const handleHotkeys = async (
 
 	if (modal.isDblClick) return;
 	const groupIndices = pluginItem.groupInfo.groupIndices;
-
+	const key = parseInt(keyPressed);
 	if (
-		keyPressed in keyToGroupObject &&
+		key > 0 &&
+		key <= numberOfGroups &&
 		!(pluginItem.id === "quick-plugin-switcher")
 	) {
-		const groupIndex = keyToGroupObject[keyPressed];
 		if (groupIndices.length === 6) return;
-		const index = groupIndices.indexOf(groupIndex);
+		const index = groupIndices.indexOf(key);
 		if (index === -1) {
-			groupIndices?.push(groupIndex);
+			groupIndices?.push(key);
+			await plugin.saveSettings();
 			modal.onOpen();
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
@@ -463,13 +445,14 @@ const handleHotkeys = async (
 			if (!groupNotEmpty(groupIndex, modal)) {
 				settings.selectedGroup = "SelectGroup";
 			}
+			await plugin.saveSettings();
 			modal.onOpen();
 		} else {
 			const menu = new Menu();
 			menu.addItem((item) => item.setTitle("Remove item group(s)"));
 			menu.addItem((item) =>
-				item.setTitle("All").onClick(() => {
-					rmvAllGroupsFromPlugin(modal, pluginItem);
+				item.setTitle("All").onClick(async () => {
+					await rmvAllGroupsFromPlugin(modal, pluginItem);
 				})
 			);
 			for (const groupIndex of groupIndices) {
@@ -477,11 +460,12 @@ const handleHotkeys = async (
 				menu.addItem((item) =>
 					item
 						.setTitle(`${emoji} group ${groupIndex}`)
-						.onClick(() => {
+						.onClick(async () => {
 							pluginItem.groupInfo.groupIndices = removeItem(
 								pluginItem.groupInfo.groupIndices,
 								groupIndex
 							);
+							await plugin.saveSettings();
 							modal.onOpen();
 						})
 				);

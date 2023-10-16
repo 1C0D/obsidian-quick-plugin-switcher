@@ -152,13 +152,16 @@ export const delayedReEnable = async (
 		.then((pluginItem.enabled = true));
 };
 
-export const conditionalEnable = async (modal: QPSModal, pluginItem: PluginInfo) => {
+export const conditionalEnable = async (
+	modal: QPSModal,
+	pluginItem: PluginInfo
+) => {
 	if (pluginItem.delayed && pluginItem.time > 0) {
-		await(modal.app as any).plugins.enablePlugin(pluginItem.id);
+		await (modal.app as any).plugins.enablePlugin(pluginItem.id);
 		await modal.plugin.saveSettings();
 	} else {
 		pluginItem.switched++; // besoin que là?
-		await(modal.app as any).plugins.enablePluginAndSave(pluginItem.id);
+		await (modal.app as any).plugins.enablePluginAndSave(pluginItem.id);
 	}
 };
 
@@ -188,6 +191,60 @@ export function groupNotEmpty(groupIndex: number, modal: QPSModal | CPModal) {
 	}
 }
 
+export const getPluginsInGroup = (
+	modal: QPSModal | CPModal,
+	groupNumber: number
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	if (modal instanceof QPSModal)
+		return settings.allPluginsList.filter(
+			(i: PluginInfo) =>
+				i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
+		);
+	else {
+		const pluginsWithGroup: PluginCommInfo[] = [];
+
+		Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
+			const plugin = settings.pluginsTagged[pluginKey];
+			const groupIndices = plugin.groupInfo.groupIndices || [];
+
+			if (groupIndices.includes(groupNumber)) {
+				const matchingPlugin = modal.pluginsList.find(
+					(plugin) => plugin.id === pluginKey
+				);
+				if (matchingPlugin) {
+					pluginsWithGroup.push(matchingPlugin);
+				}
+			}
+		});
+
+		return pluginsWithGroup;
+	}
+};
+
+// const getPluginsWithGroup = (modal: CPModal, groupNumber: number) => {
+// 	const { plugin } = modal;
+// 	const { settings } = plugin;
+// 	const pluginsWithGroup: PluginCommInfo[] = [];
+
+// 	Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
+// 		const plugin = settings.pluginsTagged[pluginKey];
+// 		const groupIndices = plugin.groupInfo.groupIndices || [];
+
+// 		if (groupIndices.includes(groupNumber)) {
+// 			const matchingPlugin = modal.pluginsList.find(
+// 				(plugin) => plugin.id === pluginKey
+// 			);
+// 			if (matchingPlugin) {
+// 				pluginsWithGroup.push(matchingPlugin);
+// 			}
+// 		}
+// 	});
+
+// 	return pluginsWithGroup;
+// };
+
 export function getIndexFromSelectedGroup(str: string) {
 	if (str === "SelectGroup") return 0;
 	else return parseInt(str.slice(-1));
@@ -208,12 +265,13 @@ export async function rmvAllGroupsFromPlugin(
 		const { groupInfo } = taggedItem;
 		groupInfo.groupIndices = [];
 		await plugin.saveSettings();
-		if ("draw" in modal) {
-			modal.draw(modal, modal.pluginsList, modal.pluginStats);
+		if (modal instanceof CPModal) {
+			modal.draw(modal);
 		}
 	} else {
 		if (pluginItem.groupInfo) {
 			pluginItem.groupInfo.groupIndices = [];
+			await plugin.saveSettings();
 			modal.onOpen();
 		}
 	}
@@ -229,18 +287,17 @@ export function createInput(el: HTMLElement, currentValue: string) {
 	return input;
 }
 
-export function GroupsKeysObject(numberOfGroups: number) {
-	const keyToGroupObject: Record<string, number> = {};
-	// Generate keyToGroupObject based on the number of groups available
-	for (let i = 1; i <= numberOfGroups; i++) {
-		keyToGroupObject[i.toString()] = i;
-	}
-	return keyToGroupObject;
-}
-
 export const pressDelay = (modal: CPModal | QPSModal) => {
 	modal.pressed = true;
 	setTimeout(() => {
 		modal.pressed = false;
 	}, 1);
 };
+
+export function getInstalled() {
+	return Object.keys(this.app.plugins.manifests);
+}
+
+export function isInstalled(item: any) {
+	return getInstalled().includes(item.id);
+}

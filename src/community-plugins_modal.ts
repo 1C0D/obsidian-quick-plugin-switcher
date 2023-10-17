@@ -12,13 +12,11 @@ import { App, DropdownComponent, Menu, Modal, setIcon } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
 import {
-	GroupData,
+	Groups,
 	GroupsComm,
 	KeyToSettingsMapType,
 	PackageInfoData,
 	PluginCommInfo,
-	commPluginStats,
-	commPlugins,
 } from "./types";
 import {
 	getCirclesItem,
@@ -32,8 +30,8 @@ import {
 } from "./modal_utils";
 import {
 	addSearch,
+	byGroupDropdowns,
 	doSearch,
-	filterByGroup,
 	findMatchingItem,
 	getElementFromMousePosition,
 	handleContextMenu,
@@ -49,10 +47,9 @@ export class CPModal extends Modal {
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
-	pluginsList: PluginCommInfo[];
-	pluginStats: PackageInfoData;
 	pressed = false;
 	mousePosition: any;
+	searchInit = true;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -74,7 +71,7 @@ export class CPModal extends Modal {
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
 		this.items = contentEl.createEl("div", { cls: "qps-community-items" });
 
-		document.addEventListener("mousemove", (event) => {
+		this.modalEl.addEventListener("mousemove", (event) => {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
@@ -95,17 +92,9 @@ export class CPModal extends Modal {
 
 	async onOpen() {
 		const { plugin, contentEl } = this;
-		contentEl.empty();
-		plugin.settings.search = "";
-		this.pluginsList = await fetchData(commPlugins);
-		this.pluginStats = await fetchData(commPluginStats);
-		await this.draw();
-	}
-
-	async draw() {
-		console.log("drawned");
-		const { plugin, contentEl } = this;
 		const { settings } = plugin;
+		if (this.searchInit) settings.search = "";
+		else this.searchInit = true;
 		contentEl.empty();
 		this.container();
 		setGroupTitle(this, plugin, GroupsComm, settings.numberOfGroupsComm);
@@ -113,12 +102,12 @@ export class CPModal extends Modal {
 		await addSearch(
 			this,
 			this.search,
-			this.pluginsList,
+			plugin.commPlugins,
 			"Search community plugins"
 		);
-		this.addGroups(this, this.groups, GroupsComm);
-		if (plugin.settings.showHotKeys) this.setHotKeysdesc();
-		await this.addItems(this, this.pluginsList);
+		this.addGroups(this, this.groups);
+		if (settings.showHotKeys) this.setHotKeysdesc();
+		await this.addItems();
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -127,10 +116,10 @@ export class CPModal extends Modal {
 		//dropdown filters
 		new DropdownComponent(contentEl)
 			.addOptions({
-				all: `All(${this.pluginsList.length})`,
+				all: `All(${settings.commPlugins.length})`,
 				installed: `Installed(${getInstalled().length})`,
 				notInstalled: `Not Installed(${
-					this.pluginsList.length - getInstalled().length
+					settings.commPlugins.length - getInstalled().length
 				})`,
 				byGroup: `By Group`,
 			})
@@ -138,13 +127,14 @@ export class CPModal extends Modal {
 			.onChange(async (value) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
-				this.draw();
+				this.searchInit = false;
+				this.onOpen();
 			});
 
-		filterByGroup(this, contentEl);
+		byGroupDropdowns(this, contentEl);
 	};
 
-	addGroups(modal: CPModal, contentEl: HTMLElement, Groups: GroupData): void {
+	addGroups(modal: CPModal, contentEl: HTMLElement): void {
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -196,20 +186,17 @@ export class CPModal extends Modal {
 		);
 	}
 
-	async addItems(modal: CPModal, listItems: PluginCommInfo[]) {
-		const { plugin, pluginStats } = modal;
+	async addItems() {
+		const { plugin } = this;
 		const { settings } = plugin;
-		listItems = filter(modal, listItems);
+		const { commPlugins, pluginStats } = settings;
 		const value = settings.search;
-		listItems = doSearch(
-			modal,
-			value,
-			modal.pluginsList
-		) as PluginCommInfo[];
+		let listItems = CPMmodeSort(this, commPlugins);
 		sortItemsByDownloads(listItems, pluginStats);
+		listItems = doSearch(this, value, listItems) as PluginCommInfo[];
 
 		for (const item of listItems) {
-			const itemContainer = modal.items.createEl("div", {
+			const itemContainer = this.items.createEl("div", {
 				cls: "qps-comm-block",
 			});
 			//name
@@ -299,13 +286,13 @@ export class CPModal extends Modal {
 	}
 }
 
-async function fetchData(url: string) {
+export async function fetchData(url: string) {
 	try {
 		const response = await fetch(url);
 		const data = await response.json();
 		return data;
 	} catch (error) {
-		console.error(`Error fetching data from ${url}:`, error);
+		console.warn(`Error fetching data from ${url}:`, error);
 		return null;
 	}
 }
@@ -334,7 +321,10 @@ export async function getManifest(item: PluginCommInfo) {
 	return null;
 }
 
-function sortItemsByDownloads(listItems: PluginCommInfo[], pluginStats: any) {
+function sortItemsByDownloads(
+	listItems: PluginCommInfo[],
+	pluginStats: PackageInfoData
+) {
 	listItems.sort((a, b) => {
 		const pluginAStats = pluginStats[a.id];
 		const pluginBStats = pluginStats[b.id];
@@ -347,13 +337,14 @@ function sortItemsByDownloads(listItems: PluginCommInfo[], pluginStats: any) {
 	});
 }
 
-function filter(modal: CPModal, listItems: PluginCommInfo[]) {
+function CPMmodeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm } = settings;
-	const installedPlugins = getInstalled();
 	if (filtersComm === "installed") {
+		const installedPlugins = getInstalled();
 		return listItems.filter((item) => installedPlugins.includes(item.id));
 	} else if (filtersComm === "notInstalled") {
+		const installedPlugins = getInstalled();
 		return listItems.filter((item) => !installedPlugins.includes(item.id));
 	} else if (filtersComm === "byGroup") {
 		const groupIndex = getIndexFromSelectedGroup(
@@ -385,45 +376,6 @@ function circleCSSModif(
 	const { color } = getEmojiForGroup(groupIndex);
 	el.style.backgroundColor = color;
 }
-
-// const editGroupName = (
-// 	modal: any,
-// 	span: HTMLSpanElement,
-// 	groupNumber: number
-// ) => {
-// 	const { plugin } = modal;
-// 	const { settings } = plugin;
-// 	const currentValue =
-// 		settings.groups[groupNumber].name !== ""
-// 			? settings.groups[groupNumber]?.name
-// 			: "";
-
-// 	const input = createInput(span, currentValue);
-
-// 	input?.addEventListener("blur", () => {
-// 		setTimeout(async () => {
-// 			if (modal.isDblClick) return;
-// 			input?.value
-// 				? (settings.groups[groupNumber].name = input.value)
-// 				: (settings.groups[groupNumber].name = `Group${groupNumber}`);
-// 			input.textContent = `${settings.groups[groupNumber].name}`;
-// 			await modal.plugin.saveSettings();
-// 			modal.draw(modal, modal.pluginsList, modal.pluginStats);
-// 		}, 200);
-// 	});
-
-// 	input?.addEventListener("keydown", async (event) => {
-// 		if (event.key === "Enter") {
-// 			if (modal.isDblClick) return;
-// 			input?.value
-// 				? (settings.groups[groupNumber].name = input.value)
-// 				: (settings.groups[groupNumber].name = GroupsComm[groupNumber]);
-// 			input.textContent = `${settings.groups[groupNumber].name}`;
-// 			await modal.plugin.saveSettings();
-// 			modal.draw(modal, modal.pluginsList, modal.pluginStats);
-// 		}
-// 	});
-// };
 
 const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 	const elementFromPoint = getElementFromMousePosition(event, modal);
@@ -478,7 +430,7 @@ const handleHotkeysCPM = async (
 		if (index === -1) {
 			groupIndices.push(key);
 			await plugin.saveSettings();
-			await modal.draw();
+			await modal.onOpen();
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -490,7 +442,7 @@ const handleHotkeysCPM = async (
 		if (groupIndices.length === 1) {
 			delete pluginsTagged[itemID];
 			await plugin.saveSettings();
-			await modal.draw();
+			await modal.onOpen();
 		} else if (groupIndices.length > 1) {
 			if (modal.pressed) {
 				return;
@@ -498,8 +450,12 @@ const handleHotkeysCPM = async (
 			pressDelay(modal);
 			const menu = new Menu();
 			menu.addItem((item) =>
-				item.setTitle("Remove item group(s)").setDisabled(true)
+				item
+					.setTitle("Remove item group(s)")
+					.setDisabled(true)
+					.setDisabled(true)
 			);
+			menu.addSeparator();
 			menu.addItem((item) =>
 				item.setTitle("All").onClick(async () => {
 					await rmvAllGroupsFromPlugin(modal, pluginItem);
@@ -517,7 +473,7 @@ const handleHotkeysCPM = async (
 									groupIndex
 								);
 								await plugin.saveSettings();
-								await modal.draw();
+								await modal.onOpen();
 							}
 						})
 				);

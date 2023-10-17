@@ -1,7 +1,3 @@
-// todo: fix add delay group disabling plugin
-// by group pas de tri alpha avant
-// listeners à checker. mieux cibler? toggle ?
-
 import {
 	App,
 	DropdownComponent,
@@ -17,7 +13,6 @@ import QuickPluginSwitcher from "./main";
 import {
 	modeSort,
 	mostSwitchedResetButton,
-	filterByGroup,
 	itemToggleClass,
 	itemTextComponent,
 	openGitHubRepo,
@@ -31,6 +26,7 @@ import {
 	handleDblClick,
 	getElementFromMousePosition,
 	findMatchingItem,
+	byGroupDropdowns,
 } from "./modal_components";
 import {
 	createInput,
@@ -55,7 +51,7 @@ export class QPSModal extends Modal {
 	isDblClick = false;
 	mousePosition: any;
 	pressed = false;
-	searchInit = true
+	searchInit = true;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
 		super(app);
@@ -96,8 +92,7 @@ export class QPSModal extends Modal {
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		if (this.searchInit) settings.search = "";
-		else this.searchInit = true
-
+		else this.searchInit = true;
 		contentEl.empty();
 		this.container();
 		setGroupTitle(this, plugin, Groups, settings.numberOfGroups);
@@ -111,13 +106,12 @@ export class QPSModal extends Modal {
 		searchDivButtons(this, this.search);
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
-		this.addItems(settings.allPluginsList);
+		await this.addItems();
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
 		const { plugin } = this;
 		const { settings } = plugin;
-
 		//dropdown with filters
 		new DropdownComponent(contentEl)
 			.addOptions({
@@ -131,15 +125,14 @@ export class QPSModal extends Modal {
 			.setValue(settings.filters as string)
 			.onChange(async (value) => {
 				settings.filters = value;
-				// plugin.getLength();//not needed apparently
 				await plugin.saveSettings();
-				this.searchInit =false
+				this.searchInit = false;
 				this.onOpen();
 			});
 
 		mostSwitchedResetButton(this, contentEl);
 
-		filterByGroup(this, contentEl);
+		byGroupDropdowns(this, contentEl);
 	};
 
 	addGroups(modal: QPSModal, contentEl: HTMLElement): void {
@@ -198,15 +191,15 @@ export class QPSModal extends Modal {
 		);
 	}
 
-	async addItems(listItems: PluginInfo[]) {
+	async addItems() {
 		const { plugin } = this;
 		const { settings } = plugin;
-
+		const { allPluginsList } = settings;
 		const value = settings.search;
-		listItems = doSearch(
+		let listItems = doSearch(
 			this,
 			value,
-			settings.allPluginsList
+			allPluginsList
 		) as PluginInfo[];
 		// Sort for chosen mode
 		listItems = modeSort(plugin, listItems);
@@ -237,6 +230,10 @@ export class QPSModal extends Modal {
 				const { plugin } = this;
 				const currentValue = pluginItem.time.toString();
 				this.isDblClick = true;
+				if (!itemContainer) {
+					console.log("ici");
+					return;
+				}
 				const input = createInput(itemContainer, currentValue);
 
 				if (!pluginItem.delayed) {
@@ -454,7 +451,13 @@ const handleHotkeysQPS = async (
 			await modal.onOpen();
 		} else {
 			const menu = new Menu();
-			menu.addItem((item) => item.setTitle("Remove item group(s)"));
+			menu.addItem((item) =>
+				item
+					.setTitle("Remove item group(s)")
+					.setDisabled(true)
+					.setDisabled(true)
+			);
+			menu.addSeparator();
 			menu.addItem((item) =>
 				item.setTitle("All").onClick(async () => {
 					await rmvAllGroupsFromPlugin(modal, pluginItem);

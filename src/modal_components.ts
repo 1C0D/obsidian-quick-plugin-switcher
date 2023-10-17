@@ -1,4 +1,5 @@
 import {
+	CommFilters,
 	Filters,
 	GroupData,
 	Groups,
@@ -39,8 +40,6 @@ import {
 import { removeItem } from "./utils";
 import { CPModal, getManifest } from "./community-plugins_modal";
 
-//addHeader /////////////////////////////////
-
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
 	contentEl: HTMLElement
@@ -60,19 +59,24 @@ export const mostSwitchedResetButton = (
 	}
 };
 
-export const filterByGroup = (
+export const byGroupDropdowns = (
 	modal: QPSModal | CPModal,
 	contentEl: HTMLElement
 ) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	const getDropdownOptions = (
-		groups: GroupData,
-		length: number
-		// filterType: string
-	) => {
-		const dropdownOptions: { [key: string]: string } = {};
+	if (modal instanceof QPSModal && settings.filters === Filters.ByGroup) {
+		getDropdownOptions(Groups, plugin.lengthAll);
+	} else if (
+		modal instanceof CPModal &&
+		settings.filtersComm === CommFilters.ByGroup
+	) {
+		getDropdownOptions(GroupsComm, settings.commPlugins.length);
+	}
+
+	function getDropdownOptions(groups: GroupData, length: number) {
+		const dropdownOptions: Record<string, string> = {};
 		for (const groupKey in groups) {
 			const groupIndex = getIndexFromSelectedGroup(groupKey);
 			if (groupKey === "SelectGroup") {
@@ -88,36 +92,16 @@ export const filterByGroup = (
 			.onChange(async (value) => {
 				settings.selectedGroup = value;
 				await plugin.saveSettings();
-				if (modal instanceof QPSModal) {
-					await modal.onOpen();
-				} else {
-					await modal.draw();
-				}
+				modal.searchInit = false;
+				await modal.onOpen();
 			});
-	};
-
-	if (modal instanceof QPSModal) {
-		if (settings.filters === Filters.ByGroup) {
-			getDropdownOptions(
-				Groups,
-				plugin.lengthAll //"selectedGroup"
-			);
-		}
-	} else {
-		if (settings.filtersComm === Filters.ByGroup) {
-			getDropdownOptions(
-				GroupsComm,
-				modal.pluginsList.length
-				// "selectedGroupComm"
-			);
-		}
 	}
 };
 
 export async function addSearch(
 	modal: CPModal | QPSModal,
 	contentEl: HTMLElement,
-	pluginsList: any[],
+	pluginsList: PluginCommInfo[] | PluginInfo[],
 	placeholder: string
 ) {
 	const { plugin } = modal;
@@ -130,23 +114,8 @@ export async function addSearch(
 				.setPlaceholder(placeholder)
 				.onChange(async (value: string) => {
 					settings.search = value;
-					// to update list
 					modal.items.empty();
-					if (modal instanceof CPModal) {
-						const listItems = doSearch(
-							modal,
-							value,
-							pluginsList
-						) as PluginCommInfo[];
-						modal.addItems(modal, listItems);
-					} else {
-						const listItems = doSearch(
-							modal,
-							value,
-							pluginsList
-						) as PluginInfo[];
-						modal.addItems(listItems);
-					}
+					modal.addItems();
 					// await plugin.saveSettings();
 				});
 		})
@@ -163,7 +132,7 @@ export function doSearch(
 		[
 			item.name,
 			modal instanceof QPSModal
-				? "" //(item as PluginInfo).desc, not usefull there 
+				? "" //don't search
 				: (item as PluginCommInfo).description,
 			item.author,
 		].some((prop) => prop.toLowerCase().includes(lowerCaseValue))
@@ -458,10 +427,10 @@ export const editGroupName = (
 
 	const handleBlurOrEnter = () => {
 		setTimeout(async () => {
-			if (!modal.isDblClick) {
+			if (!modal.isDblClick && input) {
 				updateGroupName(input.value);
 				if (modal instanceof CPModal) {
-					await modal.draw();
+					await modal.onOpen();
 				} else {
 					await modal.onOpen();
 				}
@@ -841,7 +810,8 @@ export function contextMenuCPM(
 			.setDisabled(isInstalled(matchingItem))
 			.setIcon("log-in")
 			.onClick(async () => {
-				const pluginInfo = modal.pluginStats[matchingItem.id];
+				const pluginInfo =
+					modal.plugin.settings.pluginStats[matchingItem.id];
 				let latestVersion;
 
 				for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
@@ -858,7 +828,7 @@ export function contextMenuCPM(
 					latestVersion,
 					manifest
 				);
-				await modal.draw();
+				await modal.onOpen();
 			});
 	});
 	menu.addItem((item) => {
@@ -867,7 +837,7 @@ export function contextMenuCPM(
 			.setIcon("log-out")
 			.onClick(async () => {
 				await this.app.plugins.uninstallPlugin(matchingItem.id);
-				await modal.draw();
+				await modal.onOpen();
 			});
 	});
 	menu.showAtMouseEvent(evt);
@@ -919,8 +889,9 @@ function contextMenuQPS(
 					});
 			});
 			addRemoveItemGroupMenuItems(modal, submenu, plugin, matchingItem);
-		}).addSeparator();
-		createClearGroupsMenuItem(modal, menu);
+		});
+		// .addSeparator();
+		// createClearGroupsMenuItem(modal, menu);
 	}
 	menu.showAtMouseEvent(evt);
 }
@@ -968,15 +939,16 @@ const groupMenuQPS = (
 				settings.groups[groupNumber].time || 0
 			).toString();
 			const input = createInput(span, currentValue);
+			if (!input) return;
 
 			const handleBlurOrEnter = () => {
-				setTimeout(async() => {
+				setTimeout(async () => {
 					if (!modal.isDblClick) {
-						const value = parseInt(input?.value) || 0;
+						const value = parseInt(input.value) || 0;
 						settings.groups[groupNumber].time = value;
 						span.textContent = `${value}`;
 						if (modal instanceof CPModal) {
-							await modal.draw();
+							await modal.onOpen();
 						} else if (modal instanceof QPSModal) {
 							await modal.onOpen();
 						}
@@ -984,8 +956,8 @@ const groupMenuQPS = (
 				}, 100);
 			};
 
-			input?.addEventListener("blur", handleBlurOrEnter);
-			input?.addEventListener("keydown", (event) => {
+			input.addEventListener("blur", handleBlurOrEnter);
+			input.addEventListener("keydown", (event) => {
 				if (event.key === "Enter") {
 					handleBlurOrEnter();
 				}
@@ -1128,7 +1100,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 		await this.app.plugins.uninstallPlugin(plugin.id);
 	}
 
-	await await modal.draw();
+	await await modal.onOpen();
 }
 
 async function installAllPluginsInGroup(
@@ -1142,7 +1114,7 @@ async function installAllPluginsInGroup(
 
 	for (const plugin of inGroup) {
 		const manifest = await getManifest(plugin);
-		const pluginInfo = modal.pluginStats[plugin.id];
+		const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
 		let latestVersion;
 
 		for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
@@ -1171,7 +1143,7 @@ async function installAllPluginsInGroup(
 		}
 	}
 
-	await await modal.draw();
+	await await modal.onOpen();
 }
 
 export const findMatchingItem = (
@@ -1191,7 +1163,7 @@ export const findMatchingItem = (
 	} else {
 		const itemName = targetBlock.firstChild?.textContent;
 		const cleanItemName = itemName?.replace(/installed$/, "").trim();
-		const matchingItem = modal.pluginsList.find(
+		const matchingItem = modal.plugin.settings.commPlugins.find(
 			(item) => item.name === cleanItemName
 		);
 		return matchingItem;

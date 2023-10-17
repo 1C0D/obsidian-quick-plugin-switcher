@@ -210,7 +210,7 @@ export const getPluginsInGroup = (
 			const groupIndices = plugin.groupInfo.groupIndices || [];
 
 			if (groupIndices.includes(groupNumber)) {
-				const matchingPlugin = modal.pluginsList.find(
+				const matchingPlugin = settings.commPlugins.find(
 					(plugin) => plugin.id === pluginKey
 				);
 				if (matchingPlugin) {
@@ -259,7 +259,7 @@ export async function rmvAllGroupsFromPlugin(
 	const { settings } = plugin;
 
 	if ("repo" in pluginItem) {
-		console.log("ici")
+		console.log("ici");
 		const itemID = pluginItem.id;
 		const { pluginsTagged } = settings;
 		const taggedItem = pluginsTagged[itemID];
@@ -267,7 +267,7 @@ export async function rmvAllGroupsFromPlugin(
 		delete pluginsTagged[itemID];
 		await plugin.saveSettings();
 		if (modal instanceof CPModal) {
-			await modal.draw();
+			await modal.onOpen();
 		}
 	} else {
 		if (pluginItem.groupInfo) {
@@ -278,14 +278,18 @@ export async function rmvAllGroupsFromPlugin(
 	}
 }
 
-export function createInput(el: HTMLElement, currentValue: string) {
-	const input = document.createElement("input");
-	input.type = "text";
-	input.value = currentValue;
-	el.replaceWith(input);
-	input?.focus();
-	selectValue(input);
-	return input;
+export function createInput(el: HTMLElement | null, currentValue: string) {
+	if (el) {
+		const input = document.createElement("input");
+		input.type = "text";
+		input.value = currentValue;
+		el.replaceWith(input);
+		input.focus();
+		selectValue(input);
+		return input;
+	} else {
+		return undefined
+	}
 }
 
 export const pressDelay = (modal: CPModal | QPSModal) => {

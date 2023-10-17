@@ -23,7 +23,7 @@ export const CommFilters: GroupData = {
 	All: "all",
 	NotInstalled: "not installed",
 	Installed: "installed",
-	ByGroup: "by group",
+	ByGroup: "byGroup",
 };
 
 export interface GroupData {
@@ -48,40 +48,48 @@ export interface PluginTaggedGroupInfo {
 }
 
 export interface QPSSettings {
+	lastFetchExe:number;
 	savedVersion: string;
 	allPluginsList: PluginInfo[];
-	pluginsTagged: PluginsTaggedInfo;
 	wasEnabled: string[];
 	filters: keyof typeof Filters;
-	filtersComm: keyof typeof CommFilters;
 	selectedGroup: string;
-	selectedGroupComm: string;
 	search: string;
 	numberOfGroups: number;
-	numberOfGroupsComm: number;
 	groups: Record<
 		number,
 		{ name: string; delayed: boolean; time: number; applied: boolean }
 	>;
-	groupsComm: Record<number, { name: string }>;
 	showHotKeys: boolean;
+	// commnunity plugins
+	pluginStats: PackageInfoData;
+	pluginsTagged: PluginsTaggedInfo; // à supprimer
+	commPlugins: PluginCommInfo[];
+	filtersComm: keyof typeof CommFilters;
+	selectedGroupComm: string;
+	numberOfGroupsComm: number;
+	groupsComm: Record<number, { name: string }>;
 }
 
 export const DEFAULT_SETTINGS: QPSSettings = {
+	lastFetchExe: 0,
 	savedVersion: "0.0.0",
 	allPluginsList: [],
-	pluginsTagged: {},
 	wasEnabled: [],
 	filters: Filters.All,
-	filtersComm: CommFilters.All,
 	selectedGroup: "SelectGroup",
-	selectedGroupComm: "SelectGroup",
 	search: "",
 	numberOfGroups: 4,
-	numberOfGroupsComm: 6,
 	groups: {},
-	groupsComm: {},
 	showHotKeys: true,
+	// commnunity plugins
+	pluginStats: {},
+	pluginsTagged: {},// à supprimer
+	commPlugins: [],
+	filtersComm: CommFilters.All,
+	selectedGroupComm: "SelectGroup",
+	numberOfGroupsComm: 6,
+	groupsComm: {},
 };
 
 export interface PluginInfo {
@@ -111,6 +119,7 @@ export interface PluginCommInfo {
 	description: string;
 	author: string;
 	repo: string;
+	groupInfo?: PluginTaggedGroupInfo;
 }
 
 //releases

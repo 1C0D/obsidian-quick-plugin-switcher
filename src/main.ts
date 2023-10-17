@@ -1,13 +1,21 @@
-// timer switch to fix error disabling plugin
+// switch timer to fix error disabling plugin
 // bugs hotkeys comm plugins
-// install 
 
 import { around } from "monkey-around";
 import { Plugin } from "obsidian";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
-import { DEFAULT_SETTINGS, PluginInfo, QPSSettings } from "./types";
+import {
+	DEFAULT_SETTINGS,
+	PackageInfoData,
+	PluginCommInfo,
+	PluginInfo,
+	QPSSettings,
+	commPluginStats,
+	commPlugins,
+} from "./types";
 import QPSSettingTab from "./settings";
+import { fetchData } from "./community-plugins_modal";
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -15,6 +23,8 @@ export default class QuickPluginSwitcher extends Plugin {
 	lengthAll = 0;
 	lengthDisabled = 0;
 	lengthEnabled = 0;
+	commPlugins: PluginCommInfo[];
+	pluginStats: PackageInfoData;
 
 	async onload() {
 		await this.loadSettings();
@@ -70,20 +80,22 @@ export default class QuickPluginSwitcher extends Plugin {
 		this.addRibbonIcon(
 			"toggle-right",
 			"Quick Plugin Switcher",
-			(evt: MouseEvent) => {
+			async (evt: MouseEvent) => {
 				this.getPluginsInfo();
 				this.getLength();
 				new QPSModal(this.app, this).open();
+				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
 			}
 		);
 
 		this.addCommand({
 			id: "quick-plugin-switcher-modal",
 			name: "open modal",
-			callback: () => {
+			callback: async () => {
 				this.getPluginsInfo();
 				this.getLength();
 				new QPSModal(this.app, this).open();
+				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
 			},
 		});
 	}
@@ -228,6 +240,16 @@ export default class QuickPluginSwitcher extends Plugin {
 		).length;
 	}
 
+	async commPluginsInfo() {
+		console.log("fetching'''''''''''''''''''''''''");
+		const plugins = await fetchData(commPlugins)
+		const stats = await fetchData(commPluginStats);
+		if (plugins) this.settings.commPlugins = plugins;
+		if (stats) this.settings.pluginStats = stats;
+		if (plugins || stats) await this.saveSettings();
+		// console.log("this.settings.commPlugins", this.settings.commPlugins)
+	}
+
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };
 		if ("mobileSettings" in previousSettings) {
@@ -243,3 +265,18 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
+
+const exeAfterDelay = async (
+	_this: QuickPluginSwitcher,
+	func: () => Promise<void>
+) => {
+	const { settings } = _this;
+	console.log("_this.settings.lastFetchExe", settings.lastFetchExe);
+	const currentTime: number = Date.now();
+	// delay 4min
+	if (currentTime - settings.lastFetchExe >= 240000) {
+		settings.lastFetchExe = currentTime;
+		await func();
+		await _this.saveSettings();
+	}
+};

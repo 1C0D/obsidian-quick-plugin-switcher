@@ -37,7 +37,7 @@ import {
 	sortByName,
 	sortSwitched,
 } from "./modal_utils";
-import { removeItem } from "./utils";
+import { isEnabled, removeItem } from "./utils";
 import { CPModal, getManifest } from "./community-plugins_modal";
 
 export const mostSwitchedResetButton = (
@@ -146,7 +146,7 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		.setCta()
 		.setTooltip("community plugins")
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
-			// modal.close(); //à voir
+			modal.close();
 			new CPModal(app, plugin).open();
 		});
 };
@@ -831,6 +831,28 @@ export function contextMenuCPM(
 				await modal.onOpen();
 			});
 	});
+
+	menu.addItem((item) => {
+		item.setTitle("enable plugin")
+			.setDisabled(
+				!isInstalled(matchingItem) || isInstalled(matchingItem) && isEnabled(modal, matchingItem.id)
+			)
+			.setIcon("power")
+			.onClick(async () => {
+				await (modal.app as any).plugins.enablePluginAndSave(
+					matchingItem.id
+				);
+				// auto done when reopening other modal ^^
+				// const pluginItem = modal.plugin.settings.allPluginsList;
+				// for (const item of pluginItem) {
+				// 	if (item.id === matchingItem.id) {
+				// 		item.enabled = true;
+				// 		await modal.plugin.saveSettings();
+				// 		break;
+				// 	}
+				// }
+			});
+	});
 	menu.addItem((item) => {
 		item.setTitle("uninstall plugin")
 			.setDisabled(!isInstalled(matchingItem))
@@ -1100,7 +1122,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 		await this.app.plugins.uninstallPlugin(plugin.id);
 	}
 
-	await await modal.onOpen();
+	await modal.onOpen();
 }
 
 async function installAllPluginsInGroup(
@@ -1132,18 +1154,18 @@ async function installAllPluginsInGroup(
 		);
 		if (enable) {
 			await (modal.app as any).plugins.enablePluginAndSave(plugin.id);
-			const pluginItem = modal.plugin.settings.allPluginsList;
-			for (const item of pluginItem) {
-				if (item.id === plugin.id) {
-					item.enabled = true;
-					await modal.plugin.saveSettings();
-					break;
-				}
-			}
+			// const pluginItem = modal.plugin.settings.allPluginsList;
+			// for (const item of pluginItem) {
+			// 	if (item.id === plugin.id) {
+			// 		item.enabled = true;
+			// 		await modal.plugin.saveSettings();
+			// 		break;
+			// 	}
+			// }
 		}
 	}
 
-	await await modal.onOpen();
+	await modal.onOpen();
 }
 
 export const findMatchingItem = (

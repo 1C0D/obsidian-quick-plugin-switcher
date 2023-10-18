@@ -39,6 +39,7 @@ import {
 	openGitHubRepo,
 } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
+import { QPSModal } from "./main_modal";
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -280,9 +281,9 @@ export class CPModal extends Modal {
 			handleDblClick(evt, this);
 		});
 
-		// this.plugin.getPluginsInfo();
-		// this.plugin.getLength();
-		// new QPSModal(this.app, this.plugin).open();
+		this.plugin.getPluginsInfo();
+		this.plugin.getLength();
+		new QPSModal(this.app, this.plugin).open();
 	}
 }
 
@@ -292,7 +293,7 @@ export async function fetchData(url: string) {
 		const data = await response.json();
 		return data;
 	} catch (error) {
-		console.warn(`Error fetching data from ${url}:`, error);
+		// console.warn(`Error fetching data from ${url}:`);
 		return null;
 	}
 }
@@ -304,7 +305,7 @@ export async function getReadMe(item: PluginCommInfo) {
 		const response = await fetch(repoURL);
 		return await response.json();
 	} catch (error) {
-		console.error("Error fetching ReadMe", error);
+		console.warn("Error fetching ReadMe");
 	}
 	return null;
 }
@@ -316,7 +317,7 @@ export async function getManifest(item: PluginCommInfo) {
 		const response = await fetch(repoURL);
 		return await response.json();
 	} catch (error) {
-		console.error("Error fetching ReadMe", error);
+		console.warn("Error fetching manifest");
 	}
 	return null;
 }

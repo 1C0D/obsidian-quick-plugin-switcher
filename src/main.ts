@@ -53,7 +53,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			// plugin has been toggled from obsidian UI ? or if is delayed unabled
 			for (const plugin of stillInstalled) {
 				if (
-					isEnabled(plugin.id) !== plugin.enabled &&
+					isEnabled(this, plugin.id) !== plugin.enabled &&
 					!plugin.delayed //because if delayed isEnabled false
 				) {
 					plugin.enabled = !plugin.enabled;
@@ -109,7 +109,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						const plugin = stillInstalled.find(
 							(plugin) =>
 								plugin.id === pluginId &&
-								!isEnabled(manifests[pluginId].id)
+								!isEnabled(this,manifests[pluginId].id)
 						);
 						if (plugin && plugin.delayed && plugin.time > 0) {
 							plugin.enabled = false;
@@ -128,7 +128,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						const plugin = stillInstalled.find(
 							(plugin) =>
 								plugin.id === pluginId &&
-								isEnabled(manifests[pluginId].id)
+								isEnabled(this, manifests[pluginId].id)
 						);
 						if (plugin && plugin.delayed && plugin.time > 0) {
 							plugin.enabled = true;
@@ -175,15 +175,15 @@ export default class QuickPluginSwitcher extends Plugin {
 
 			if (pluginInList) {
 				if (
-					isEnabled(manifests[key].id) !== pluginInList.enabled &&
+					isEnabled(this, manifests[key].id) !== pluginInList.enabled &&
 					!pluginInList.delayed
 				) {
 					pluginInList.enabled = !pluginInList.enabled;
 				} else if (
 					pluginInList.delayed &&
-					isEnabled(manifests[key].id) !== pluginInList.enabled
+					isEnabled(this, manifests[key].id) !== pluginInList.enabled
 				) {
-					if (isEnabled(manifests[key].id)) {
+					if (isEnabled(this, manifests[key].id)) {
 						pluginInList.enabled = true;
 						await (this.app as any).plugins.disablePluginAndSave(
 							pluginInList.id
@@ -210,7 +210,7 @@ export default class QuickPluginSwitcher extends Plugin {
 					author: manifests[key].author || "",
 					authorUrl: manifests[key].authorUrl || "",
 					desktopOnly: manifests[key].isDesktopOnly || false,
-					enabled: isEnabled(manifests[key].id) || false,
+					enabled: isEnabled(this, manifests[key].id) || false,
 					switched: 0,
 					groupInfo: {
 						groupIndices: [],
@@ -247,7 +247,8 @@ export default class QuickPluginSwitcher extends Plugin {
 		if (plugins) this.settings.commPlugins = plugins;
 		if (stats) this.settings.pluginStats = stats;
 		if (plugins || stats) await this.saveSettings();
-		// console.log("this.settings.commPlugins", this.settings.commPlugins)
+		if (plugins | stats) return true
+		else return false
 	}
 
 	async loadSettings() {
@@ -268,15 +269,17 @@ export default class QuickPluginSwitcher extends Plugin {
 
 const exeAfterDelay = async (
 	_this: QuickPluginSwitcher,
-	func: () => Promise<void>
+	func: () => Promise<boolean>
 ) => {
 	const { settings } = _this;
-	console.log("_this.settings.lastFetchExe", settings.lastFetchExe);
+	console.log("lastFetchExe less than 3 min");
 	const currentTime: number = Date.now();
-	// delay 4min
-	if (currentTime - settings.lastFetchExe >= 240000) {
-		settings.lastFetchExe = currentTime;
-		await func();
-		await _this.saveSettings();
+	// delay 3min
+	if (currentTime - settings.lastFetchExe >= 180000) {
+		const ret = await func();
+		if (ret === true){
+			settings.lastFetchExe = currentTime;
+			await _this.saveSettings();
+		}
 	}
 };

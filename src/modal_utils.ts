@@ -259,7 +259,6 @@ export async function rmvAllGroupsFromPlugin(
 	const { settings } = plugin;
 
 	if ("repo" in pluginItem) {
-		console.log("ici");
 		const itemID = pluginItem.id;
 		const { pluginsTagged } = settings;
 		const taggedItem = pluginsTagged[itemID];

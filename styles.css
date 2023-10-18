@@ -255,8 +255,16 @@
 }
 
 /* read me modal  ---------------*/
-.modal.read-me-modal {
-  margin: 0;
+.read-me-modal {
+  width: var(--modal-width);
+  height: var(--modal-height);
+  background-color: var(--background-secondary);
+  min-width: var(--modal-community-sidebar-width);
+  padding: var(--size-4-3);
+  display: flex;
+  flex-direction: column;
+
+  /* margin: 0;
   padding: 0;
   padding-top: 25px;
   background-color: var(--modal-background);
@@ -268,15 +276,11 @@
   display: flex;
   flex-direction: column;
   overflow: auto;
-  overflow-wrap: break-word;
+  overflow-wrap: break-word; */
 }
 
-.modal.read-me-modal iframe {
-  height: 80vh;
-  width: 100%;
-}
 
-.qps-read-me {
+/* .qps-read-me {
   font-size: 1.25rem
 }
 
@@ -299,6 +303,6 @@
 
 .qps-read-me th {
   background-color: #222222;
-}
+} */
 
 /* read me modal ------- end --------*/

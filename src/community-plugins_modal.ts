@@ -1,5 +1,4 @@
-// ajout filter group
-// uninstall by group
+
 // ajout getlength ds addHeader
 // do search à revoir et meilleure algo?
 // search focus perdu après qu'on referme whole desc
@@ -291,7 +290,7 @@ export async function fetchData(url: string) {
 	try {
 		const response = await fetch(url);
 		const data = await response.json();
-		return data;
+		if (data) return data;
 	} catch (error) {
 		// console.warn(`Error fetching data from ${url}:`);
 		return null;

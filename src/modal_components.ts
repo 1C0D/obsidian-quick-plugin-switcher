@@ -835,13 +835,16 @@ export function contextMenuCPM(
 	menu.addItem((item) => {
 		item.setTitle("enable plugin")
 			.setDisabled(
-				!isInstalled(matchingItem) || isInstalled(matchingItem) && isEnabled(modal, matchingItem.id)
+				!isInstalled(matchingItem) ||
+					(isInstalled(matchingItem) &&
+						isEnabled(modal, matchingItem.id))
 			)
 			.setIcon("power")
 			.onClick(async () => {
 				await (modal.app as any).plugins.enablePluginAndSave(
 					matchingItem.id
 				);
+				new Notice(`${matchingItem.name} enabled`, 1000);
 				// auto done when reopening other modal ^^
 				// const pluginItem = modal.plugin.settings.allPluginsList;
 				// for (const item of pluginItem) {
@@ -912,8 +915,6 @@ function contextMenuQPS(
 			});
 			addRemoveItemGroupMenuItems(modal, submenu, plugin, matchingItem);
 		});
-		// .addSeparator();
-		// createClearGroupsMenuItem(modal, menu);
 	}
 	menu.showAtMouseEvent(evt);
 }
@@ -1119,6 +1120,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 	if (!inGroup.length) return;
 
 	for (const plugin of inGroup) {
+		if (!isInstalled(plugin)) continue;
 		await this.app.plugins.uninstallPlugin(plugin.id);
 	}
 
@@ -1135,6 +1137,7 @@ async function installAllPluginsInGroup(
 	if (!inGroup.length) return;
 
 	for (const plugin of inGroup) {
+		if (isInstalled(plugin)) continue;
 		const manifest = await getManifest(plugin);
 		const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
 		let latestVersion;
@@ -1154,6 +1157,7 @@ async function installAllPluginsInGroup(
 		);
 		if (enable) {
 			await (modal.app as any).plugins.enablePluginAndSave(plugin.id);
+			new Notice(`${plugin.name} enabled`, 3500);
 			// const pluginItem = modal.plugin.settings.allPluginsList;
 			// for (const item of pluginItem) {
 			// 	if (item.id === plugin.id) {

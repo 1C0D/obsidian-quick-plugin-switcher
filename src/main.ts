@@ -109,7 +109,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						const plugin = stillInstalled.find(
 							(plugin) =>
 								plugin.id === pluginId &&
-								!isEnabled(this,manifests[pluginId].id)
+								!isEnabled(this, manifests[pluginId].id)
 						);
 						if (plugin && plugin.delayed && plugin.time > 0) {
 							plugin.enabled = false;
@@ -175,7 +175,8 @@ export default class QuickPluginSwitcher extends Plugin {
 
 			if (pluginInList) {
 				if (
-					isEnabled(this, manifests[key].id) !== pluginInList.enabled &&
+					isEnabled(this, manifests[key].id) !==
+						pluginInList.enabled &&
 					!pluginInList.delayed
 				) {
 					pluginInList.enabled = !pluginInList.enabled;
@@ -242,13 +243,21 @@ export default class QuickPluginSwitcher extends Plugin {
 
 	async commPluginsInfo() {
 		console.log("fetching'''''''''''''''''''''''''");
-		const plugins = await fetchData(commPlugins)
-		const stats = await fetchData(commPluginStats);
-		if (plugins) this.settings.commPlugins = plugins;
-		if (stats) this.settings.pluginStats = stats;
-		if (plugins || stats) await this.saveSettings();
-		if (plugins | stats) return true
-		else return false
+		let plugins, stats;
+		try {
+			plugins = await fetchData(commPlugins);
+			stats = await fetchData(commPluginStats);
+		} catch {
+			return false;
+		}
+		if (plugins || stats) {
+			this.settings.commPlugins = plugins;
+			this.settings.pluginStats = stats;
+			await this.saveSettings();
+			console.log("fetched");
+			return true;
+		}
+		return false;
 	}
 
 	async loadSettings() {
@@ -272,14 +281,17 @@ const exeAfterDelay = async (
 	func: () => Promise<boolean>
 ) => {
 	const { settings } = _this;
-	console.log("lastFetchExe less than 3 min");
 	const currentTime: number = Date.now();
 	// delay 3min
 	if (currentTime - settings.lastFetchExe >= 180000) {
 		const ret = await func();
-		if (ret === true){
+		if (ret === true) {
 			settings.lastFetchExe = currentTime;
 			await _this.saveSettings();
+		} else {
+			console.log("check your connexion");
 		}
+	} else {
+		console.log("fetched less than 3 min, community plugins not updated");
 	}
 };

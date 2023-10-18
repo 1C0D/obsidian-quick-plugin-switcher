@@ -1,7 +1,7 @@
-import { App, Modal, Setting } from "obsidian";
+import { App, Component, MarkdownRenderer, Modal, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginCommInfo, PluginInfo } from "./types";
-import { CPModal } from "./community-plugins_modal";
+import { CPModal, getReadMe } from "./community-plugins_modal";
 
 type ConfirmCallback = (confirmed: boolean) => void;
 
@@ -149,6 +149,7 @@ export class NewVersion extends Modal {
 }
 
 export class ReadMeModal extends Modal {
+	comp: Component;
 	constructor(
 		app: App,
 		public modal: CPModal,
@@ -158,39 +159,45 @@ export class ReadMeModal extends Modal {
 		this.modal = modal;
 		this.pluginItem = pluginItem;
 		this.modalEl.addClass("read-me-modal");
+		this.comp = new Component();
+		this.comp.load();
 	}
 
 	async onOpen() {
 		const { contentEl, pluginItem } = this;
-		contentEl.empty();		
-		const div = contentEl.createDiv({ cls: "qps-read-me" });
-		// easy way
-		div.innerHTML = `<iframe style='filter: invert(0) brightness(90%);' src="https://github.com/${pluginItem.repo}/blob/master/README.md"></iframe>`;
-		
-		// contentEl
-		// 	.createEl("p", {
-		// 		text: pluginItem.name,
-		// 	})
-		// 	.createEl("p", {
-		// 		text: "By: " + pluginItem.author,
-		// 	});
-		// much harder, how to render html portions?
-		// const data = await getReadMe(pluginItem);
-		// const content = Buffer.from(data.content, "base64").toString("utf-8");
+		// this.modalEl.addClass("read-me-modal");
+		contentEl.empty();
+
+		contentEl
+			.createEl("p", {
+				text: pluginItem.name,
+			})
+			.createEl("p", {
+				text: "By: " + pluginItem.author,
+			});
+
+		const data = await getReadMe(pluginItem);
+		const content = Buffer.from(data.content, "base64").toString("utf-8");
 		// const updatedContent = content
 		// 	.replace(/\/blob\//g, "/raw/")
 		// 	.replace(
 		// 		/\]\(\.\//g,
 		// 		`](https://github.com/${pluginItem.repo}/raw/master/`
 		// 	);
-		// var MarkdownIt = require("markdown-it"),
-		// 	md = new MarkdownIt();
-		// var htmlContent = md.render("---\n" + updatedContent);
-		// div.innerHTML = htmlContent;
+		const src = `https://api.github.com/repos/${pluginItem.repo}/contents`;
+		MarkdownRenderer.render(this.app, content, contentEl, src, this.comp);
+
+		// MarkdownRenderer.renderMarkdown(
+		// 	data,
+		// 	contentEl,
+		// 	"/",
+		// 	this.modal
+		// );
 	}
 
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		this.comp.unload();
 	}
 }

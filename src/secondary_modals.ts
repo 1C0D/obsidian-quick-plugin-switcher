@@ -176,23 +176,15 @@ export class ReadMeModal extends Modal {
 				text: "By: " + pluginItem.author,
 			});
 
+		const div = contentEl.createDiv({ cls: "qps-read-me" });
+
 		const data = await getReadMe(pluginItem);
 		const content = Buffer.from(data.content, "base64").toString("utf-8");
-		// const updatedContent = content
-		// 	.replace(/\/blob\//g, "/raw/")
-		// 	.replace(
-		// 		/\]\(\.\//g,
-		// 		`](https://github.com/${pluginItem.repo}/raw/master/`
-		// 	);
-		const src = `https://api.github.com/repos/${pluginItem.repo}/contents`;
-		MarkdownRenderer.render(this.app, content, contentEl, src, this.comp);
+		console.log("content", content);
 
-		// MarkdownRenderer.renderMarkdown(
-		// 	data,
-		// 	contentEl,
-		// 	"/",
-		// 	this.modal
-		// );
+		const updatedContent = modifyGitHubLinks(content, pluginItem);
+
+		MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
 	}
 
 	onClose() {
@@ -200,4 +192,22 @@ export class ReadMeModal extends Modal {
 		contentEl.empty();
 		this.comp.unload();
 	}
+}
+
+function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
+	const regex = /!\[([^\]]*)\]\(([^)]*)\)/g;
+	return content
+		.replace(/\/blob\//g, "/raw/")
+		.replace(regex, (match, alt, url) => {
+			if (!url.startsWith("http")) {
+				if (url.startsWith(".")) {
+					url = `https://github.com/${
+						pluginItem.repo
+					}/raw/master${url.substr(1)}`;
+				} else {
+					url = `https://github.com/${pluginItem.repo}/raw/master/${url}`;
+				}
+			}
+			return `![${alt}](${url})`;
+		});
 }

@@ -242,7 +242,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	async commPluginsInfo() {
-		console.log("fetching'''''''''''''''''''''''''");
+		console.debug("fetching'''''''''''''''''''''''''");
 		let plugins, stats;
 		try {
 			plugins = await fetchData(commPlugins);
@@ -254,7 +254,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.settings.commPlugins = plugins;
 			this.settings.pluginStats = stats;
 			await this.saveSettings();
-			console.log("fetched");
+			console.debug("fetched");
 			return true;
 		}
 		return false;

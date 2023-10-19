@@ -38,7 +38,13 @@ import {
 	sortSwitched,
 } from "./modal_utils";
 import { isEnabled, removeItem } from "./utils";
-import { CPModal, getManifest } from "./community-plugins_modal";
+import {
+	CPModal,
+	getManifest,
+	installFromList,
+	installPluginFromOtherVault,
+	reOpenModal,
+} from "./community-plugins_modal";
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -101,7 +107,6 @@ export const byGroupDropdowns = (
 export async function addSearch(
 	modal: CPModal | QPSModal,
 	contentEl: HTMLElement,
-	pluginsList: PluginCommInfo[] | PluginInfo[],
 	placeholder: string
 ) {
 	const { plugin } = modal;
@@ -148,6 +153,54 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
 			modal.close();
 			new CPModal(app, plugin).open();
+		});
+};
+
+export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
+	const { plugin } = modal;
+	new ButtonComponent(el)
+		.setIcon("list-end")
+		.setCta()
+		.setTooltip(
+			"Install & enable plugins based on another Vault content or from a JSON list"
+		)
+		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
+			const menu = new Menu();
+			menu.addItem((item) =>
+				item
+					.setTitle("install plugins based on another Vault")
+					.setIcon("book-copy")
+					.onClick(async () => {
+						await installPluginFromOtherVault(modal);
+					})
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("install & enable plugins based on another Vault")
+					.setIcon("book-copy")
+					.onClick(async () => {
+						await installPluginFromOtherVault(modal, true);
+					})
+			);
+			menu.addSeparator();
+			menu.addItem((item) =>
+				item
+					.setTitle("install & enable plugins from json list")
+					.setIcon("list")
+					.onClick(async () => {
+						await installFromList(modal, true);
+					})
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("install plugins from json list")
+					.setIcon("list")
+					.onClick(async () => {
+						await installFromList(modal);
+					})
+			);
+
+			menu.showAtMouseEvent(evt);
 		});
 };
 
@@ -747,6 +800,22 @@ export const searchDivButtons = (
 	);
 };
 
+export const searchCommDivButton = (
+	modal: CPModal,
+	contentEl: HTMLElement
+): void => {
+	// toggle plugin options
+	const span = contentEl.createEl(
+		"span",
+		{
+			cls: "qps-toggle-plugins",
+		},
+		(el) => {
+			commOptionButton(modal, el);
+		}
+	);
+};
+
 export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(evt, modal);
 	const targetGroup = elementFromPoint?.closest(
@@ -810,50 +879,28 @@ export function contextMenuCPM(
 			.setDisabled(isInstalled(matchingItem))
 			.setIcon("log-in")
 			.onClick(async () => {
-				const pluginInfo =
-					modal.plugin.settings.pluginStats[matchingItem.id];
-				let latestVersion;
-
-				for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
-					const version = Object.keys(pluginInfo)[i];
-					if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-						latestVersion = version;
-						break;
-					}
-				}
-
-				const manifest = await getManifest(matchingItem);
-				await this.app.plugins.installPlugin(
-					matchingItem.repo,
-					latestVersion,
-					manifest
-				);
+				await installLatestPluginVersion(modal, matchingItem);
+				modal.searchInit = false;
 				await modal.onOpen();
 			});
 	});
 
 	menu.addItem((item) => {
-		item.setTitle("enable plugin")
-			.setDisabled(
-				!isInstalled(matchingItem) ||
-					(isInstalled(matchingItem) &&
-						isEnabled(modal, matchingItem.id))
-			)
-			.setIcon("power")
+		const isenabled = isEnabled(modal, matchingItem.id);
+		item.setTitle(isenabled ? "disable plugin" : "enable plugin")
+			.setDisabled(!isInstalled(matchingItem))
+			.setIcon(isenabled ? "poweroff" : "power")
 			.onClick(async () => {
-				await (modal.app as any).plugins.enablePluginAndSave(
-					matchingItem.id
-				);
-				new Notice(`${matchingItem.name} enabled`, 1000);
-				// auto done when reopening other modal ^^
-				// const pluginItem = modal.plugin.settings.allPluginsList;
-				// for (const item of pluginItem) {
-				// 	if (item.id === matchingItem.id) {
-				// 		item.enabled = true;
-				// 		await modal.plugin.saveSettings();
-				// 		break;
-				// 	}
-				// }
+				isEnabled(modal, matchingItem.id)
+					? await (modal.app as any).plugins.disablePluginAndSave(
+							matchingItem.id
+					  )
+					: await (modal.app as any).plugins.enablePluginAndSave(
+							matchingItem.id
+					  );
+
+				const msg = isenabled ? "disabled" : "enabled";
+				new Notice(`${matchingItem.name} ${msg}`, 1000);
 			});
 	});
 	menu.addItem((item) => {
@@ -862,6 +909,7 @@ export function contextMenuCPM(
 			.setIcon("log-out")
 			.onClick(async () => {
 				await this.app.plugins.uninstallPlugin(matchingItem.id);
+				modal.searchInit = false;
 				await modal.onOpen();
 			});
 	});
@@ -1091,13 +1139,25 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 	menu.addItem((item) => {
 		item.setTitle("install & enable in group");
 		item.onClick(async () => {
-			await installAllPluginsInGroup(modal, groupNumber, true);
+			const inGroup = getPluginsInGroup(
+				modal,
+				groupNumber
+			) as PluginCommInfo[];
+
+			if (!inGroup.length) return;
+			await installAllPluginsInGroup(modal, inGroup, true);
 		});
 	});
 	menu.addItem((item) => {
 		item.setTitle("install plugins in group");
 		item.onClick(async () => {
-			await installAllPluginsInGroup(modal, groupNumber);
+			const inGroup = getPluginsInGroup(
+				modal,
+				groupNumber
+			) as PluginCommInfo[];
+
+			if (!inGroup.length) return;
+			await installAllPluginsInGroup(modal, inGroup);
 		});
 	});
 	menu.addItem((item) => {
@@ -1122,54 +1182,29 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 	for (const plugin of inGroup) {
 		if (!isInstalled(plugin)) continue;
 		await this.app.plugins.uninstallPlugin(plugin.id);
+		new Notice(`${plugin.name} uninstalled`, 4000);
 	}
 
-	await modal.onOpen();
+	await reOpenModal(modal);
 }
 
-async function installAllPluginsInGroup(
+export async function installAllPluginsInGroup(
 	modal: CPModal,
-	groupNumber: number,
+	pluginList: PluginCommInfo[],
 	enable = false
 ) {
-	const inGroup = getPluginsInGroup(modal, groupNumber) as PluginCommInfo[];
-
-	if (!inGroup.length) return;
-
-	for (const plugin of inGroup) {
-		if (isInstalled(plugin)) continue;
-		const manifest = await getManifest(plugin);
-		const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
-		let latestVersion;
-
-		for (let i = Object.keys(pluginInfo).length - 1; i >= 0; i--) {
-			const version = Object.keys(pluginInfo)[i];
-			if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-				latestVersion = version;
-				break;
-			}
+	for (const plugin of pluginList) {
+		if (isInstalled(plugin)) {
+			new Notice(`${plugin.name} already installed`, 4000);
+			continue;
 		}
-
-		await this.app.plugins.installPlugin(
-			plugin.repo,
-			latestVersion,
-			manifest
-		);
+		await installLatestPluginVersion(modal, plugin);
 		if (enable) {
 			await (modal.app as any).plugins.enablePluginAndSave(plugin.id);
-			new Notice(`${plugin.name} enabled`, 3500);
-			// const pluginItem = modal.plugin.settings.allPluginsList;
-			// for (const item of pluginItem) {
-			// 	if (item.id === plugin.id) {
-			// 		item.enabled = true;
-			// 		await modal.plugin.saveSettings();
-			// 		break;
-			// 	}
-			// }
+			new Notice(`${plugin.name} enabled`, 4000);
 		}
 	}
-
-	await modal.onOpen();
+	await reOpenModal(modal);
 }
 
 export const findMatchingItem = (
@@ -1223,3 +1258,27 @@ const createClearGroupsMenuItem = (modal: QPSModal, menu: Menu) => {
 		addRemoveGroupMenuItems(modal, submenu);
 	});
 };
+
+async function installLatestPluginVersion(
+	modal: CPModal,
+	plugin: PluginCommInfo
+) {
+	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
+	let latestVersion = null;
+
+	for (const version in pluginInfo) {
+		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
+			if (!latestVersion || version > latestVersion) {
+				latestVersion = version;
+			}
+		}
+	}
+
+	if (!latestVersion) {
+		console.log("no last version?"); // shouldn't happen
+		return;
+	}
+
+	const manifest = await getManifest(plugin);
+	await this.app.plugins.installPlugin(plugin.repo, latestVersion, manifest);
+}

@@ -97,12 +97,7 @@ export class QPSModal extends Modal {
 		this.container();
 		setGroupTitle(this, plugin, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
-		await addSearch(
-			this,
-			this.search,
-			settings.allPluginsList,
-			"Search plugins"
-		);
+		await addSearch(this, this.search, "Search plugins");
 		searchDivButtons(this, this.search);
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
@@ -112,7 +107,6 @@ export class QPSModal extends Modal {
 	addHeader = (contentEl: HTMLElement): void => {
 		const { plugin } = this;
 		const { settings } = plugin;
-		//dropdown with filters
 		new DropdownComponent(contentEl)
 			.addOptions({
 				all: `All(${plugin.lengthAll})`,
@@ -196,11 +190,7 @@ export class QPSModal extends Modal {
 		const { settings } = plugin;
 		const { allPluginsList } = settings;
 		const value = settings.search;
-		let listItems = doSearch(
-			this,
-			value,
-			allPluginsList
-		) as PluginInfo[];
+		let listItems = doSearch(this, value, allPluginsList) as PluginInfo[];
 		// Sort for chosen mode
 		listItems = modeSort(plugin, listItems);
 
@@ -231,7 +221,6 @@ export class QPSModal extends Modal {
 				const currentValue = pluginItem.time.toString();
 				this.isDblClick = true;
 				if (!itemContainer) {
-					console.log("ici");
 					return;
 				}
 				const input = createInput(itemContainer, currentValue);

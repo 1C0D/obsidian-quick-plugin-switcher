@@ -88,7 +88,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	commPlugins: [],
 	filtersComm: CommFilters.All,
 	selectedGroupComm: "SelectGroup",
-	numberOfGroupsComm: 6,
+	numberOfGroupsComm: 4,
 	groupsComm: {},
 };
 

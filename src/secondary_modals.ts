@@ -171,6 +171,7 @@ export class ReadMeModal extends Modal {
 		contentEl
 			.createEl("p", {
 				text: pluginItem.name,
+				cls: "readme-title"
 			})
 			.createEl("p", {
 				text: "By: " + pluginItem.author,
@@ -180,7 +181,6 @@ export class ReadMeModal extends Modal {
 
 		const data = await getReadMe(pluginItem);
 		const content = Buffer.from(data.content, "base64").toString("utf-8");
-		console.log("content", content);
 
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 

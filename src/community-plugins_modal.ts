@@ -1,17 +1,16 @@
-
-// ajout getlength ds addHeader
-// do search à revoir et meilleure algo?
-// search focus perdu après qu'on referme whole desc
-// settings groups length
-// group menu voir plus tard
-// destkop only
-// context menu
-// futur?: utiliser une map au lieu d'un array pour pluginList? this.pluginsList = new Map(await getPluginList().map(plugin => [plugin.id, plugin]));
-import { App, DropdownComponent, Menu, Modal, setIcon } from "obsidian";
+import { readFileSync, existsSync, readdirSync } from "fs";
+import {
+	App,
+	DropdownComponent,
+	Menu,
+	Modal,
+	Notice,
+	Platform,
+	setIcon,
+} from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
 import {
-	Groups,
 	GroupsComm,
 	KeyToSettingsMapType,
 	PackageInfoData,
@@ -35,10 +34,13 @@ import {
 	getElementFromMousePosition,
 	handleContextMenu,
 	handleDblClick,
+	installAllPluginsInGroup,
 	openGitHubRepo,
+	searchCommDivButton,
 } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal } from "./main_modal";
+import * as path from "path";
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -95,6 +97,7 @@ export class CPModal extends Modal {
 		const { settings } = plugin;
 		if (this.searchInit) settings.search = "";
 		else this.searchInit = true;
+		await plugin.saveSettings();
 		contentEl.empty();
 		this.container();
 		setGroupTitle(this, plugin, GroupsComm, settings.numberOfGroupsComm);
@@ -102,12 +105,15 @@ export class CPModal extends Modal {
 		await addSearch(
 			this,
 			this.search,
-			plugin.commPlugins,
 			"Search community plugins"
 		);
+		if (Platform.isDesktopApp) {
+			searchCommDivButton(this, this.search);
+		}
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
 		await this.addItems();
+
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -127,15 +133,14 @@ export class CPModal extends Modal {
 			.onChange(async (value) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
-				this.searchInit = false;
-				this.onOpen();
+				await reOpenModal(this);
 			});
 
 		byGroupDropdowns(this, contentEl);
 	};
 
 	addGroups(modal: CPModal, contentEl: HTMLElement): void {
-		const groups = Object.values(Groups);
+		const groups = Object.values(GroupsComm);
 
 		for (let i = 1; i < groups.length; i++) {
 			const groupKey = groups[i];
@@ -401,6 +406,10 @@ const handleHotkeysCPM = async (
 	evt: KeyboardEvent,
 	pluginItem: PluginCommInfo
 ) => {
+	if (modal.pressed) {
+		return;
+	}
+	pressDelay(modal);
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroupsComm;
@@ -418,7 +427,7 @@ const handleHotkeysCPM = async (
 		pluginsTagged[itemID] = {
 			groupInfo: { groupIndices: [] },
 		};
-		await modal.plugin.saveSettings();
+		// await modal.plugin.saveSettings();
 	}
 	taggedItem = pluginsTagged[itemID];
 	const { groupInfo } = taggedItem;
@@ -430,7 +439,7 @@ const handleHotkeysCPM = async (
 		if (index === -1) {
 			groupIndices.push(key);
 			await plugin.saveSettings();
-			await modal.onOpen();
+			await reOpenModal(modal)
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -442,12 +451,8 @@ const handleHotkeysCPM = async (
 		if (groupIndices.length === 1) {
 			delete pluginsTagged[itemID];
 			await plugin.saveSettings();
-			await modal.onOpen();
+			await reOpenModal(modal);
 		} else if (groupIndices.length > 1) {
-			if (modal.pressed) {
-				return;
-			}
-			pressDelay(modal);
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item
@@ -473,7 +478,7 @@ const handleHotkeysCPM = async (
 									groupIndex
 								);
 								await plugin.saveSettings();
-								await modal.onOpen();
+								await reOpenModal(modal);
 							}
 						})
 				);
@@ -527,3 +532,109 @@ const addGroupCircles = (
 		}
 	}
 };
+
+export async function installFromList(modal: CPModal, enable = false) {
+	let properties = ["openFile"]; //, "dontAddToRecent"
+	let filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
+		title: "Pick json list file of plugins to install",
+		properties,
+		filters: ["JsonList", "json"],
+	});
+
+	if (filePaths && filePaths.length) {
+		const contenu = readFileSync(filePaths[0], "utf-8");
+
+		try {
+			const pluginList = JSON.parse(contenu);
+			if (Array.isArray(pluginList)) {
+				const plugins = modal.plugin.settings.commPlugins.filter(
+					(plugin) => {
+						return pluginList.includes(plugin.id);
+					}
+				);
+
+				await installAllPluginsInGroup(modal, plugins, enable);
+			} else {
+				console.error("this file is not a JSON list.");
+			}
+		} catch (erreur) {
+			console.error("Error reading JSON file: ", erreur);
+		}
+	}
+}
+
+export async function installPluginFromOtherVault(modal: CPModal, enable =false) {
+	let dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
+		title: "Select your vault directory, you want plugins list from",
+		properties: ["openDirectory"],
+	});
+	if (dirPath && dirPath.length) {
+		const vaultPath = dirPath[0];
+
+		const obsidianPath = path.join(vaultPath, ".obsidian");
+		// isVault?
+		if (!existsSync(obsidianPath)) {
+			new Notice("Select a vault folder!", 2500);
+			return;
+		}
+
+		// don't select actual vault!
+		const selectedVaultName = path.basename(vaultPath);
+		const currentVaultName = modal.app.vault.getName();
+
+		if (selectedVaultName === currentVaultName) {
+			new Notice("You have selected the current vault!", 2500);
+			return;
+		}
+
+		const pluginsPath = path.join(obsidianPath, "plugins");
+		if (!existsSync(pluginsPath)) {
+			new Notice(
+				"This vault doesn't contain any installed plugin!",
+				2500
+			);
+			return;
+		}
+
+		const installedPlugins: string[] = [];
+		const pluginFolders = readdirSync(pluginsPath);
+
+		for (const pluginFolder of pluginFolders) {
+			const pluginFolderPath = path.join(pluginsPath, pluginFolder);
+			const packageJsonPath = path.join(pluginFolderPath, "package.json");
+			const manifestJsonPath = path.join(
+				pluginFolderPath,
+				"manifest.json"
+			);
+			const mainJsPath = path.join(pluginFolderPath, "main.js");
+
+			if (existsSync(packageJsonPath)) {
+				// Le plugin a un package.json
+				continue;
+			}
+
+			if (existsSync(manifestJsonPath) && existsSync(mainJsPath)) {
+				const manifestContent = readFileSync(manifestJsonPath, "utf-8");
+				const manifestData = JSON.parse(manifestContent);
+				const pluginId = manifestData.id;
+
+				installedPlugins.push(pluginId);
+			}
+		}
+
+		if (!installedPlugins.length) {
+			new Notice("Found no plugin to install", 2500);
+			return;
+		}
+
+		const plugins = modal.plugin.settings.commPlugins.filter((plugin) => {
+			return installedPlugins.includes(plugin.id);
+		});
+		await installAllPluginsInGroup(modal, plugins, enable);
+	}
+}
+
+export async function reOpenModal(modal:CPModal) {
+	modal.searchInit = false;
+	await modal.onOpen();
+}

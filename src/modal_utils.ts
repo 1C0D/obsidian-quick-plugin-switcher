@@ -266,13 +266,14 @@ export async function rmvAllGroupsFromPlugin(
 		delete pluginsTagged[itemID];
 		await plugin.saveSettings();
 		if (modal instanceof CPModal) {
-			await modal.onOpen();
+			await plugin.saveSettings();
+			await reOpenModal(modal);
 		}
 	} else {
 		if (pluginItem.groupInfo) {
 			pluginItem.groupInfo.groupIndices = [];
 			await plugin.saveSettings();
-			await modal.onOpen();
+			await reOpenModal(modal);
 		}
 	}
 }
@@ -287,7 +288,7 @@ export function createInput(el: HTMLElement | null, currentValue: string) {
 		selectValue(input);
 		return input;
 	} else {
-		return undefined
+		return undefined;
 	}
 }
 
@@ -304,4 +305,9 @@ export function getInstalled() {
 
 export function isInstalled(item: any) {
 	return getInstalled().includes(item.id);
+}
+
+export async function reOpenModal(modal: QPSModal | CPModal) {
+	modal.searchInit = false;
+	await modal.onOpen();
 }

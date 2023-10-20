@@ -25,6 +25,7 @@ import {
 	rmvAllGroupsFromPlugin,
 	getInstalled,
 	isInstalled,
+	reOpenModal,
 } from "./modal_utils";
 import {
 	addSearch,
@@ -46,6 +47,7 @@ export class CPModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
 	search: HTMLElement;
+	searchTyping = true;
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
@@ -102,18 +104,13 @@ export class CPModal extends Modal {
 		this.container();
 		setGroupTitle(this, plugin, GroupsComm, settings.numberOfGroupsComm);
 		this.addHeader(this.header);
-		await addSearch(
-			this,
-			this.search,
-			"Search community plugins"
-		);
+		await addSearch(this, this.search, "Search community plugins");
 		if (Platform.isDesktopApp) {
 			searchCommDivButton(this, this.search);
 		}
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
 		await this.addItems();
-
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -392,12 +389,15 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 		const matchingItem = findMatchingItem(modal, targetBlock);
 
 		if (matchingItem) {
+			modal.searchTyping = false;
 			await handleHotkeysCPM(
 				modal,
 				event,
 				matchingItem as PluginCommInfo
 			);
 		}
+	} else {
+		modal.searchTyping = true;
 	}
 };
 
@@ -439,7 +439,7 @@ const handleHotkeysCPM = async (
 		if (index === -1) {
 			groupIndices.push(key);
 			await plugin.saveSettings();
-			await reOpenModal(modal)
+			await reOpenModal(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -563,7 +563,10 @@ export async function installFromList(modal: CPModal, enable = false) {
 	}
 }
 
-export async function installPluginFromOtherVault(modal: CPModal, enable =false) {
+export async function installPluginFromOtherVault(
+	modal: CPModal,
+	enable = false
+) {
 	let dirPath: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Select your vault directory, you want plugins list from",
 		properties: ["openDirectory"],
@@ -632,9 +635,4 @@ export async function installPluginFromOtherVault(modal: CPModal, enable =false)
 		});
 		await installAllPluginsInGroup(modal, plugins, enable);
 	}
-}
-
-export async function reOpenModal(modal:CPModal) {
-	modal.searchInit = false;
-	await modal.onOpen();
 }

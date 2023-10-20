@@ -63,7 +63,7 @@ export interface QPSSettings {
 	showHotKeys: boolean;
 	// commnunity plugins
 	pluginStats: PackageInfoData;
-	pluginsTagged: PluginsTaggedInfo; // à supprimer
+	pluginsTagged: PluginsTaggedInfo;
 	commPlugins: PluginCommInfo[];
 	filtersComm: keyof typeof CommFilters;
 	selectedGroupComm: string;
@@ -84,7 +84,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	showHotKeys: true,
 	// commnunity plugins
 	pluginStats: {},
-	pluginsTagged: {},// à supprimer
+	pluginsTagged: {},
 	commPlugins: [],
 	filtersComm: CommFilters.All,
 	selectedGroupComm: "SelectGroup",

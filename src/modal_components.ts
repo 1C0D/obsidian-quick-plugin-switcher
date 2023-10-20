@@ -32,6 +32,7 @@ import {
 	groupNotEmpty,
 	isInstalled,
 	openDirectoryInFileManager,
+	reOpenModal,
 	reset,
 	rmvAllGroupsFromPlugin,
 	sortByName,
@@ -43,7 +44,6 @@ import {
 	getManifest,
 	installFromList,
 	installPluginFromOtherVault,
-	reOpenModal,
 } from "./community-plugins_modal";
 
 export const mostSwitchedResetButton = (
@@ -114,13 +114,19 @@ export async function addSearch(
 
 	new Setting(contentEl)
 		.addSearch(async (search: SearchComponent) => {
+			const actualValue = search.getValue();
 			search
 				.setValue(settings.search)
 				.setPlaceholder(placeholder)
 				.onChange(async (value: string) => {
-					settings.search = value;
-					modal.items.empty();
-					modal.addItems();
+					if (modal.searchTyping) {
+						settings.search = value;
+						modal.items.empty();
+						modal.addItems();
+					} else {
+						// if cursor over qps-item-line.
+						value = actualValue;
+					}
 					// await plugin.saveSettings();
 				});
 		})
@@ -600,7 +606,7 @@ const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
 	return { groupIndex, lengthGroup, groupValue };
 };
 
-function addRemoveGroupMenuItems(modal: QPSModal, submenu: Menu) {
+function addRemoveGroupMenuItems(modal: QPSModal | CPModal, submenu: Menu) {
 	const { plugin } = modal;
 	const { settings } = plugin;
 	Object.keys(Groups).forEach((groupKey) => {
@@ -1167,9 +1173,7 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 		});
 	});
 	menu.addSeparator();
-	menu.addItem((item) => {
-		item.setTitle("clear group items");
-	});
+	createClearGroupsMenuItem(modal, menu);
 
 	menu.showAtMouseEvent(evt);
 };
@@ -1231,7 +1235,7 @@ export const findMatchingItem = (
 	}
 };
 
-const createClearGroupsMenuItem = (modal: QPSModal, menu: Menu) => {
+const createClearGroupsMenuItem = (modal: QPSModal | CPModal, menu: Menu) => {
 	menu.addItem((item) => {
 		const { plugin } = modal;
 		item.setTitle("Clear group(s)").setIcon("user-minus");
@@ -1244,12 +1248,37 @@ const createClearGroupsMenuItem = (modal: QPSModal, menu: Menu) => {
 					300
 				);
 				if (confirmReset) {
-					for (const i of plugin.settings.allPluginsList) {
-						i.groupInfo.groupIndices = [];
+					if (modal instanceof QPSModal) {
+						for (const i of plugin.settings.allPluginsList) {
+							i.groupInfo.groupIndices = [];
+						}
+						await plugin.saveSettings();
+						await modal.onOpen();
+						new Notice("Done", 1000);
+					} else {
+						const { settings } = modal.plugin;
+						let { pluginsTagged, commPlugins } = settings;
+						console.log("commPlugins", commPlugins);
+						// console.log("GroupsComm", GroupsComm)
+						for (const item of commPlugins) {
+							delete pluginsTagged[item.id];
+						}
+						// console.log("pluginsTagged", pluginsTagged);
+						// commPlugins.forEach((i) => {
+						// 	if (i.groupInfo)
+						// 	i.groupInfo.groupIndices = []
+						// 	const taggedItem = pluginsTagged[i.id];
+						// 	if (taggedItem) {
+						// 		const { groupInfo } = taggedItem;
+						// 		let { groupIndices } = groupInfo;
+						// 		groupIndices =[]
+						// 		// console.log("groupInfo", groupInfo)
+						// 		// console.log("groupIndices", groupIndices)
+						// 	}
+						// });
+						await modal.plugin.saveSettings();
+						reOpenModal(modal);
 					}
-					await plugin.saveSettings();
-					await modal.onOpen();
-					new Notice("Done", 1000);
 				} else {
 					new Notice("Operation cancelled", 1000);
 				}

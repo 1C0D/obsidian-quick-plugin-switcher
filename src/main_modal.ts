@@ -39,6 +39,7 @@ import {
 	pressDelay,
 	rmvAllGroupsFromPlugin,
 	togglePlugin,
+	reOpenModal,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
 
@@ -46,6 +47,7 @@ export class QPSModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
 	search: HTMLElement;
+	searchTyping= true;
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
@@ -356,15 +358,18 @@ const addGroupCircles = (input: HTMLElement, item: PluginInfo) => {
 function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 	// const key = event.key;
 	const elementFromPoint = getElementFromMousePosition(event, modal);
-	const targetBlock = elementFromPoint?.closest(
+	const pluginItemBlock = elementFromPoint?.closest(
 		".qps-item-line"
 	) as HTMLElement;
 
-	if (targetBlock) {
-		const matchingItem = findMatchingItem(modal, targetBlock);
+	if (pluginItemBlock) {
+		modal.searchTyping = false;
+		const matchingItem = findMatchingItem(modal, pluginItemBlock);
 		if (matchingItem) {
 			handleHotkeysQPS(modal, event, matchingItem as PluginInfo);
 		}
+	}else{
+		modal.searchTyping = true;
 	}
 }
 
@@ -399,7 +404,7 @@ const handleHotkeysQPS = async (
 			groupInfo: { groupIndices: [] },
 		};
 		await modal.plugin.saveSettings();
-		await modal.onOpen();
+		await reOpenModal(modal);
 	}
 	if (!taggedItem || modal.pressed) {
 		return;
@@ -419,7 +424,7 @@ const handleHotkeysQPS = async (
 		if (index === -1) {
 			groupIndices?.push(key);
 			await plugin.saveSettings();
-			await modal.onOpen();
+			await reOpenModal(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
@@ -437,7 +442,7 @@ const handleHotkeysQPS = async (
 				settings.selectedGroup = "SelectGroup";
 			}
 			await plugin.saveSettings();
-			await modal.onOpen();
+			await reOpenModal(modal);
 		} else {
 			const menu = new Menu();
 			menu.addItem((item) =>
@@ -463,7 +468,7 @@ const handleHotkeysQPS = async (
 								groupIndex
 							);
 							await plugin.saveSettings();
-							await modal.onOpen();
+							await reOpenModal(modal);
 						})
 				);
 			}

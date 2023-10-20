@@ -250,6 +250,16 @@ export function getIndexFromSelectedGroup(str: string) {
 	else return parseInt(str.slice(-1));
 }
 
+export function groupNameFromIndex(groups: GroupData, index: number) {
+	for (let key in groups) {
+		if (key.endsWith(index.toString())) {
+			return key;
+		}
+	}
+	return null;
+}
+
+
 // removing groups ---------------
 export async function rmvAllGroupsFromPlugin(
 	modal: QPSModal | CPModal,

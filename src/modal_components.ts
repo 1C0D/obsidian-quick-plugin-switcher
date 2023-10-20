@@ -6,7 +6,6 @@ import {
 	GroupsComm,
 	PluginCommInfo,
 	PluginInfo,
-	QPSSettings,
 } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
@@ -29,6 +28,7 @@ import {
 	getEmojiForGroup,
 	getIndexFromSelectedGroup,
 	getPluginsInGroup,
+	groupNameFromIndex,
 	groupNotEmpty,
 	isInstalled,
 	openDirectoryInFileManager,
@@ -568,7 +568,7 @@ function addRemoveItemGroupMenuItems(
 	const { settings } = plugin;
 	Object.keys(Groups).forEach((groupKey) => {
 		const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(
-			settings,
+			modal,
 			groupKey
 		);
 		const getGroup =
@@ -596,47 +596,76 @@ function addRemoveItemGroupMenuItems(
 	});
 }
 
-const getGroupIndexLength = (settings: QPSSettings, groupKey: string) => {
+const getGroupIndexLength = (modal: QPSModal | CPModal, groupKey: string) => {
 	const groupIndex = getIndexFromSelectedGroup(groupKey);
-	const lengthGroup = settings.allPluginsList.filter(
-		(i) => i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
-	).length;
-	const groupValue = Groups[groupKey as keyof typeof Groups];
+	const { settings } = modal.plugin;
+	let lengthGroup, groupValue;
+	if (modal instanceof QPSModal) {
+		lengthGroup = settings.allPluginsList.filter(
+			(i) => i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+		).length;
+		groupValue = Groups[groupKey as keyof typeof Groups];
+	} else {
+		lengthGroup = Object.keys(settings.pluginsTagged).filter((id) => {
+			const plugin = settings.pluginsTagged[id];
+			const groupIndices = plugin.groupInfo.groupIndices;
+			return groupIndices?.indexOf(groupIndex) !== -1;
+		}).length;
+		groupValue = GroupsComm[groupKey as keyof typeof GroupsComm];
+	}
 
 	return { groupIndex, lengthGroup, groupValue };
 };
 
-function addRemoveGroupMenuItems(modal: QPSModal | CPModal, submenu: Menu) {
+function addRemoveGroupMenuItems(
+	modal: QPSModal | CPModal,
+	submenu: Menu,
+	groupNumber: number
+) {
 	const { plugin } = modal;
 	const { settings } = plugin;
-	Object.keys(Groups).forEach((groupKey) => {
-		const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(
-			settings,
-			groupKey
-		);
-		if (groupKey !== "SelectGroup" && lengthGroup) {
-			submenu.addItem((subitem) => {
-				subitem.setTitle(`${groupValue}`).onClick(async () => {
-					let pluginsRemoved = false;
+	let groupName;
+	if (modal instanceof QPSModal) {
+		groupName = groupNameFromIndex(Groups, groupNumber);
+	} else {
+		groupName = groupNameFromIndex(GroupsComm, groupNumber);
+	}
+
+	const { lengthGroup, groupValue } = getGroupIndexLength(modal, groupName!);
+	if (groupName !== "SelectGroup" && lengthGroup) {
+		submenu.addItem((subitem) => {
+			subitem.setTitle(`${groupValue}`).onClick(async () => {
+				let pluginsRemoved = false;
+				if (modal instanceof QPSModal) {
 					for (const i of settings.allPluginsList) {
 						const index =
-							i.groupInfo.groupIndices?.indexOf(groupIndex);
+							i.groupInfo.groupIndices?.indexOf(groupNumber);
 						if (index !== -1) {
 							i.groupInfo.groupIndices?.splice(index, 1);
 							pluginsRemoved = true;
 						}
 					}
-					await plugin.saveSettings();
-					await modal.onOpen();
-					if (pluginsRemoved) {
-						new Notice(`All plugins removed from ${groupValue}`);
-					} else {
-						new Notice(`No plugins found in ${groupValue} group`);
-					}
-				});
+				} else {
+					const taggedItem = settings.pluginsTagged;
+					Object.keys(taggedItem).forEach((id) => {
+						const plugin = taggedItem[id];
+						const groupIndices = plugin.groupInfo.groupIndices;
+						plugin.groupInfo.groupIndices = groupIndices.filter(
+							(index) => index !== groupNumber
+						);
+						pluginsRemoved = true;
+					});
+				}
+				await plugin.saveSettings();
+				await reOpenModal(modal);
+				if (pluginsRemoved) {
+					new Notice(`All plugins removed from ${groupValue}`);
+				} else {
+					new Notice(`No plugins found in ${groupValue} group`);
+				}
 			});
-		}
-	});
+		});
+	}
 }
 
 const addToGroupSubMenu = (
@@ -1135,7 +1164,7 @@ const groupMenuQPS = (
 			})
 	);
 	menu.addSeparator();
-	createClearGroupsMenuItem(modal, menu);
+	createClearGroupsMenuItem(modal, menu, groupNumber);
 
 	menu.showAtMouseEvent(evt);
 };
@@ -1173,7 +1202,7 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 		});
 	});
 	menu.addSeparator();
-	createClearGroupsMenuItem(modal, menu);
+	createClearGroupsMenuItem(modal, menu, groupNumber);
 
 	menu.showAtMouseEvent(evt);
 };
@@ -1235,12 +1264,18 @@ export const findMatchingItem = (
 	}
 };
 
-const createClearGroupsMenuItem = (modal: QPSModal | CPModal, menu: Menu) => {
+const createClearGroupsMenuItem = (
+	modal: QPSModal | CPModal,
+	menu: Menu,
+	groupNumber: number
+) => {
 	menu.addItem((item) => {
 		const { plugin } = modal;
 		item.setTitle("Clear group(s)").setIcon("user-minus");
 
 		const submenu = (item as any).setSubmenu() as Menu;
+		addRemoveGroupMenuItems(modal, submenu, groupNumber);
+		submenu.addSeparator();
 		submenu.addItem((subitem) => {
 			subitem.setTitle("All groups").onClick(async () => {
 				const confirmReset = await confirm(
@@ -1253,38 +1288,23 @@ const createClearGroupsMenuItem = (modal: QPSModal | CPModal, menu: Menu) => {
 							i.groupInfo.groupIndices = [];
 						}
 						await plugin.saveSettings();
-						await modal.onOpen();
-						new Notice("Done", 1000);
+						await reOpenModal(modal);
+						new Notice(`All groups empty`, 2500);
 					} else {
 						const { settings } = modal.plugin;
 						let { pluginsTagged, commPlugins } = settings;
-						console.log("commPlugins", commPlugins);
-						// console.log("GroupsComm", GroupsComm)
 						for (const item of commPlugins) {
 							delete pluginsTagged[item.id];
 						}
-						// console.log("pluginsTagged", pluginsTagged);
-						// commPlugins.forEach((i) => {
-						// 	if (i.groupInfo)
-						// 	i.groupInfo.groupIndices = []
-						// 	const taggedItem = pluginsTagged[i.id];
-						// 	if (taggedItem) {
-						// 		const { groupInfo } = taggedItem;
-						// 		let { groupIndices } = groupInfo;
-						// 		groupIndices =[]
-						// 		// console.log("groupInfo", groupInfo)
-						// 		// console.log("groupIndices", groupIndices)
-						// 	}
-						// });
 						await modal.plugin.saveSettings();
-						reOpenModal(modal);
+						await reOpenModal(modal);
+						new Notice(`All groups empty`, 2500);
 					}
 				} else {
 					new Notice("Operation cancelled", 1000);
 				}
 			});
 		});
-		addRemoveGroupMenuItems(modal, submenu);
 	});
 };
 
@@ -1304,7 +1324,7 @@ async function installLatestPluginVersion(
 	}
 
 	if (!latestVersion) {
-		console.log("no last version?"); // shouldn't happen
+		console.debug("no last version?"); // shouldn't happen
 		return;
 	}
 

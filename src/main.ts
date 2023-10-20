@@ -1,6 +1,4 @@
 // switch timer to fix error disabling plugin
-// bugs hotkeys comm plugins
-
 import { around } from "monkey-around";
 import { Plugin } from "obsidian";
 import { QPSModal } from "./main_modal";
@@ -289,9 +287,11 @@ const exeAfterDelay = async (
 			settings.lastFetchExe = currentTime;
 			await _this.saveSettings();
 		} else {
-			console.log("check your connexion");
+			console.log("community plugins udpate failed, check your connexion");
 		}
 	} else {
-		console.log("fetched less than 3 min, community plugins not updated");
+		console.log(
+			"fetched less than 3 min, community plugins not updated"
+		);
 	}
 };

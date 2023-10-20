@@ -122,8 +122,7 @@ export class QPSModal extends Modal {
 			.onChange(async (value) => {
 				settings.filters = value;
 				await plugin.saveSettings();
-				this.searchInit = false;
-				this.onOpen();
+				await reOpenModal(this);
 			});
 
 		mostSwitchedResetButton(this, contentEl);
@@ -249,7 +248,7 @@ export class QPSModal extends Modal {
 					);
 					this.isDblClick = false;
 					await plugin.saveSettings();
-					this.onOpen();
+					await reOpenModal(this);
 				}
 			});
 		}
@@ -266,7 +265,7 @@ export class QPSModal extends Modal {
 			delayedReEnable(this, pluginItem);
 		}
 		await this.plugin.saveSettings();
-		this.onOpen();
+		await reOpenModal(this);
 	};
 
 	onClose() {

@@ -1,6 +1,11 @@
 ## Quick Plugin Switcher
 
 New: 
+- community plugins have been added and a lot of things fixed or improved
+- if some bugs remaining, plz report on github
+- I will update this readme again soon to show new things
+- I put a video on discord in the room updates
+
 - no more needed to click on a plugin before to use shortcuts  
 - desktop only are now marked with a ᴰ
 ![show_hotkey](img/desktopOnly.jpg)

@@ -386,9 +386,9 @@ const handleHotkeysQPS = async (
 	const condition = getCondition(modal, pluginItem);
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: () => openGitHubRepo(pluginItem),
-		s: () => openPluginSettings(modal, pluginSettings),
-		h: () => showHotkeysFor(pluginItem, condition),
+		g: async () => openGitHubRepo(pluginItem),
+		s: async () => openPluginSettings(modal, pluginSettings),
+		h: async () => showHotkeysFor(pluginItem, condition),
 		i: () => new DescriptionModal(plugin.app, plugin, pluginItem).open(),
 	};
 	if (Platform.isDesktopApp)

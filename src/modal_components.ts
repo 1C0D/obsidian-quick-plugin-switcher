@@ -9,7 +9,7 @@ import {
 } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { confirm } from "./secondary_modals";
+import { ReadMeModal, confirm } from "./secondary_modals";
 import {
 	ButtonComponent,
 	DropdownComponent,
@@ -217,7 +217,9 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	new ButtonComponent(el)
 		.setIcon("power")
 		.setCta()
-		.setTooltip("toggle plugins: you can disable some plugins and enable them later")
+		.setTooltip(
+			"toggle plugins: you can disable some plugins and enable them later"
+		)
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
 			const menu = new Menu();
 			if (
@@ -717,8 +719,8 @@ const pluginFeatureSubmenu = (
 			item
 				.setTitle("Plugin github (g)")
 				.setIcon("github")
-				.onClick(() => {
-					openGitHubRepo(pluginItem);
+				.onClick(async () => {
+					await openGitHubRepo(pluginItem);
 				})
 	);
 
@@ -737,8 +739,6 @@ const pluginFeatureSubmenu = (
 	);
 
 	// helped by hotkey-helper code, even if it is extremly simplified
-	const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)
-		?.app?.commands.commands;
 	const condition = getCondition(modal, pluginItem);
 	submenu.addItem((item) =>
 		item
@@ -746,12 +746,12 @@ const pluginFeatureSubmenu = (
 			.setIcon("plus-circle")
 			.setDisabled(!condition)
 			.onClick(async () => {
-				showHotkeysFor(pluginItem, condition);
+				await showHotkeysFor(pluginItem, condition);
 			})
 	);
 };
 
-export async function openPluginSettings(modal: QPSModal, pluginSettings: any) {
+export async function openPluginSettings(modal: QPSModal|CPModal, pluginSettings: any) {
 	if (!pluginSettings) {
 		new Notice("No settings on this plugin");
 		return;
@@ -761,7 +761,7 @@ export async function openPluginSettings(modal: QPSModal, pluginSettings: any) {
 }
 
 export const showHotkeysFor = async function (
-	pluginItem: PluginInfo,
+	pluginItem: PluginInfo|PluginCommInfo,
 	condition: boolean
 ) {
 	if (!condition) {
@@ -778,7 +778,7 @@ export const showHotkeysFor = async function (
 
 export const getCondition = function (
 	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | Record<string, string>
+	pluginItem: PluginInfo |PluginCommInfo | Record<string, string>
 ) {
 	const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)
 		?.app?.commands.commands;
@@ -858,9 +858,27 @@ export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 		".qps-groups-name"
 	) as HTMLElement;
 
-	const groupName = targetGroup?.textContent;
-	const groupNumber = parseInt(groupName?.match(/\((\d+)\)$/)?.[1] as string);
-	editGroupName(modal, targetGroup, groupNumber);
+	const targetBlock = elementFromPoint?.closest(
+		".qps-comm-block"
+	) as HTMLElement;
+
+	if (targetGroup) {
+		const groupName = targetGroup.textContent;
+		const groupNumber = parseInt(
+			groupName?.match(/\((\d+)\)$/)?.[1] as string
+		);
+		editGroupName(modal, targetGroup, groupNumber);
+	}
+	if (targetBlock) {
+		const matchingItem = findMatchingItem(modal, targetBlock);
+		if (matchingItem) {
+			new ReadMeModal(
+				modal.plugin.app,
+				modal,
+				matchingItem as PluginCommInfo
+			).open();
+		}
+	}
 }
 
 export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
@@ -1307,7 +1325,7 @@ const createClearGroupsMenuItem = (
 	});
 };
 
-async function installLatestPluginVersion(
+export async function installLatestPluginVersion(
 	modal: CPModal,
 	plugin: PluginCommInfo
 ) {

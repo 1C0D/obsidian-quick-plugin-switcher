@@ -259,6 +259,12 @@
   padding: var(--size-4-4);
 }
 
+.read-me-buttons{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 5px
+}
+
 
 .qps-read-me {
   font-size: 1.25rem

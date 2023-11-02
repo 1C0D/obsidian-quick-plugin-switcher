@@ -182,7 +182,7 @@ export class CPModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (i)readme`,
+					text: ` (i,🖱️x2)Readme`,
 				});
 			}
 		);
@@ -415,7 +415,7 @@ const handleHotkeysCPM = async (
 	const numberOfGroups = settings.numberOfGroupsComm;
 	// handle groups shortcuts
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: () => openGitHubRepo(pluginItem),
+		g: async () => openGitHubRepo(pluginItem),
 		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
 	};
 

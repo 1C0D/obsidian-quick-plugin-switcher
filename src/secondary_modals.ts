@@ -1,7 +1,23 @@
-import { App, Component, MarkdownRenderer, Modal, Setting } from "obsidian";
+import {
+	App,
+	ButtonComponent,
+	Component,
+	MarkdownRenderer,
+	Modal,
+	Notice,
+	Setting,
+} from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { PluginCommInfo, PluginInfo } from "./types";
 import { CPModal, getReadMe } from "./community-plugins_modal";
+import { isInstalled, reOpenModal } from "./modal_utils";
+import {
+	getCondition,
+	installLatestPluginVersion,
+	openPluginSettings,
+	showHotkeysFor,
+} from "./modal_components";
+import { isEnabled } from "./utils";
 
 type ConfirmCallback = (confirmed: boolean) => void;
 
@@ -171,11 +187,73 @@ export class ReadMeModal extends Modal {
 		contentEl
 			.createEl("p", {
 				text: pluginItem.name,
-				cls: "readme-title"
+				cls: "readme-title",
 			})
 			.createEl("p", {
 				text: "By: " + pluginItem.author,
 			});
+
+		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
+		if (!isInstalled(pluginItem)) {
+			new ButtonComponent(divButtons)
+				.setButtonText("Install")
+				.setCta()
+				.onClick(async () => {
+					await installLatestPluginVersion(this.modal, pluginItem);
+					new Notice(`${pluginItem.name} installed`, 4000);
+					await this.onOpen();
+				});
+		} else {
+			const manifests = (this.app as any).plugins.manifests || {};
+			if (!isEnabled(this.modal, manifests[pluginItem.id].id)) {
+				new ButtonComponent(divButtons)
+					.setButtonText("Enable")
+					.onClick(async () => {
+						await (
+							this.modal.app as any
+						).plugins.enablePluginAndSave(pluginItem.id);
+						await this.onOpen();
+						new Notice(`${pluginItem.name} enabled`, 4000);
+					});
+			} else {
+				new ButtonComponent(divButtons)
+					.setButtonText("Options")
+					.onClick(async () => {
+						const pluginSettings = await (
+							this.modal.app as any
+						).setting.openTabById(pluginItem.id);
+						await openPluginSettings(this.modal, pluginSettings);
+					});
+
+				const condition = getCondition(this.modal, pluginItem);
+				if (condition) {
+					new ButtonComponent(divButtons)
+						.setButtonText("Hotkeys")
+						.onClick(async () => {
+							await showHotkeysFor(pluginItem, condition);
+						});
+				}
+
+				new ButtonComponent(divButtons)
+					.setButtonText("Disable")
+					.onClick(async () => {
+						await (
+							this.modal.app as any
+						).plugins.disablePluginAndSave(pluginItem.id);
+						await this.onOpen();
+						new Notice(`${pluginItem.name} disabled`, 4000);
+					});
+			}
+			new ButtonComponent(divButtons)
+				.setButtonText("Uninstall")
+				.onClick(async () => {
+					await (this.modal.app as any).plugins.uninstallPlugin(
+						pluginItem.id
+					);
+					await this.onOpen();
+					new Notice(`${pluginItem.name} uninstalled`, 4000);
+				});
+		}
 
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
 

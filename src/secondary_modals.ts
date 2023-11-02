@@ -205,6 +205,7 @@ export class ReadMeModal extends Modal {
 				});
 		} else {
 			const manifests = (this.app as any).plugins.manifests || {};
+			let condition: boolean;
 			if (!isEnabled(this.modal, manifests[pluginItem.id].id)) {
 				new ButtonComponent(divButtons)
 					.setButtonText("Enable")
@@ -213,6 +214,8 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
+						condition = await getCondition(this.modal, pluginItem);
+						if (condition) await this.onOpen();
 						new Notice(`${pluginItem.name} enabled`, 4000);
 					});
 			} else {
@@ -225,7 +228,7 @@ export class ReadMeModal extends Modal {
 						await openPluginSettings(this.modal, pluginSettings);
 					});
 
-				const condition = getCondition(this.modal, pluginItem);
+				condition = await getCondition(this.modal, pluginItem);
 				if (condition) {
 					new ButtonComponent(divButtons)
 						.setButtonText("Hotkeys")

@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync } from "fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync } from "fs";
 import {
 	App,
 	DropdownComponent,
@@ -559,6 +559,23 @@ export async function installFromList(modal: CPModal, enable = false) {
 			}
 		} catch (erreur) {
 			console.error("Error reading JSON file: ", erreur);
+		}
+	}
+}
+
+export async function getPluginsList(modal: CPModal, enable = false) {
+	const installed = getInstalled();
+	let filePath: string = window.electron.remote.dialog.showSaveDialogSync({
+		title: "Save installed plugins list as JSON",
+		filters: [{ name: "JSON Files", extensions: ["json"] }],
+	});
+	if (filePath && filePath.length) {
+		try {
+			const jsonContent = JSON.stringify(installed, null, 2);
+			writeFileSync(filePath, jsonContent);
+			new Notice(`${filePath} created`, 4000);
+		} catch (error) {
+			console.error("Error saving JSON file:", error);
 		}
 	}
 }

@@ -42,6 +42,7 @@ import { isEnabled, removeItem } from "./utils";
 import {
 	CPModal,
 	getManifest,
+	getPluginsList,
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
@@ -190,6 +191,15 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 					})
 			);
 			menu.addSeparator();
+
+			menu.addItem((item) =>
+				item
+					.setTitle("save installed plugins list")
+					.setIcon("pen-square")
+					.onClick(async () => {
+						await getPluginsList(modal, true);
+					})
+			);
 			menu.addItem((item) =>
 				item
 					.setTitle("install & enable plugins from json list")

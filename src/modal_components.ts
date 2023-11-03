@@ -751,7 +751,10 @@ const pluginFeatureSubmenu = (
 	);
 };
 
-export async function openPluginSettings(modal: QPSModal|CPModal, pluginSettings: any) {
+export async function openPluginSettings(
+	modal: QPSModal | CPModal,
+	pluginSettings: any
+) {
 	if (!pluginSettings) {
 		new Notice("No settings on this plugin");
 		return;
@@ -761,7 +764,7 @@ export async function openPluginSettings(modal: QPSModal|CPModal, pluginSettings
 }
 
 export const showHotkeysFor = async function (
-	pluginItem: PluginInfo|PluginCommInfo,
+	pluginItem: PluginInfo | PluginCommInfo,
 	condition: boolean
 ) {
 	if (!condition) {
@@ -778,10 +781,11 @@ export const showHotkeysFor = async function (
 
 export const getCondition = function (
 	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo |PluginCommInfo | Record<string, string>
+	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
 ) {
-	const pluginCommands = (modal.app as any).setting.openTabById(pluginItem.id)
-		?.app?.commands.commands;
+	const pluginCommands = (modal.app as any).setting.openTabById(
+		"command-palette"
+	)?.app?.commands.commands;
 	return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id);
 };
 

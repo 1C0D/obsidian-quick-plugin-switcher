@@ -219,14 +219,18 @@ export class ReadMeModal extends Modal {
 						new Notice(`${pluginItem.name} enabled`, 4000);
 					});
 			} else {
-				new ButtonComponent(divButtons)
-					.setButtonText("Options")
-					.onClick(async () => {
-						const pluginSettings = await (
-							this.modal.app as any
-						).setting.openTabById(pluginItem.id);
-						await openPluginSettings(this.modal, pluginSettings);
-					});
+				const pluginSettings = await (
+					this.modal.app as any
+				).setting.openTabById(pluginItem.id);
+				if (pluginSettings)
+					{new ButtonComponent(divButtons)
+						.setButtonText("Options")
+						.onClick(async () => {
+							await openPluginSettings(
+								this.modal,
+								pluginSettings
+							);
+						});}
 
 				condition = await getCondition(this.modal, pluginItem);
 				if (condition) {

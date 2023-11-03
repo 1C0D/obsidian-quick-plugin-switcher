@@ -76,7 +76,7 @@
 
 .qps-desktop-only input {
   border-bottom: 1.3px double;
-  background-color: rgba(5, 4, 4, 0.4);
+  /* background-color: rgba(5, 4, 4, 0.4); */
 }
 
 .git-hub-icon {

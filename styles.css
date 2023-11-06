@@ -187,6 +187,7 @@
   text-align: center;
   color: rgb(3, 3, 3)
 }
+
 /* groups ------ end -------------------- */
 
 
@@ -237,6 +238,11 @@
   font-size: calc(0.7 * var(--font-ui-smaller));
 }
 
+.enabled-span {
+  margin-left: var(--size-4-1);
+  color:rgb(198, 238, 138)
+}
+
 .post-span-downloads {
   margin-left: 20px
 }
@@ -259,8 +265,8 @@
   padding: var(--size-4-4);
 }
 
-.read-me-buttons{
-  display:flex;
+.read-me-buttons {
+  display: flex;
   flex-wrap: wrap;
   gap: 5px
 }

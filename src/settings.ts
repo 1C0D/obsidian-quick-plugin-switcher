@@ -93,8 +93,8 @@ export default class QPSSettingTab extends PluginSettingTab {
 										let hasValueGreaterThanValue = false;
 										const taggedItem =
 											pluginsTagged[plugin.id];
-                                        if (!taggedItem) return
-											const { groupInfo } = taggedItem;
+										if (!taggedItem) return;
+										const { groupInfo } = taggedItem;
 										let { groupIndices } = groupInfo;
 										for (const groupIndex of groupIndices) {
 											if (groupIndex > value) {
@@ -141,10 +141,10 @@ export default class QPSSettingTab extends PluginSettingTab {
 								plugin.settings.groups = {};
 							}
 							await plugin.saveSettings();
-							new Notice("Reset done", 1300);
+							new Notice("Reset done", 2500);
 							// (this.app as any).commands.executeCommandById('app:reload')
 						} else {
-							new Notice("Operation cancelled", 1000);
+							new Notice("Operation cancelled", 2500);
 						}
 					});
 			});

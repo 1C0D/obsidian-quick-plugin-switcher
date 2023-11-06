@@ -160,7 +160,7 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		)
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
 			modal.close();
-			new CPModal(app, plugin).open();
+			new CPModal(modal.app, plugin).open();
 		});
 };
 
@@ -176,7 +176,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item
-					.setTitle("install plugins based on another Vault")
+					.setTitle("Install plugins based on another Vault")
 					.setIcon("book-copy")
 					.onClick(async () => {
 						await installPluginFromOtherVault(modal);
@@ -184,7 +184,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("install & enable plugins based on another Vault")
+					.setTitle("Install & enable plugins based on another Vault")
 					.setIcon("book-copy")
 					.onClick(async () => {
 						await installPluginFromOtherVault(modal, true);
@@ -194,7 +194,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 
 			menu.addItem((item) =>
 				item
-					.setTitle("save installed plugins list")
+					.setTitle("Save installed plugins list")
 					.setIcon("pen-square")
 					.onClick(async () => {
 						await getPluginsList(modal, true);
@@ -202,7 +202,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("install & enable plugins from json list")
+					.setTitle("Install & enable plugins from json list")
 					.setIcon("list")
 					.onClick(async () => {
 						await installFromList(modal, true);
@@ -210,7 +210,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("install plugins from json list")
+					.setTitle("Install plugins from json list")
 					.setIcon("list")
 					.onClick(async () => {
 						await installFromList(modal);
@@ -266,7 +266,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 								plugin.getLength();
 								await reOpenModal(modal);
 								await plugin.saveSettings();
-								new Notice("All plugins disabled", 1500);
+								new Notice("All plugins disabled", 2500);
 							} else if (settings.wasEnabled.length > 0) {
 								for (const i of settings.wasEnabled) {
 									//check plugin not deleted between
@@ -285,7 +285,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 								plugin.getLength();
 								await reOpenModal(modal);
 								settings.wasEnabled = [];
-								new Notice("All plugins re-enabled", 1500);
+								new Notice("All plugins re-enabled", 2500);
 								await modal.plugin.saveSettings();
 							}
 						})
@@ -303,9 +303,9 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 								if (confirmReset) {
 									settings.wasEnabled = [];
 									await modal.plugin.saveSettings();
-									new Notice("Done", 1500);
+									new Notice("Done", 2500);
 								} else {
-									new Notice("Operation cancelled", 1000);
+									new Notice("Operation cancelled", 2500);
 								}
 							})
 					);
@@ -342,7 +342,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 							item
 								.setTitle(
 									previousWasEnabled.length > 0
-										? `re-enable ${groupValue}`
+										? `Re-enable ${groupValue}`
 										: groupValue
 								)
 								.setIcon(
@@ -370,7 +370,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 											await reOpenModal(modal);
 											new Notice(
 												"All plugins disabled",
-												1500
+												2500
 											);
 											await modal.plugin.saveSettings();
 										}
@@ -388,7 +388,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 										await reOpenModal(modal);
 										new Notice(
 											"All plugins re-enabled",
-											1500
+											2500
 										);
 									}
 								})
@@ -409,11 +409,11 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 													false;
 											});
 											await modal.plugin.saveSettings();
-											new Notice("Done", 1000);
+											new Notice("Done", 2500);
 										} else {
 											new Notice(
 												"Operation cancelled",
-												1000
+												2500
 											);
 										}
 									})
@@ -672,9 +672,9 @@ function addRemoveGroupMenuItems(
 				await plugin.saveSettings();
 				await reOpenModal(modal);
 				if (pluginsRemoved) {
-					new Notice(`All plugins removed from ${groupValue}`);
+					new Notice(`All plugins removed from ${groupValue}`, 2500);
 				} else {
-					new Notice(`No plugins found in ${groupValue} group`);
+					new Notice(`No plugins found in ${groupValue} group`, 2500);
 				}
 			});
 		});
@@ -766,7 +766,7 @@ export async function openPluginSettings(
 	pluginSettings: any
 ) {
 	if (!pluginSettings) {
-		new Notice("No settings on this plugin");
+		new Notice("No settings on this plugin", 2500);
 		return;
 	}
 	await (modal.app as any).setting.open();
@@ -778,7 +778,7 @@ export const showHotkeysFor = async function (
 	condition: boolean
 ) {
 	if (!condition) {
-		new Notice("No HotKeys on this plugin");
+		new Notice("No HotKeys on this plugin", 2500);
 		return;
 	}
 	await (this.app as any).setting.open();
@@ -943,7 +943,7 @@ export function contextMenuCPM(
 	evt.preventDefault();
 	const menu = new Menu();
 	menu.addItem((item) => {
-		item.setTitle("install plugin")
+		item.setTitle("Install plugin")
 			.setDisabled(isInstalled(matchingItem))
 			.setIcon("log-in")
 			.onClick(async () => {
@@ -954,7 +954,7 @@ export function contextMenuCPM(
 
 	menu.addItem((item) => {
 		const isenabled = isEnabled(modal, matchingItem.id);
-		item.setTitle(isenabled ? "disable plugin" : "enable plugin")
+		item.setTitle(isenabled ? "Disable plugin" : "Enable plugin")
 			.setDisabled(!isInstalled(matchingItem))
 			.setIcon(isenabled ? "poweroff" : "power")
 			.onClick(async () => {
@@ -967,15 +967,16 @@ export function contextMenuCPM(
 					  );
 
 				const msg = isenabled ? "disabled" : "enabled";
-				new Notice(`${matchingItem.name} ${msg}`, 1000);
+				new Notice(`${matchingItem.name} ${msg}`, 2500);
 			});
 	});
 	menu.addItem((item) => {
-		item.setTitle("uninstall plugin")
+		item.setTitle("Uninstall plugin")
 			.setDisabled(!isInstalled(matchingItem))
 			.setIcon("log-out")
 			.onClick(async () => {
 				await this.app.plugins.uninstallPlugin(matchingItem.id);
+				new Notice(`${matchingItem.name} uninstalled`, 2500);
 				await reOpenModal(modal);
 			});
 	});
@@ -995,8 +996,8 @@ function contextMenuQPS(
 			item
 				.setTitle("Plugin folder (f)")
 				.setIcon("folder-open")
-				.onClick(() => {
-					openDirectoryInFileManager(modal, matchingItem);
+				.onClick(async () => {
+					await openDirectoryInFileManager(modal, matchingItem);
 				})
 		);
 	}
@@ -1005,6 +1006,21 @@ function contextMenuQPS(
 		const submenu = (item as any).setSubmenu() as Menu;
 		pluginFeatureSubmenu(submenu, matchingItem, modal);
 	});
+
+	if (isInstalled(matchingItem)) {
+		menu.addItem((item) => {
+			console.log("toto");
+			item.setTitle("Uninstall plugin")
+				.setIcon("log-out")
+				.onClick(async () => {
+					await this.app.plugins.uninstallPlugin(matchingItem.id);
+					new Notice(`${matchingItem.name} uninstalled`, 2500);
+					modal.plugin.getPluginsInfo();
+					modal.plugin.getLength();
+					await reOpenModal(modal);
+				});
+		});
+	}
 
 	if (matchingItem.id !== "quick-plugin-switcher") {
 		menu.addSeparator();
@@ -1071,7 +1087,7 @@ const groupMenuQPS = (
 	const inGroup = getPluginsInGroup(modal, groupNumber) as PluginInfo[];
 	const menu = new Menu();
 	menu.addItem((item) =>
-		item.setTitle("delay group").onClick(() => {
+		item.setTitle("Delay group").onClick(() => {
 			const currentValue = (
 				settings.groups[groupNumber].time || 0
 			).toString();
@@ -1104,7 +1120,7 @@ const groupMenuQPS = (
 
 	menu.addItem((item) =>
 		item
-			.setTitle("apply")
+			.setTitle("Apply")
 			.setDisabled(
 				!inGroup.length || settings.groups[groupNumber].time === 0
 			)
@@ -1128,7 +1144,7 @@ const groupMenuQPS = (
 	);
 	menu.addItem((item) =>
 		item
-			.setTitle("reset")
+			.setTitle("Reset")
 			.setDisabled(
 				!inGroup.length || settings.groups[groupNumber].time === 0
 			)
@@ -1151,7 +1167,7 @@ const groupMenuQPS = (
 	const toEnable = inGroup.filter((i: PluginInfo) => i.enabled === false);
 	menu.addItem((item) =>
 		item
-			.setTitle("enable all plugins in group")
+			.setTitle("Enable all plugins in group")
 			.setDisabled(!inGroup.length || !toEnable.length)
 			.onClick(async () => {
 				if (toEnable) {
@@ -1164,7 +1180,7 @@ const groupMenuQPS = (
 					);
 
 					plugin.getLength();
-					new Notice("All plugins enabled.");
+					new Notice("All plugins enabled.", 2500);
 					await modal.plugin.saveSettings();
 					await reOpenModal(modal);
 				}
@@ -1174,7 +1190,7 @@ const groupMenuQPS = (
 	const toDisable = inGroup.filter((i: PluginInfo) => i.enabled === true);
 	menu.addItem((item) =>
 		item
-			.setTitle("disable all plugins in group")
+			.setTitle("Disable all plugins in group")
 			.setDisabled(!inGroup.length || !toDisable.length)
 			.onClick(async () => {
 				if (toDisable) {
@@ -1188,7 +1204,7 @@ const groupMenuQPS = (
 					);
 
 					plugin.getLength();
-					new Notice("All plugins disabled.");
+					new Notice("All plugins disabled.", 2500);
 					await modal.plugin.saveSettings();
 					await reOpenModal(modal);
 				}
@@ -1203,7 +1219,7 @@ const groupMenuQPS = (
 const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 	const menu = new Menu();
 	menu.addItem((item) => {
-		item.setTitle("install & enable in group");
+		item.setTitle("Install & enable in group");
 		item.onClick(async () => {
 			const inGroup = getPluginsInGroup(
 				modal,
@@ -1215,7 +1231,7 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 		});
 	});
 	menu.addItem((item) => {
-		item.setTitle("install plugins in group");
+		item.setTitle("Install plugins in group");
 		item.onClick(async () => {
 			const inGroup = getPluginsInGroup(
 				modal,
@@ -1227,7 +1243,7 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
 		});
 	});
 	menu.addItem((item) => {
-		item.setTitle("uninstall plugins in group");
+		item.setTitle("Uninstall plugins in group");
 		item.onClick(async () => {
 			await uninstallAllPluginsInGroup(modal, groupNumber);
 		});
@@ -1246,7 +1262,7 @@ async function uninstallAllPluginsInGroup(modal: CPModal, groupNumber: number) {
 	for (const plugin of inGroup) {
 		if (!isInstalled(plugin)) continue;
 		await this.app.plugins.uninstallPlugin(plugin.id);
-		new Notice(`${plugin.name} uninstalled`, 4000);
+		new Notice(`${plugin.name} uninstalled`, 2500);
 	}
 
 	await reOpenModal(modal);
@@ -1259,13 +1275,13 @@ export async function installAllPluginsInGroup(
 ) {
 	for (const plugin of pluginList) {
 		if (isInstalled(plugin)) {
-			new Notice(`${plugin.name} already installed`, 4000);
+			new Notice(`${plugin.name} already installed`, 2500);
 			continue;
 		}
 		await installLatestPluginVersion(modal, plugin);
 		if (enable) {
 			await (modal.app as any).plugins.enablePluginAndSave(plugin.id);
-			new Notice(`${plugin.name} enabled`, 4000);
+			new Notice(`${plugin.name} enabled`, 2500);
 		}
 	}
 	await reOpenModal(modal);
@@ -1332,7 +1348,7 @@ const createClearGroupsMenuItem = (
 						new Notice(`All groups empty`, 2500);
 					}
 				} else {
-					new Notice("Operation cancelled", 1000);
+					new Notice("Operation cancelled", 2500);
 				}
 			});
 		});

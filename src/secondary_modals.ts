@@ -200,7 +200,7 @@ export class ReadMeModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					await installLatestPluginVersion(this.modal, pluginItem);
-					new Notice(`${pluginItem.name} installed`, 4000);
+					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
 				});
 		} else {
@@ -216,21 +216,22 @@ export class ReadMeModal extends Modal {
 						await this.onOpen();
 						condition = await getCondition(this.modal, pluginItem);
 						if (condition) await this.onOpen();
-						new Notice(`${pluginItem.name} enabled`, 4000);
+						new Notice(`${pluginItem.name} enabled`, 2500);
 					});
 			} else {
 				const pluginSettings = await (
 					this.modal.app as any
 				).setting.openTabById(pluginItem.id);
-				if (pluginSettings)
-					{new ButtonComponent(divButtons)
+				if (pluginSettings) {
+					new ButtonComponent(divButtons)
 						.setButtonText("Options")
 						.onClick(async () => {
 							await openPluginSettings(
 								this.modal,
 								pluginSettings
 							);
-						});}
+						});
+				}
 
 				condition = await getCondition(this.modal, pluginItem);
 				if (condition) {
@@ -248,7 +249,7 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.disablePluginAndSave(pluginItem.id);
 						await this.onOpen();
-						new Notice(`${pluginItem.name} disabled`, 4000);
+						new Notice(`${pluginItem.name} disabled`, 2500);
 					});
 			}
 			new ButtonComponent(divButtons)
@@ -258,7 +259,7 @@ export class ReadMeModal extends Modal {
 						pluginItem.id
 					);
 					await this.onOpen();
-					new Notice(`${pluginItem.name} uninstalled`, 4000);
+					new Notice(`${pluginItem.name} uninstalled`, 2500);
 				});
 		}
 

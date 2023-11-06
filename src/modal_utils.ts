@@ -15,9 +15,9 @@ export const reset = async (modal: QPSModal) => {
 		plugin.reset = true; //if true, reset done in modal>addItems()
 		plugin.getLength();
 		await reOpenModal(modal);
-		new Notice("Done", 1000);
+		new Notice("Done", 2500);
 	} else {
-		new Notice("Operation cancelled", 1000);
+		new Notice("Operation cancelled", 2500);
 	}
 };
 

@@ -386,14 +386,14 @@ const handleHotkeysQPS = async (
 	const condition = getCondition(modal, pluginItem);
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => openGitHubRepo(pluginItem),
-		s: async () => openPluginSettings(modal, pluginSettings),
-		h: async () => showHotkeysFor(pluginItem, condition),
+		g: async () => await openGitHubRepo(pluginItem),
+		s: async () => await openPluginSettings(modal, pluginSettings),
+		h: async () => await showHotkeysFor(pluginItem, condition),
 		i: () => new DescriptionModal(plugin.app, plugin, pluginItem).open(),
 	};
 	if (Platform.isDesktopApp)
-		KeyToSettingsMap["f"] = () =>
-			openDirectoryInFileManager(modal, pluginItem);
+		KeyToSettingsMap["f"] = async () =>
+			await openDirectoryInFileManager(modal, pluginItem);
 
 	const keyPressed = evt.key;
 	const itemID = pluginItem.id;

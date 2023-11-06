@@ -9,7 +9,12 @@ import {
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
-import { calculateTimeElapsed, formatNumber, removeItem } from "./utils";
+import {
+	calculateTimeElapsed,
+	formatNumber,
+	isEnabled,
+	removeItem,
+} from "./utils";
 import {
 	GroupsComm,
 	KeyToSettingsMapType,
@@ -213,6 +218,12 @@ export class CPModal extends Modal {
 							cls: "installed-span",
 							text: "installed",
 						});
+					if (isEnabled(this, item.id)) {
+						const span = el.createSpan({
+							cls: "enabled-span",
+						});
+						setIcon(span, "power");
+					}
 				}
 			);
 			//author
@@ -415,7 +426,7 @@ const handleHotkeysCPM = async (
 	const numberOfGroups = settings.numberOfGroupsComm;
 	// handle groups shortcuts
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => openGitHubRepo(pluginItem),
+		g: async () => await openGitHubRepo(pluginItem),
 		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
 	};
 
@@ -573,7 +584,7 @@ export async function getPluginsList(modal: CPModal, enable = false) {
 		try {
 			const jsonContent = JSON.stringify(installed, null, 2);
 			writeFileSync(filePath, jsonContent);
-			new Notice(`${filePath} created`, 4000);
+			new Notice(`${filePath} created`, 2500);
 		} catch (error) {
 			console.error("Error saving JSON file:", error);
 		}

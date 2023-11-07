@@ -268,12 +268,14 @@
 .read-me-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px
+  gap: 5px;
+  margin-top : 5px
 }
 
 
 .qps-read-me {
-  font-size: 1.25rem
+  font-size: 1.25rem;
+  user-select: text
 }
 
 .readme-title {

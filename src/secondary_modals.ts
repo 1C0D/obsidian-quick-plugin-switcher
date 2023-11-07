@@ -3,6 +3,7 @@ import {
 	ButtonComponent,
 	Component,
 	MarkdownRenderer,
+	Menu,
 	Modal,
 	Notice,
 	Setting,
@@ -12,8 +13,10 @@ import { PluginCommInfo, PluginInfo } from "./types";
 import { CPModal, getReadMe } from "./community-plugins_modal";
 import { isInstalled, reOpenModal } from "./modal_utils";
 import {
-	getCondition,
+	getCommandCondition,
+	getHkeyCondition,
 	installLatestPluginVersion,
+	openGitHubRepo,
 	openPluginSettings,
 	showHotkeysFor,
 } from "./modal_components";
@@ -191,7 +194,14 @@ export class ReadMeModal extends Modal {
 			})
 			.createEl("p", {
 				text: "By: " + pluginItem.author,
-			});
+			})
+
+		const openRepo = contentEl.createDiv()
+		new ButtonComponent(openRepo)
+		.setButtonText("GitHub Repo")
+		.onClick(async () => {
+			await openGitHubRepo(pluginItem);
+		});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
 		if (!isInstalled(pluginItem)) {
@@ -214,7 +224,7 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
-						condition = await getCondition(this.modal, pluginItem);
+						condition = await getCommandCondition(this.modal, pluginItem);
 						if (condition) await this.onOpen();
 						new Notice(`${pluginItem.name} enabled`, 2500);
 					});
@@ -233,7 +243,7 @@ export class ReadMeModal extends Modal {
 						});
 				}
 
-				condition = await getCondition(this.modal, pluginItem);
+				condition = await getHkeyCondition(this.modal, pluginItem);
 				if (condition) {
 					new ButtonComponent(divButtons)
 						.setButtonText("Hotkeys")
@@ -271,6 +281,17 @@ export class ReadMeModal extends Modal {
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
 		MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
+
+		const menu = new Menu();
+
+		// menu.addItem((item) =>
+		//   item
+		// 	.setTitle("translate")
+		// 	// .setIcon("documents")
+		// 	.onClick(() => {
+		// 	  new Notice("translated");
+		// 	})
+		// );
 	}
 
 	onClose() {

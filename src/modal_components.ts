@@ -704,7 +704,7 @@ const addToGroupSubMenu = (
 	});
 };
 
-const pluginFeatureSubmenu = (
+const pluginFeatureSubmenu = async (
 	submenu: Menu,
 	pluginItem: PluginInfo,
 	modal: QPSModal
@@ -749,7 +749,7 @@ const pluginFeatureSubmenu = (
 	);
 
 	// helped by hotkey-helper code, even if it is extremly simplified
-	const condition = getCondition(modal, pluginItem);
+	const condition = await getHkeyCondition(modal, pluginItem);
 	submenu.addItem((item) =>
 		item
 			.setTitle("Modify hotkeys (h)")
@@ -775,7 +775,7 @@ export async function openPluginSettings(
 
 export const showHotkeysFor = async function (
 	pluginItem: PluginInfo | PluginCommInfo,
-	condition: boolean
+	condition: Promise<boolean> | boolean
 ) {
 	if (!condition) {
 		new Notice("No HotKeys on this plugin", 2500);
@@ -789,14 +789,23 @@ export const showHotkeysFor = async function (
 	tab.searchComponent.inputEl.blur();
 };
 
-export const getCondition = function (
+export const getCommandCondition = async function (
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
 ) {
-	const pluginCommands = (modal.app as any).setting.openTabById(
+	const pluginCommands = await (modal.app as any).setting.openTabById(
+		pluginItem.id
+	)?.app?.commands.commands;
+	return pluginCommands
+};
+export const getHkeyCondition = async function (
+	modal: QPSModal | CPModal,
+	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
+) {
+	const pluginCommands = await (modal.app as any).setting.openTabById(
 		"command-palette"
 	)?.app?.commands.commands;
-	return pluginCommands && hasKeyStartingWith(pluginCommands, pluginItem.id);
+	return hasKeyStartingWith(pluginCommands, pluginItem.id);
 };
 
 export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
@@ -820,7 +829,8 @@ export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
 				console.debug("Repo not found for the plugin.");
 				try {
 					const repoURL = `https://github.com/${plugin.author}/${plugin.id}`;
-					window.open(repoURL, "_blank");
+					const ret =window.open(repoURL, "_blank");
+					console.debug("ret", ret)
 				} catch {
 					const repoURL = `https://github.com/${plugin.author}`;
 					window.open(repoURL, "_blank");
@@ -1001,10 +1011,10 @@ function contextMenuQPS(
 				})
 		);
 	}
-	menu.addItem((item) => {
+	menu.addItem(async (item) => {
 		item.setTitle("Plugin features").setIcon("package-plus");
 		const submenu = (item as any).setSubmenu() as Menu;
-		pluginFeatureSubmenu(submenu, matchingItem, modal);
+		await pluginFeatureSubmenu(submenu, matchingItem, modal);
 	});
 
 	if (isInstalled(matchingItem)) {

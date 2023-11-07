@@ -18,7 +18,6 @@ import {
 	openGitHubRepo,
 	openPluginSettings,
 	showHotkeysFor,
-	getCondition,
 	searchDivButtons,
 	handleContextMenu,
 	doSearch,
@@ -27,6 +26,7 @@ import {
 	getElementFromMousePosition,
 	findMatchingItem,
 	byGroupDropdowns,
+	getHkeyCondition,
 } from "./modal_components";
 import {
 	createInput,
@@ -383,7 +383,9 @@ const handleHotkeysQPS = async (
 	const pluginSettings = (modal.app as any).setting.openTabById(
 		pluginItem.id
 	);
-	const condition = getCondition(modal, pluginItem);
+	const condition = await getHkeyCondition(modal, pluginItem);
+	console.log("condition",condition)
+	
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(pluginItem),

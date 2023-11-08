@@ -383,9 +383,7 @@ const handleHotkeysQPS = async (
 	const pluginSettings = (modal.app as any).setting.openTabById(
 		pluginItem.id
 	);
-	const condition = await getHkeyCondition(modal, pluginItem);
-	console.log("condition",condition)
-	
+	const condition = await getHkeyCondition(modal, pluginItem);	
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(pluginItem),

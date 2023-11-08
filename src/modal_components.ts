@@ -829,8 +829,7 @@ export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
 				console.debug("Repo not found for the plugin.");
 				try {
 					const repoURL = `https://github.com/${plugin.author}/${plugin.id}`;
-					const ret =window.open(repoURL, "_blank");
-					console.debug("ret", ret)
+					window.open(repoURL, "_blank");
 				} catch {
 					const repoURL = `https://github.com/${plugin.author}`;
 					window.open(repoURL, "_blank");
@@ -1019,7 +1018,6 @@ function contextMenuQPS(
 
 	if (isInstalled(matchingItem)) {
 		menu.addItem((item) => {
-			console.log("toto");
 			item.setTitle("Uninstall plugin")
 				.setIcon("log-out")
 				.onClick(async () => {

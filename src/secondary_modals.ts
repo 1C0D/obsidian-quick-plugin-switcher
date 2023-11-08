@@ -310,9 +310,9 @@ function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
 				if (url.startsWith(".")) {
 					url = `https://github.com/${
 						pluginItem.repo
-					}/raw/master${url.substr(1)}`;
+					}/raw/HEAD${url.substr(1)}`;
 				} else {
-					url = `https://github.com/${pluginItem.repo}/raw/master/${url}`;
+					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 				}
 			}
 			return `![${alt}](${url})`;

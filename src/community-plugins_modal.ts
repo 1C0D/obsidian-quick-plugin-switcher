@@ -438,7 +438,6 @@ const handleHotkeysCPM = async (
 		pluginsTagged[itemID] = {
 			groupInfo: { groupIndices: [] },
 		};
-		// await modal.plugin.saveSettings();
 	}
 	taggedItem = pluginsTagged[itemID];
 	const { groupInfo } = taggedItem;

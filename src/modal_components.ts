@@ -127,7 +127,6 @@ export async function addSearch(
 						// if cursor over qps-item-line.
 						value = actualValue;
 					}
-					// await plugin.saveSettings();
 				});
 		})
 		.setClass("qps-search-component");

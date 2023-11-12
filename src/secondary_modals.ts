@@ -12,7 +12,7 @@ import {
 import QuickPluginSwitcher from "./main";
 import { PluginCommInfo, PluginInfo } from "./types";
 import { CPModal, getReadMe } from "./community-plugins_modal";
-import { isInstalled, reOpenModal } from "./modal_utils";
+import { isInstalled } from "./modal_utils";
 import {
 	getCommandCondition,
 	getHkeyCondition,

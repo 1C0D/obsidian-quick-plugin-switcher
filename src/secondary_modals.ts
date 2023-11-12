@@ -244,7 +244,7 @@ export class ReadMeModal extends Modal {
 						.onClick(async () => {
 							await openPluginSettings(
 								this.modal,
-								pluginSettings
+								pluginItem
 							);
 						});
 				}
@@ -254,7 +254,7 @@ export class ReadMeModal extends Modal {
 					new ButtonComponent(divButtons)
 						.setButtonText("Hotkeys")
 						.onClick(async () => {
-							await showHotkeysFor(pluginItem, condition);
+							await showHotkeysFor(this.modal, pluginItem);
 						});
 				}
 

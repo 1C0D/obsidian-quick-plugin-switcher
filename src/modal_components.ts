@@ -755,15 +755,18 @@ const pluginFeatureSubmenu = async (
 			.setIcon("plus-circle")
 			.setDisabled(!condition)
 			.onClick(async () => {
-				await showHotkeysFor(pluginItem, condition);
+				await showHotkeysFor(modal, pluginItem);
 			})
 	);
 };
 
 export async function openPluginSettings(
 	modal: QPSModal | CPModal,
-	pluginSettings: any
+	pluginItem: PluginInfo | PluginCommInfo
 ) {
+	const pluginSettings = (modal.app as any).setting.openTabById(
+		pluginItem.id
+	);
 	if (!pluginSettings) {
 		new Notice("No settings on this plugin", 2500);
 		return;
@@ -773,9 +776,10 @@ export async function openPluginSettings(
 }
 
 export const showHotkeysFor = async function (
-	pluginItem: PluginInfo | PluginCommInfo,
-	condition: Promise<boolean> | boolean
+	modal: QPSModal | CPModal,
+	pluginItem: PluginInfo | PluginCommInfo
 ) {
+	const condition = await getHkeyCondition(modal, pluginItem);
 	if (!condition) {
 		new Notice("No HotKeys on this plugin", 2500);
 		return;
@@ -795,7 +799,7 @@ export const getCommandCondition = async function (
 	const pluginCommands = await (modal.app as any).setting.openTabById(
 		pluginItem.id
 	)?.app?.commands.commands;
-	return pluginCommands
+	return pluginCommands;
 };
 export const getHkeyCondition = async function (
 	modal: QPSModal | CPModal,

@@ -380,15 +380,15 @@ const handleHotkeysQPS = async (
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroups;
-	const pluginSettings = (modal.app as any).setting.openTabById(
-		pluginItem.id
-	);
-	const condition = await getHkeyCondition(modal, pluginItem);	
+	// const pluginSettings = (modal.app as any).setting.openTabById(
+	// 	pluginItem.id
+	// );
+	// const condition = await getHkeyCondition(modal, pluginItem);	
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(pluginItem),
-		s: async () => await openPluginSettings(modal, pluginSettings),
-		h: async () => await showHotkeysFor(pluginItem, condition),
+		s: async () => await openPluginSettings(modal, pluginItem),
+		h: async () => await showHotkeysFor(modal, pluginItem),
 		i: () => new DescriptionModal(plugin.app, plugin, pluginItem).open(),
 	};
 	if (Platform.isDesktopApp)

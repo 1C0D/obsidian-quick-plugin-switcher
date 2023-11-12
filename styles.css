@@ -240,7 +240,7 @@
 
 .enabled-span {
   margin-left: var(--size-4-1);
-  color:rgb(198, 238, 138)
+  color: rgb(198, 238, 138)
 }
 
 .post-span-downloads {
@@ -269,7 +269,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top : 5px
+  margin-top: 5px
 }
 
 
@@ -302,5 +302,14 @@
 .qps-read-me th {
   background-color: #222222;
 }
+
+.translate-modal {
+  width: auto;
+  min-width: 150px;
+}
+
+/* .widget-trad {
+  z-index: 5
+} */
 
 /* read me modal ------- end --------*/

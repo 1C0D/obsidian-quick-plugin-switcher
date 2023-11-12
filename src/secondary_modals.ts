@@ -6,6 +6,7 @@ import {
 	Menu,
 	Modal,
 	Notice,
+	Scope,
 	Setting,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -169,6 +170,8 @@ export class NewVersion extends Modal {
 
 export class ReadMeModal extends Modal {
 	comp: Component;
+	mousePosition: any;
+	scope: Scope = new Scope(this.app.scope);
 	constructor(
 		app: App,
 		public modal: CPModal,
@@ -194,14 +197,14 @@ export class ReadMeModal extends Modal {
 			})
 			.createEl("p", {
 				text: "By: " + pluginItem.author,
-			})
+			});
 
-		const openRepo = contentEl.createDiv()
+		const openRepo = contentEl.createDiv();
 		new ButtonComponent(openRepo)
-		.setButtonText("GitHub Repo")
-		.onClick(async () => {
-			await openGitHubRepo(pluginItem);
-		});
+			.setButtonText("GitHub Repo")
+			.onClick(async () => {
+				await openGitHubRepo(pluginItem);
+			});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
 		if (!isInstalled(pluginItem)) {
@@ -224,7 +227,10 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
-						condition = await getCommandCondition(this.modal, pluginItem);
+						condition = await getCommandCondition(
+							this.modal,
+							pluginItem
+						);
 						if (condition) await this.onOpen();
 						new Notice(`${pluginItem.name} enabled`, 2500);
 					});
@@ -282,22 +288,109 @@ export class ReadMeModal extends Modal {
 
 		MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
 
-		const menu = new Menu();
+		// || add a menu with translate
+		this.modalEl.addEventListener("mousemove", (event) => {
+			this.mousePosition = { x: event.clientX, y: event.clientY };
+		});
 
-		// menu.addItem((item) =>
-		//   item
-		// 	.setTitle("translate")
-		// 	// .setIcon("documents")
-		// 	.onClick(() => {
-		// 	  new Notice("translated");
-		// 	})
-		// );
+		this.scope.register(["Ctrl"], "t", async () => {
+			const selectedContent = getSelectedContent();
+			if (!selectedContent) {
+				new Notice("no selection", 4000);
+				return;
+			}
+			await translation(selectedContent);
+		});
+
+		this.modalEl.addEventListener("contextmenu", (event) => {
+			event.preventDefault();
+			const selectedContent = getSelectedContent();
+			if (selectedContent) {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item.setTitle("Copy Ctrl+C").onClick(async () => {
+						await navigator.clipboard.writeText(selectedContent);
+					})
+				);
+				menu.addItem((item) =>
+					item.setTitle("translate").onClick(async () => {
+						await translation(selectedContent);
+					})
+				);
+				menu.showAtPosition(this.mousePosition);
+			}
+		});
 	}
 
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.comp.unload();
+	}
+}
+
+function getSelectedContent() {
+	const selection = window.getSelection();
+	return selection?.toString();
+}
+
+function canTranslate() {
+	return this.plugin.translator && this.plugin.translator.valid;
+}
+
+async function translate(text: string, from: string) {
+	let to = "";
+	const plugin = (this.app as any).plugins.plugins.translate;
+	if (!plugin) {
+		new Notice(
+			"install obsidian-translate and select a translator"
+		);
+		return;
+	}
+	if (!canTranslate) {
+		new Notice("translator not valid. check your settings", 4000);
+		return;
+	}
+	const loaded_settings = await plugin.loadData();
+
+	if (loaded_settings.target_language_preference === "last") {
+		to = loaded_settings.last_used_target_languages[0];
+	} else if (loaded_settings.target_language_preference === "specific") {
+		to = loaded_settings.default_target_language;
+	} else if (loaded_settings.target_language_preference === "display") {
+		to = plugin.current_language;
+	}
+
+	return plugin.translator.translate(text, from, to);
+}
+
+async function translation(selectedContent: string) {
+	const translated = await translate(selectedContent, "en");
+	if (!translated) return;
+	const translation = translated.translation;
+	if (!translation) {
+		new Notice("translator not valid. check your settings", 4000);
+		return;
+	}
+	new TranslateModal(this.app, translation).open();
+}
+
+export class TranslateModal extends Modal {
+	constructor(app: App, public message: string) {
+		super(app);
+		this.modalEl.addClass("translate-modal");
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		const lines = this.message.split("\n");
+		lines.forEach((line) => contentEl.createEl("p").setText(line));
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
 	}
 }
 

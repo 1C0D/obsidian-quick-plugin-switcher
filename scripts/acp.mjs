@@ -18,6 +18,7 @@ export function acp() {
         } catch (error) {
             console.error('Error:', error.message);
         }
+        process.exit()
     });
 }
 

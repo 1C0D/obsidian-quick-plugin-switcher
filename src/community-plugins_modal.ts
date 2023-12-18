@@ -6,6 +6,7 @@ import {
 	Modal,
 	Notice,
 	Platform,
+	debounce,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -20,6 +21,7 @@ import {
 	KeyToSettingsMapType,
 	PackageInfoData,
 	PluginCommInfo,
+	PluginInfo,
 } from "./types";
 import {
 	getCirclesItem,
@@ -47,6 +49,12 @@ import {
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal } from "./main_modal";
 import * as path from "path";
+
+declare global {
+	interface Window {
+		electron: any;
+	}
+}
 
 export class CPModal extends Modal {
 	header: HTMLElement;
@@ -115,7 +123,7 @@ export class CPModal extends Modal {
 		}
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
-		await this.addItems();
+		await this.addItems(settings.search);
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -126,9 +134,8 @@ export class CPModal extends Modal {
 			.addOptions({
 				all: `All(${settings.commPlugins.length})`,
 				installed: `Installed(${getInstalled().length})`,
-				notInstalled: `Not Installed(${
-					settings.commPlugins.length - getInstalled().length
-				})`,
+				notInstalled: `Not Installed(${settings.commPlugins.length - getInstalled().length
+					})`,
 				byGroup: `By Group`,
 			})
 			.setValue(settings.filtersComm as string)
@@ -193,60 +200,149 @@ export class CPModal extends Modal {
 		);
 	}
 
-	async addItems() {
+	async addItems(value: string) {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { commPlugins, pluginStats } = settings;
-		const value = settings.search;
-		let listItems = CPMmodeSort(this, commPlugins);
+		// const previousValue = settings.search; //
+		let listItems = cpmModeSort(this, commPlugins);
 		sortItemsByDownloads(listItems, pluginStats);
 		listItems = doSearch(this, value, listItems) as PluginCommInfo[];
+		// this.drawPluginItems(listItems, pluginStats, value)
+		await this.drawItemsAsync(listItems, pluginStats, value)
+	}
 
-		for (const item of listItems) {
-			const itemContainer = this.items.createEl("div", {
-				cls: "qps-comm-block",
-			});
+	hightLightSpan(value: string, text: string) {
+		if (value.trim() === '') {
+			return text; // Retourne le texte original si la valeur est vide
+		} else {
+			const regex = new RegExp(`(${value})`, 'gi');
+			return text.replace(regex, `<span class="highlighted">$&</span>`);
+		}
+	}
+
+	// drawPluginItems(
+	// 	listItems: PluginCommInfo[],
+	// 	pluginStats: PackageInfoData,
+	// 	value: string
+	// ) {
+	// 	for (const item of listItems) {
+	// 		const itemContainer = this.items.createEl("div", {
+	// 			cls: "qps-comm-block",
+	// 		});
+	// 		//name
+			
+	// 		const text = this.hightLightSpan(value, item)
+	// 		itemContainer.createDiv(
+	// 			{
+	// 				cls: "qps-community-item-name",
+	// 				// text: item.name,
+	// 			},
+	// 			(el: HTMLElement) => {
+	// 				el.innerHTML = text
+	// 				if (isInstalled(item))
+	// 					el.createSpan({
+	// 						cls: "installed-span",
+	// 						text: "installed",
+	// 					});
+	// 				if (isEnabled(this, item.id)) {
+	// 					const span = el.createSpan({
+	// 						cls: "enabled-span",
+	// 					});
+	// 					setIcon(span, "power");
+	// 				}
+	// 			}
+	// 		);
+
+	// 		//author
+	// 		itemContainer.createDiv({
+	// 			cls: "qps-community-item-author",
+	// 			// text: `By ${item.author} `,
+	// 		});
+	// 		const pluginInfo = pluginStats[item.id];
+	// 		if (pluginInfo) {
+	// 			// downloads
+	// 			itemContainer.createDiv(
+	// 				{
+	// 					cls: "qps-community-item-downloads",
+	// 				},
+	// 				(el: HTMLElement) => {
+	// 					el.innerHTML = text
+	// 					el.createSpan({ cls: "downloads-span" }, (el) => {
+	// 						const preSpan = el.createSpan();
+	// 						const span = el.createSpan({
+	// 							text: formatNumber(
+	// 								pluginInfo.downloads,
+	// 								1
+	// 							).toString(),
+	// 							cls: "downloads-text-span",
+	// 						});
+	// 						addGroupCircles(this, span, item);
+	// 						setIcon(preSpan, "download-cloud");
+	// 					});
+	// 				}
+	// 			);
+
+	// 			const lastUpdated = new Date(pluginInfo.updated);
+	// 			const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
+	// 			// Updated
+	// 			itemContainer.createDiv({
+	// 				cls: "qps-community-item-updated",
+	// 				text: `Updated ${timeSinceUpdate}`,
+	// 			});
+	// 		}
+
+	// 		// desc
+	// 		itemContainer.createDiv({
+	// 			cls: "qps-community-item-desc",
+	// 			// text: item.description,
+	// 		}, (el: HTMLElement) => { el.innerHTML = text });
+	// 	}
+	// }
+
+// Votre fonction doSearch reste inchangée
+
+async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
+	const batchSize = 80; // Nombre d'éléments à dessiner à chaque itération
+	let index = 0;
+
+	while (index < listItems.length) {
+		const batch = listItems.slice(index, index + batchSize);
+		const promises = batch.map(async (item) => {
+			const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
+
+			// Utilisation de votre logique de dessin d'éléments ici
+			const name = this.hightLightSpan(value, item.name);
+
 			//name
 			itemContainer.createDiv(
-				{
-					cls: "qps-community-item-name",
-					text: item.name,
-				},
+				{ cls: "qps-community-item-name" },
 				(el: HTMLElement) => {
-					if (isInstalled(item))
-						el.createSpan({
-							cls: "installed-span",
-							text: "installed",
-						});
+					el.innerHTML = name;
+					if (isInstalled(item)) {
+						el.createSpan({ cls: "installed-span", text: "installed" });
+					}
 					if (isEnabled(this, item.id)) {
-						const span = el.createSpan({
-							cls: "enabled-span",
-						});
+						const span = el.createSpan({ cls: "enabled-span" });
 						setIcon(span, "power");
 					}
 				}
 			);
+
 			//author
-			itemContainer.createDiv({
-				cls: "qps-community-item-author",
-				text: `By ${item.author} `,
-			});
+			itemContainer.createDiv({ cls: "qps-community-item-author" });
 
 			const pluginInfo = pluginStats[item.id];
 			if (pluginInfo) {
 				// downloads
 				itemContainer.createDiv(
-					{
-						cls: "qps-community-item-downloads",
-					},
+					{ cls: "qps-community-item-downloads" },
 					(el: HTMLElement) => {
+						el.innerHTML = name;
 						el.createSpan({ cls: "downloads-span" }, (el) => {
 							const preSpan = el.createSpan();
 							const span = el.createSpan({
-								text: formatNumber(
-									pluginInfo.downloads,
-									1
-								).toString(),
+								text: formatNumber(pluginInfo.downloads, 1).toString(),
 								cls: "downloads-text-span",
 							});
 							addGroupCircles(this, span, item);
@@ -263,14 +359,21 @@ export class CPModal extends Modal {
 					text: `Updated ${timeSinceUpdate}`,
 				});
 			}
-
+			const desc = this.hightLightSpan(value, item.description);
 			// desc
-			itemContainer.createDiv({
-				cls: "qps-community-item-desc",
-				text: item.description,
+			itemContainer.createDiv({ cls: "qps-community-item-desc" }, (el: HTMLElement) => {
+				el.innerHTML = desc;
 			});
-		}
+
+			return itemContainer;
+		});
+
+		// Attendez que tous les éléments du lot en cours soient dessinés
+		const batchContainers = await Promise.all(promises);
+
+		index += batchSize;
 	}
+}
 
 	onClose() {
 		const { contentEl } = this;
@@ -350,7 +453,7 @@ function sortItemsByDownloads(
 	});
 }
 
-function CPMmodeSort(modal: CPModal, listItems: PluginCommInfo[]) {
+function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm } = settings;
 	if (filtersComm === "installed") {

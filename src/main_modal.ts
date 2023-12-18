@@ -103,7 +103,7 @@ export class QPSModal extends Modal {
 		searchDivButtons(this, this.search);
 		this.addGroups(this, this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
-		await this.addItems();
+		await this.addItems(settings.search);
 	}
 
 	addHeader = (contentEl: HTMLElement): void => {
@@ -186,11 +186,11 @@ export class QPSModal extends Modal {
 		);
 	}
 
-	async addItems() {
+	async addItems(value:string) {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { allPluginsList } = settings;
-		const value = settings.search;
+		// const previousValue = settings.search;
 		let listItems = doSearch(this, value, allPluginsList) as PluginInfo[];
 		// Sort for chosen mode
 		listItems = modeSort(plugin, listItems);

@@ -286,7 +286,7 @@ export class ReadMeModal extends Modal {
 
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
-		MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
+		await MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
 
 		// || add a menu with translate
 		this.modalEl.addEventListener("mousemove", (event) => {

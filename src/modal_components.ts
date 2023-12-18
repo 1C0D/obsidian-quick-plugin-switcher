@@ -112,7 +112,7 @@ export async function addSearch(
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	new Setting(contentEl)
+	const search = new Setting(contentEl)
 		.addSearch(async (search: SearchComponent) => {
 			const actualValue = search.getValue();
 			search
@@ -122,11 +122,7 @@ export async function addSearch(
 					if (modal.searchTyping) {
 						settings.search = value;
 						modal.items.empty();
-						modal.addItems();
-					} else {
-						// if cursor over qps-item-line.
-						value = actualValue;
-					}
+						modal.addItems(value);}
 				});
 		})
 		.setClass("qps-search-component");
@@ -135,7 +131,7 @@ export async function addSearch(
 export function doSearch(
 	modal: QPSModal | CPModal,
 	value: string,
-	pluginsList: PluginCommInfo[] | PluginInfo[]
+	pluginsList: (PluginCommInfo | PluginInfo)[]
 ) {
 	const lowerCaseValue = value.toLowerCase();
 	return pluginsList.filter((item) =>
@@ -149,13 +145,36 @@ export function doSearch(
 	);
 }
 
+export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanElement) => {
+	const { plugin } = modal;
+	new ButtonComponent(el)
+		.setIcon("rocket")
+		.setCta()
+		.setClass("update-button")
+		.setTooltip(
+			"update plugins: open settings and check for plugins updates"
+		)
+		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
+			modal.app.setting.open();
+			const tab = modal.app.setting.openTabById("community-plugins")
+			const El = tab.containerEl
+			const buttons: NodeListOf<HTMLButtonElement> = El.querySelectorAll('button.mod-cta');// not super useful but I add the type
+			const buttonArr: HTMLButtonElement[] = Array.from(buttons);
+			const wantedButton = buttonArr.find(button => {
+				return (button as HTMLButtonElement).textContent === 'Check for updates'
+			}) as HTMLButtonElement
+			wantedButton?.click()
+		});
+};
+
 export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
 	new ButtonComponent(el)
 		.setIcon("download-cloud")
 		.setCta()
+		.setClass("comm-button")
 		.setTooltip(
-			"community plugins: you can to tag plugins with groups, install by group..."
+			"community plugins: you can tag plugins with groups, install by group..."
 		)
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
 			modal.close();
@@ -856,8 +875,9 @@ export const searchDivButtons = (
 			cls: "qps-toggle-plugins",
 		},
 		(el) => {
-			commButton(modal, el);
 			powerButton(modal, el);
+			commButton(modal, el);
+			Check4UpdatesButton(modal, el)
 		}
 	);
 };
@@ -900,7 +920,7 @@ export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 		if (matchingItem) {
 			new ReadMeModal(
 				modal.plugin.app,
-				modal,
+				modal as CPModal,
 				matchingItem as PluginCommInfo
 			).open();
 		}
@@ -972,11 +992,11 @@ export function contextMenuCPM(
 			.onClick(async () => {
 				isEnabled(modal, matchingItem.id)
 					? await (modal.app as any).plugins.disablePluginAndSave(
-							matchingItem.id
-					  )
+						matchingItem.id
+					)
 					: await (modal.app as any).plugins.enablePluginAndSave(
-							matchingItem.id
-					  );
+						matchingItem.id
+					);
 
 				const msg = isenabled ? "disabled" : "enabled";
 				new Notice(`${matchingItem.name} ${msg}`, 2500);
@@ -1371,7 +1391,7 @@ export async function installLatestPluginVersion(
 	plugin: PluginCommInfo
 ) {
 	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
-	let latestVersion = null;
+	let latestVersion: string | null = null;
 
 	for (const version in pluginInfo) {
 		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {

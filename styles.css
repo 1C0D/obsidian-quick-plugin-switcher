@@ -223,6 +223,22 @@
   line-height: var(--line-height-tight);
 }
 
+.qps-toggle-plugins .comm-button {
+  background-color: hsl(29, 29%, 21%);
+}
+
+.qps-toggle-plugins .comm-button:hover {
+  background-color: hsl(29, 29%, 23%);
+}
+
+.qps-toggle-plugins .update-button {
+  background-color: hsl(27, 22%, 12%);
+}
+
+.qps-toggle-plugins .update-button:hover {
+  background-color: hsl(27, 22%, 14%);
+}
+
 .installed-span {
   margin-left: var(--size-4-1);
   padding: var(--size-2-1) var(--size-2-2);
@@ -313,3 +329,7 @@
 } */
 
 /* read me modal ------- end --------*/
+
+.highlighted {
+  background-color: #ffa6005f;
+}

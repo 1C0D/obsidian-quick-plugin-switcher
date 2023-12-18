@@ -128,18 +128,18 @@ export async function openDirectoryInFileManager(
 	modal: QPSModal,
 	pluginItem: PluginInfo
 ) {
-	let shell = window.electron.shell;
+	let shell = window.electron.remote.shell;
 	const filePath = (modal.app as any).vault.adapter.getFullPath(
 		pluginItem.dir
 	);
 	try {
-		await shell.openExternal(filePath);
+		await shell.openPath(filePath);
 	} catch (err) {
-		const plugins = (app as any).vault.adapter.getFullPath(
+		const plugins = modal.app.vault.adapter.getFullPath(
 			".obsidian/plugins"
 		);
-		await shell.openExternal(plugins);
-	}
+		await shell.openPath(plugins);
+	}	
 }
 
 export const delayedReEnable = async (

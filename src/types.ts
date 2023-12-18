@@ -4,11 +4,6 @@ export const commPlugins =
 export const commPluginStats =
 	"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
 
-declare global {
-	interface Window {
-		electron: any;
-	}
-}
 
 export const Filters: GroupData = {
 	All: "all",

@@ -1,6 +1,3 @@
-import { CPModal } from "./community-plugins_modal";
-import { QPSModal } from "./main_modal";
-
 export function isEnabled(modal:any, name: string): boolean {
 	return (modal.app as any).plugins.enabledPlugins.has(name);
 }

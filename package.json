@@ -1,6 +1,6 @@
 {
 	"name": "quick-plugin-switcher",
-	"version": "4.4.1",
+	"version": "4.4.2",
 	"description": "Adds a ribbon icon to quickly switch plugins with filters (all, enabled, disabled, most switched)",
 	"main": "main.js",
 	"scripts": {

@@ -584,7 +584,7 @@ export const itemTextComponent = (
 	if (pluginItem.desktopOnly) {
 		customValue = "\u1D30" + customValue;
 	}
-
+	customValue = customValue + `|${pluginItem.version}`
 	const text = new TextComponent(itemContainer).setValue(customValue).inputEl;
 
 	return text;
@@ -1327,6 +1327,7 @@ export const findMatchingItem = (
 		if (itemName.startsWith("ᴰ")) {
 			itemName = itemName.substring(1);
 		}
+		itemName = itemName.split("|")[0]
 		const matchingItem = modal.plugin.settings.allPluginsList.find(
 			(item) => item.name === itemName
 		);

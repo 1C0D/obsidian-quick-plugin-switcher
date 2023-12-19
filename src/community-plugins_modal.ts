@@ -204,11 +204,9 @@ export class CPModal extends Modal {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { commPlugins, pluginStats } = settings;
-		// const previousValue = settings.search; //
 		let listItems = cpmModeSort(this, commPlugins);
 		sortItemsByDownloads(listItems, pluginStats);
 		listItems = doSearch(this, value, listItems) as PluginCommInfo[];
-		// this.drawPluginItems(listItems, pluginStats, value)
 		await this.drawItemsAsync(listItems, pluginStats, value)
 	}
 
@@ -221,159 +219,76 @@ export class CPModal extends Modal {
 		}
 	}
 
-	// drawPluginItems(
-	// 	listItems: PluginCommInfo[],
-	// 	pluginStats: PackageInfoData,
-	// 	value: string
-	// ) {
-	// 	for (const item of listItems) {
-	// 		const itemContainer = this.items.createEl("div", {
-	// 			cls: "qps-comm-block",
-	// 		});
-	// 		//name
-			
-	// 		const text = this.hightLightSpan(value, item)
-	// 		itemContainer.createDiv(
-	// 			{
-	// 				cls: "qps-community-item-name",
-	// 				// text: item.name,
-	// 			},
-	// 			(el: HTMLElement) => {
-	// 				el.innerHTML = text
-	// 				if (isInstalled(item))
-	// 					el.createSpan({
-	// 						cls: "installed-span",
-	// 						text: "installed",
-	// 					});
-	// 				if (isEnabled(this, item.id)) {
-	// 					const span = el.createSpan({
-	// 						cls: "enabled-span",
-	// 					});
-	// 					setIcon(span, "power");
-	// 				}
-	// 			}
-	// 		);
+	async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
+		const batchSize = 50;
+		let index = 0;
 
-	// 		//author
-	// 		itemContainer.createDiv({
-	// 			cls: "qps-community-item-author",
-	// 			// text: `By ${item.author} `,
-	// 		});
-	// 		const pluginInfo = pluginStats[item.id];
-	// 		if (pluginInfo) {
-	// 			// downloads
-	// 			itemContainer.createDiv(
-	// 				{
-	// 					cls: "qps-community-item-downloads",
-	// 				},
-	// 				(el: HTMLElement) => {
-	// 					el.innerHTML = text
-	// 					el.createSpan({ cls: "downloads-span" }, (el) => {
-	// 						const preSpan = el.createSpan();
-	// 						const span = el.createSpan({
-	// 							text: formatNumber(
-	// 								pluginInfo.downloads,
-	// 								1
-	// 							).toString(),
-	// 							cls: "downloads-text-span",
-	// 						});
-	// 						addGroupCircles(this, span, item);
-	// 						setIcon(preSpan, "download-cloud");
-	// 					});
-	// 				}
-	// 			);
+		while (index < listItems.length) {
+			const batch = listItems.slice(index, index + batchSize);
+			const promises = batch.map(async (item) => {
+				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
-	// 			const lastUpdated = new Date(pluginInfo.updated);
-	// 			const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-	// 			// Updated
-	// 			itemContainer.createDiv({
-	// 				cls: "qps-community-item-updated",
-	// 				text: `Updated ${timeSinceUpdate}`,
-	// 			});
-	// 		}
+				const name = this.hightLightSpan(value, item.name);
+				const author = `by ${this.hightLightSpan(value, item.author)}`;
+				const desc = this.hightLightSpan(value, item.description);
 
-	// 		// desc
-	// 		itemContainer.createDiv({
-	// 			cls: "qps-community-item-desc",
-	// 			// text: item.description,
-	// 		}, (el: HTMLElement) => { el.innerHTML = text });
-	// 	}
-	// }
-
-// Votre fonction doSearch reste inchangée
-
-async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
-	const batchSize = 80; // Nombre d'éléments à dessiner à chaque itération
-	let index = 0;
-
-	while (index < listItems.length) {
-		const batch = listItems.slice(index, index + batchSize);
-		const promises = batch.map(async (item) => {
-			const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
-
-			// Utilisation de votre logique de dessin d'éléments ici
-			const name = this.hightLightSpan(value, item.name);
-
-			//name
-			itemContainer.createDiv(
-				{ cls: "qps-community-item-name" },
-				(el: HTMLElement) => {
-					el.innerHTML = name;
-					if (isInstalled(item)) {
-						el.createSpan({ cls: "installed-span", text: "installed" });
-					}
-					if (isEnabled(this, item.id)) {
-						const span = el.createSpan({ cls: "enabled-span" });
-						setIcon(span, "power");
-					}
-				}
-			);
-
-			//author
-			itemContainer.createDiv({ cls: "qps-community-item-author" });
-
-			const pluginInfo = pluginStats[item.id];
-			if (pluginInfo) {
-				// downloads
+				//name
 				itemContainer.createDiv(
-					{ cls: "qps-community-item-downloads" },
+					{ cls: "qps-community-item-name" },
 					(el: HTMLElement) => {
 						el.innerHTML = name;
-						el.createSpan({ cls: "downloads-span" }, (el) => {
-							const preSpan = el.createSpan();
-							const span = el.createSpan({
-								text: formatNumber(pluginInfo.downloads, 1).toString(),
-								cls: "downloads-text-span",
-							});
-							addGroupCircles(this, span, item);
-							setIcon(preSpan, "download-cloud");
-						});
+						if (isInstalled(item)) {
+							el.createSpan({ cls: "installed-span", text: "installed" });
+						}
+						if (isEnabled(this, item.id)) {
+							const span = el.createSpan({ cls: "enabled-span" });
+							setIcon(span, "power");
+						}
 					}
 				);
 
-				const lastUpdated = new Date(pluginInfo.updated);
-				const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-				// Updated
-				itemContainer.createDiv({
-					cls: "qps-community-item-updated",
-					text: `Updated ${timeSinceUpdate}`,
+				//author
+				itemContainer.createDiv({ cls: "qps-community-item-author" });
+
+				const pluginInfo = pluginStats[item.id];
+				if (pluginInfo) {
+					// downloads
+					itemContainer.createDiv(
+						{ cls: "qps-community-item-downloads" },
+						(el: HTMLElement) => {
+							el.innerHTML = author;
+							el.createSpan({ cls: "downloads-span" }, (el) => {
+								const preSpan = el.createSpan();
+								const span = el.createSpan({
+									text: formatNumber(pluginInfo.downloads, 1).toString(),
+									cls: "downloads-text-span",
+								});
+								addGroupCircles(this, span, item);
+								setIcon(preSpan, "download-cloud");
+							});
+						}
+					);
+
+					const lastUpdated = new Date(pluginInfo.updated);
+					const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
+					// Updated
+					itemContainer.createDiv({
+						cls: "qps-community-item-updated",
+						text: `Updated ${timeSinceUpdate}`,
+					});
+				}
+				// desc
+				itemContainer.createDiv({ cls: "qps-community-item-desc" }, (el: HTMLElement) => {
+					el.innerHTML = desc;
 				});
-			}
-			const desc = this.hightLightSpan(value, item.description);
-			// desc
-			itemContainer.createDiv({ cls: "qps-community-item-desc" }, (el: HTMLElement) => {
-				el.innerHTML = desc;
+
+				return itemContainer;
 			});
 
-			return itemContainer;
-		});
-
-		// Attendez que tous les éléments du lot en cours soient dessinés
-		const batchContainers = await Promise.all(promises);
-
-		index += batchSize;
+			await Promise.all(promises);
+			index += batchSize;
+		}
 	}
-}
 
 	onClose() {
 		const { contentEl } = this;

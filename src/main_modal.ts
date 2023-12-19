@@ -44,7 +44,7 @@ export class QPSModal extends Modal {
 		this.search = contentEl.createEl("div", { cls: "qps-search" });
 		this.groups = contentEl.createEl("div", { cls: "qps-groups" });
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
-		addButton(contentEl, this.plugin)
+		if (this.plugin.settings.showReset) addButton(contentEl, this.plugin)
 		this.items = contentEl.createEl("div", { cls: "qps-items" });
 
 		this.modalEl.addEventListener("mousemove", (event) => {

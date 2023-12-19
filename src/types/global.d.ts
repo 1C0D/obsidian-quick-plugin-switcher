@@ -63,6 +63,7 @@ declare module "obsidian" {
             { name: string; delayed: boolean; time: number; applied: boolean }
         >;
         showHotKeys: boolean;
+        showReset:boolean;
         // commnunity plugins
         pluginStats: PackageInfoData;
         pluginsTagged: PluginsTaggedInfo;

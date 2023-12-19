@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	numberOfGroups: 4,
 	groups: {},
 	showHotKeys: true,
+	showReset: false,
 	// commnunity plugins
 	pluginStats: {},
 	pluginsTagged: {},

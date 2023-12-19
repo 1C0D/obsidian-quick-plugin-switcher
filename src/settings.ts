@@ -127,9 +127,20 @@ export default class QPSSettingTab extends PluginSettingTab {
 			.addToggle((toggle) => {
 				toggle
 					.setValue(this.plugin.settings.showHotKeys)
-					.onChange((value) => {
+					.onChange(async (value) => {
 						this.plugin.settings.showHotKeys = value;
-						this.plugin.saveSettings();
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName("Show reset in main modal (for dev)")
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.showReset)
+					.onChange(async (value) => {
+						this.plugin.settings.showReset = value;
+						await this.plugin.saveSettings();
 					});
 			});
 	}

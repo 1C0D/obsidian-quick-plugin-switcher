@@ -1,7 +1,6 @@
-import { GroupData, PluginCommInfo, PluginInfo } from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { Notice } from "obsidian";
+import { GroupData, Notice, PluginCommInfo, PluginInfo } from "obsidian";
 import { confirm } from "./secondary_modals";
 import { CPModal } from "./community-plugins_modal";
 
@@ -139,7 +138,7 @@ export async function openDirectoryInFileManager(
 			".obsidian/plugins"
 		);
 		await shell.openPath(plugins);
-	}	
+	}
 }
 
 export const delayedReEnable = async (
@@ -268,7 +267,7 @@ export async function rmvAllGroupsFromPlugin(
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	if ("repo" in pluginItem) {
+	if (pluginItem.repo !== "") {
 		const itemID = pluginItem.id;
 		const { pluginsTagged } = settings;
 		const taggedItem = pluginsTagged[itemID];

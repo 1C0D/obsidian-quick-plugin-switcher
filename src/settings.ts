@@ -120,34 +120,7 @@ export default class QPSSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
-			.setName("Reset all values")
-			.setDesc("Don't do this, unless you really need to")
-			.addButton((btn) => {
-				btn.setIcon("alert-octagon")
-					.setTooltip("Reset all values")
-					.onClick(async () => {
-						const confirmReset = await confirm(
-							"Do you want to reset all values?",
-							300
-						);
-						if (confirmReset) {
-							if (
-								plugin.settings.hasOwnProperty("allPluginsList")
-							) {
-								plugin.settings.allPluginsList = [];
-							}
-							if (plugin.settings.hasOwnProperty("groups")) {
-								plugin.settings.groups = {};
-							}
-							await plugin.saveSettings();
-							new Notice("Reset done", 2500);
-							// (this.app as any).commands.executeCommandById('app:reload')
-						} else {
-							new Notice("Operation cancelled", 2500);
-						}
-					});
-			});
+		addButton(containerEl, plugin)
 
 		new Setting(containerEl)
 			.setName("Show hotkeys line reminder")
@@ -160,4 +133,37 @@ export default class QPSSettingTab extends PluginSettingTab {
 					});
 			});
 	}
+}
+
+
+export function addButton(containerEl: HTMLElement, plugin: QuickPluginSwitcher) {
+	return new Setting(containerEl)
+	.setName("Reset all values")
+	.setDesc("Don't do this, unless you really need to")
+	.addButton((btn) => {
+		btn.setIcon("alert-octagon")
+			.setTooltip("Reset all values")
+			.onClick(async () => {
+				const confirmReset = await confirm(
+					"Do you want to reset all values?",
+					300
+				);
+				if (confirmReset) {
+					if (
+						plugin.settings.hasOwnProperty("allPluginsList")
+					) {
+						plugin.settings.allPluginsList = [];
+					}
+					if (plugin.settings.hasOwnProperty("groups")) {
+						plugin.settings.groups = {};
+					}
+					await plugin.saveSettings();
+					// new Notice("Reset done", 2500);
+					(this.app as any).commands.executeCommandById('app:reload')
+				} else {
+					new Notice("Operation cancelled", 2500);
+				}
+			});
+	});
+	
 }

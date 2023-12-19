@@ -2,11 +2,14 @@ import { readFileSync, existsSync, readdirSync, writeFileSync } from "fs";
 import {
 	App,
 	DropdownComponent,
+	KeyToSettingsMapType,
 	Menu,
 	Modal,
 	Notice,
+	PackageInfoData,
 	Platform,
-	debounce,
+	PluginCommInfo,
+	PluginInfo,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -18,11 +21,7 @@ import {
 } from "./utils";
 import {
 	GroupsComm,
-	KeyToSettingsMapType,
-	PackageInfoData,
-	PluginCommInfo,
-	PluginInfo,
-} from "./types";
+} from "./types/variables";
 import {
 	getCirclesItem,
 	getEmojiForGroup,

@@ -1,53 +1,28 @@
 import {
 	App,
 	DropdownComponent,
+	KeyToSettingsMapType,
 	Menu,
 	Modal,
 	Platform,
+	PluginInfo,
 	ToggleComponent,
 	setIcon,
 } from "obsidian";
-import { Groups, KeyToSettingsMapType, PluginInfo, QPSSettings } from "./types";
-import { removeItem } from "./utils";
+
+import { Groups } from "./types/variables";
 import QuickPluginSwitcher from "./main";
-import {
-	modeSort,
-	mostSwitchedResetButton,
-	itemToggleClass,
-	itemTextComponent,
-	openGitHubRepo,
-	openPluginSettings,
-	showHotkeysFor,
-	searchDivButtons,
-	handleContextMenu,
-	doSearch,
-	addSearch,
-	handleDblClick,
-	getElementFromMousePosition,
-	findMatchingItem,
-	byGroupDropdowns,
-	getHkeyCondition,
-} from "./modal_components";
-import {
-	createInput,
-	delayedReEnable,
-	getCirclesItem,
-	getEmojiForGroup,
-	setGroupTitle,
-	groupNotEmpty,
-	openDirectoryInFileManager,
-	pressDelay,
-	rmvAllGroupsFromPlugin,
-	togglePlugin,
-	reOpenModal,
-} from "./modal_utils";
+import { addSearch, byGroupDropdowns, doSearch, findMatchingItem, getElementFromMousePosition, handleContextMenu, handleDblClick, itemTextComponent, itemToggleClass, modeSort, mostSwitchedResetButton, openGitHubRepo, openPluginSettings, searchDivButtons, showHotkeysFor } from "./modal_components";
+import { createInput, delayedReEnable, getCirclesItem, getEmojiForGroup, groupNotEmpty, openDirectoryInFileManager, pressDelay, reOpenModal, rmvAllGroupsFromPlugin, setGroupTitle, togglePlugin } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
+import { removeItem } from "./utils";
+import { addButton } from "./settings";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;
 	items: HTMLElement;
 	search: HTMLElement;
-	searchTyping= true;
+	searchTyping = true;
 	groups: HTMLElement;
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
@@ -69,6 +44,7 @@ export class QPSModal extends Modal {
 		this.search = contentEl.createEl("div", { cls: "qps-search" });
 		this.groups = contentEl.createEl("div", { cls: "qps-groups" });
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
+		addButton(contentEl, this.plugin)
 		this.items = contentEl.createEl("div", { cls: "qps-items" });
 
 		this.modalEl.addEventListener("mousemove", (event) => {
@@ -186,7 +162,7 @@ export class QPSModal extends Modal {
 		);
 	}
 
-	async addItems(value:string) {
+	async addItems(value: string) {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { allPluginsList } = settings;
@@ -227,7 +203,7 @@ export class QPSModal extends Modal {
 				const input = createInput(itemContainer, currentValue);
 
 				if (!pluginItem.delayed) {
-					input?.addEventListener("keydown", async (event) => {
+					input?.addEventListener("keydown", async (event:KeyboardEvent) => {
 						if (event.key === "Enter") {
 							setTimeout(async () => {
 								this.addDelay(pluginItem, input);
@@ -367,7 +343,7 @@ function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 		if (matchingItem) {
 			handleHotkeysQPS(modal, event, matchingItem as PluginInfo);
 		}
-	}else{
+	} else {
 		modal.searchTyping = true;
 	}
 }

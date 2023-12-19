@@ -70,3 +70,16 @@ export function calculateTimeElapsed(datePasted: Date): string {
 
 	return "seconds ago";
 }
+
+export function compareVersions(v1:any, v2:any) {
+	const [v1Maj, v1Min,v1Patch] = v1.split('.');
+	const [v2Maj, v2Min, v2Patch] = v2.split('.');
+
+	if (v1Maj === v2Maj) {
+		if (v1Min === v2Min) {
+			return v1Patch - v2Patch;
+		}
+		return v1Min - v2Min;
+	}
+	return v1Maj - v2Maj;
+}

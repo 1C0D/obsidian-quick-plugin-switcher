@@ -1,17 +1,13 @@
 // switch timer to fix error disabling plugin
 import { around } from "monkey-around";
-import { Plugin } from "obsidian";
+import { PackageInfoData, Plugin, PluginCommInfo, PluginInfo, QPSSettings } from "obsidian";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import {
 	DEFAULT_SETTINGS,
-	PackageInfoData,
-	PluginCommInfo,
-	PluginInfo,
-	QPSSettings,
 	commPluginStats,
 	commPlugins,
-} from "./types";
+} from "./types/variables";
 import QPSSettingTab from "./settings";
 import { fetchData } from "./community-plugins_modal";
 
@@ -32,6 +28,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			const manifests = (this.app as any).plugins.manifests || {};
 			// plugin have been deleted from obsidian UI ?
 			let stillInstalled: PluginInfo[] = [];
+
+			// console.log("manifests", manifests)
 
 			for (const plugin of allPluginsList) {
 				if (Object.keys(manifests).includes(plugin.id))
@@ -81,8 +79,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			async (evt: MouseEvent) => {
 				this.getPluginsInfo();
 				this.getLength();
-				new QPSModal(this.app, this).open();
 				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
+				new QPSModal(this.app, this).open();
 			}
 		);
 
@@ -92,8 +90,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			callback: async () => {
 				this.getPluginsInfo();
 				this.getLength();
-				new QPSModal(this.app, this).open();
 				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
+				new QPSModal(this.app, this).open();
 			},
 		});
 	}
@@ -149,40 +147,33 @@ export default class QuickPluginSwitcher extends Plugin {
 
 	async getPluginsInfo() {
 		const { settings } = this;
-
 		const allPluginsList = settings.allPluginsList || [];
-		const manifests = (this.app as any).plugins.manifests || {};
+		const manifests = this.app.plugins.manifests || {};
 
 		// plugin have been deleted from obsidian UI ?
 		let stillInstalled: PluginInfo[] = [];
-		let uninstalled: PluginInfo[] = [];
-
 		for (const plugin of allPluginsList) {
 			if (Object.keys(manifests).includes(plugin.id))
 				stillInstalled.push(plugin);
-			else {
-				uninstalled.push(plugin);
-			}
 		}
 
-		for (const key of Object.keys(manifests)) {
-			// plugin has been toggled from obsidian UI ? or if is delayed unabled
-			const pluginInList = stillInstalled.find(
-				(plugin) => plugin.id === manifests[key].id
+		for (let pluginInList of stillInstalled) {
+			const matchingManifest = Object.values(manifests).find(
+				(manifest) => manifest.id === pluginInList.id
 			);
-
-			if (pluginInList) {
+			// Check and update properties based on the matching manifest
+			if (matchingManifest) {
 				if (
-					isEnabled(this, manifests[key].id) !==
-						pluginInList.enabled &&
+					isEnabled(this, matchingManifest.id) !==
+					pluginInList.enabled &&
 					!pluginInList.delayed
 				) {
 					pluginInList.enabled = !pluginInList.enabled;
 				} else if (
 					pluginInList.delayed &&
-					isEnabled(this, manifests[key].id) !== pluginInList.enabled
+					isEnabled(this, matchingManifest.id) !== pluginInList.enabled
 				) {
-					if (isEnabled(this, manifests[key].id)) {
+					if (isEnabled(this, matchingManifest.id)) {
 						pluginInList.enabled = true;
 						await (this.app as any).plugins.disablePluginAndSave(
 							pluginInList.id
@@ -193,23 +184,36 @@ export default class QuickPluginSwitcher extends Plugin {
 						pluginInList.switched++;
 					}
 				}
-				// compatibility with previous versions
-				if (pluginInList.desktopOnly === undefined) {
-					pluginInList.desktopOnly =
-						manifests[key].isDesktopOnly || false;
-				}
-				continue;
+
+				const {
+					name = "",
+					description = "",
+					dir = "",
+					version = "",
+					author = "",
+					authorUrl = "",
+					isDesktopOnly = false
+				} = matchingManifest;
+
+				pluginInList.name = name
+				pluginInList.desc = description
+				pluginInList.dir = dir
+				pluginInList.version = version
+				pluginInList.author = author
+				pluginInList.authorUrl = authorUrl
+				pluginInList.desktopOnly = isDesktopOnly
 			} else {
 				const notInListInfo: PluginInfo = {
-					name: manifests[key].name || "",
-					id: manifests[key].id || "",
-					desc: manifests[key].description || "",
-					dir: manifests[key].dir || "",
-					version: manifests[key].version || "",
-					author: manifests[key].author || "",
-					authorUrl: manifests[key].authorUrl || "",
-					desktopOnly: manifests[key].isDesktopOnly || false,
-					enabled: isEnabled(this, manifests[key].id) || false,
+					name: "",
+					id: "",
+					desc: "",
+					dir: "",
+					version: "",
+					repo: { downloads: 0, updated: 0 },
+					author: "",
+					authorUrl: "",
+					desktopOnly: false,
+					enabled: false,
 					switched: 0,
 					groupInfo: {
 						groupIndices: [],

@@ -1,12 +1,3 @@
-import {
-	CommFilters,
-	Filters,
-	GroupData,
-	Groups,
-	GroupsComm,
-	PluginCommInfo,
-	PluginInfo,
-} from "./types";
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
 import { ReadMeModal, confirm } from "./secondary_modals";
@@ -14,9 +5,12 @@ import {
 	ButtonComponent,
 	DropdownComponent,
 	ExtraButtonComponent,
+	GroupData,
 	Menu,
 	Notice,
 	Platform,
+	PluginCommInfo,
+	PluginInfo,
 	SearchComponent,
 	Setting,
 	TextComponent,
@@ -38,7 +32,7 @@ import {
 	sortByName,
 	sortSwitched,
 } from "./modal_utils";
-import { isEnabled, removeItem } from "./utils";
+import { compareVersions, isEnabled, removeItem } from "./utils";
 import {
 	CPModal,
 	getManifest,
@@ -46,6 +40,7 @@ import {
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
+import { Filters, Groups, CommFilters, GroupsComm } from "./types/variables";
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -122,7 +117,8 @@ export async function addSearch(
 					if (modal.searchTyping) {
 						settings.search = value;
 						modal.items.empty();
-						modal.addItems(value);}
+						modal.addItems(value);
+					}
 				});
 		})
 		.setClass("qps-search-component");
@@ -152,7 +148,7 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 		.setCta()
 		.setClass("update-button")
 		.setTooltip(
-			"update plugins: open settings and check for plugins updates"
+			"Search for updateS"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
 			modal.app.setting.open();
@@ -831,7 +827,7 @@ export const getHkeyCondition = async function (
 };
 
 export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
-	if ("repo" in plugin) {
+	if (plugin.repo !== "") {
 		const repoURL = `https://github.com/${plugin.repo}`;
 		window.open(repoURL, "_blank"); // open
 	} else {
@@ -953,15 +949,13 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 	}
 
 	if (targetBlock) {
-		if (modal instanceof QPSModal) {
-			const matchingItem = findMatchingItem(modal, targetBlock);
-			if (matchingItem) {
+		const matchingItem = findMatchingItem(modal, targetBlock);
+		if (matchingItem) {
+			if (modal instanceof QPSModal) {
 				contextMenuQPS(evt, modal, matchingItem as PluginInfo);
-			}
-		} else {
-			const matchingItem = findMatchingItem(modal, targetBlock);
-			if (matchingItem) {
+			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
+
 			}
 		}
 	}
@@ -979,7 +973,9 @@ export function contextMenuCPM(
 			.setDisabled(isInstalled(matchingItem))
 			.setIcon("log-in")
 			.onClick(async () => {
-				await installLatestPluginVersion(modal, matchingItem);
+				const lastVersion = await getLatestPluginVersion(modal, matchingItem);
+				const manifest = await getManifest(matchingItem);
+				await this.app.plugins.installPlugin(matchingItem.repo, lastVersion, manifest);
 				await reOpenModal(modal);
 			});
 	});
@@ -1040,6 +1036,37 @@ function contextMenuQPS(
 	});
 
 	if (isInstalled(matchingItem)) {
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item.setTitle("Search for update")
+				.setDisabled(!(!!plugin.settings.pluginStats[matchingItem.id]))
+				.setIcon("rocket")
+				.onClick(async () => {
+					const lastVersion = await getLatestPluginVersion(modal, matchingItem);
+					if (lastVersion) {
+						if (lastVersion <= matchingItem.version) {
+							new Notice(`Already last version ${lastVersion}`, 2500)
+							return
+						}
+						console.log("ici")
+						// await this.app.plugins.uninstallPlugin(matchingItem.id);// not needed
+						const pluginCominfo = plugin.settings.commPlugins.find(
+							(item) => item.id === matchingItem.id
+						) as PluginCommInfo;
+						const manifest = await getManifest(pluginCominfo);
+						try { await modal.app.plugins.installPlugin(pluginCominfo.repo, lastVersion, manifest);}catch{console.error("install failed");
+						}
+						new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
+						matchingItem.version = lastVersion
+						console.log("lastVersion", lastVersion)
+						modal.plugin.getPluginsInfo();
+						// modal.plugin.getLength();// save settings inside
+						await reOpenModal(modal);
+					} else {
+						new Notice(`not a published plugin`, 2500);
+					}
+				});
+		});
 		menu.addItem((item) => {
 			item.setTitle("Uninstall plugin")
 				.setIcon("log-out")
@@ -1309,7 +1336,9 @@ export async function installAllPluginsInGroup(
 			new Notice(`${plugin.name} already installed`, 2500);
 			continue;
 		}
-		await installLatestPluginVersion(modal, plugin);
+		const lastVersion = await getLatestPluginVersion(modal, plugin);
+		const manifest = await getManifest(plugin);
+		await this.app.plugins.installPlugin(plugin.repo, lastVersion, manifest);
 		if (enable) {
 			await (modal.app as any).plugins.enablePluginAndSave(plugin.id);
 			new Notice(`${plugin.name} enabled`, 2500);
@@ -1387,17 +1416,23 @@ const createClearGroupsMenuItem = (
 	});
 };
 
-export async function installLatestPluginVersion(
-	modal: CPModal,
-	plugin: PluginCommInfo
+export async function getLatestPluginVersion(
+	modal: CPModal | QPSModal,
+	plugin: PluginCommInfo | PluginInfo
 ) {
 	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
 	let latestVersion: string | null = null;
 
 	for (const version in pluginInfo) {
 		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-			if (!latestVersion || version > latestVersion) {
-				latestVersion = version;
+			const numericVersion = version
+				.replace(/^v/, '')
+				.split('.')
+				// .map(Number)
+				.join(".")
+
+			if (!latestVersion || compareVersions(numericVersion, latestVersion) > 0) {
+				latestVersion = numericVersion;
 			}
 		}
 	}
@@ -1406,7 +1441,5 @@ export async function installLatestPluginVersion(
 		console.debug("no last version?"); // shouldn't happen
 		return;
 	}
-
-	const manifest = await getManifest(plugin);
-	await this.app.plugins.installPlugin(plugin.repo, latestVersion, manifest);
+	return latestVersion
 }

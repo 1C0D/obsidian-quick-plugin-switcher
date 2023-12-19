@@ -6,17 +6,18 @@ import {
 	Menu,
 	Modal,
 	Notice,
+	PluginCommInfo,
+	PluginInfo,
 	Scope,
 	Setting,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
-import { PluginCommInfo, PluginInfo } from "./types";
-import { CPModal, getReadMe } from "./community-plugins_modal";
+import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
 import { isInstalled } from "./modal_utils";
 import {
 	getCommandCondition,
 	getHkeyCondition,
-	installLatestPluginVersion,
+	getLatestPluginVersion,
 	openGitHubRepo,
 	openPluginSettings,
 	showHotkeysFor,
@@ -212,7 +213,9 @@ export class ReadMeModal extends Modal {
 				.setButtonText("Install")
 				.setCta()
 				.onClick(async () => {
-					await installLatestPluginVersion(this.modal, pluginItem);
+					const lastVersion = await getLatestPluginVersion(this.modal, pluginItem);
+					const manifest = await getManifest(pluginItem);
+					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion??"", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
 				});
@@ -401,9 +404,8 @@ function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
 		.replace(regex, (match, alt, url) => {
 			if (!url.startsWith("http")) {
 				if (url.startsWith(".")) {
-					url = `https://github.com/${
-						pluginItem.repo
-					}/raw/HEAD${url.substr(1)}`;
+					url = `https://github.com/${pluginItem.repo
+						}/raw/HEAD${url.substr(1)}`;
 				} else {
 					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 				}

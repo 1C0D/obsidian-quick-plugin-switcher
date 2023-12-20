@@ -21,18 +21,21 @@ import {
 	createInput,
 	getEmojiForGroup,
 	getIndexFromSelectedGroup,
+	getLatestPluginVersion,
 	getPluginsInGroup,
 	groupNameFromIndex,
 	groupNotEmpty,
 	isInstalled,
 	openDirectoryInFileManager,
+	openPluginSettings,
 	reOpenModal,
 	reset,
 	rmvAllGroupsFromPlugin,
+	showHotkeysFor,
 	sortByName,
 	sortSwitched,
 } from "./modal_utils";
-import { compareVersions, isEnabled, removeItem } from "./utils";
+import { compareVersions, hasKeyStartingWith, isEnabled, removeItem } from "./utils";
 import {
 	CPModal,
 	getManifest,
@@ -563,15 +566,6 @@ export const itemToggleClass = (
 	}
 };
 
-function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {
-	for (const key in obj) {
-		if (key.startsWith(prefix)) {
-			return true;
-		}
-	}
-	return false;
-}
-
 export const itemTextComponent = (
 	pluginItem: PluginInfo,
 	itemContainer: HTMLDivElement
@@ -775,38 +769,6 @@ const pluginFeatureSubmenu = async (
 	);
 };
 
-export async function openPluginSettings(
-	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo
-) {
-	const pluginSettings = (modal.app as any).setting.openTabById(
-		pluginItem.id
-	);
-	if (!pluginSettings) {
-		new Notice("No settings on this plugin", 2500);
-		return;
-	}
-	await (modal.app as any).setting.open();
-	await pluginSettings?.display();
-}
-
-export const showHotkeysFor = async function (
-	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo
-) {
-	const condition = await getHkeyCondition(modal, pluginItem);
-	if (!condition) {
-		new Notice("No HotKeys on this plugin", 2500);
-		return;
-	}
-	await (this.app as any).setting.open();
-	await (this.app as any).setting.openTabById("hotkeys");
-	const tab = await (this.app as any).setting.activeTab;
-	tab.searchComponent.inputEl.value = pluginItem.name + ":";
-	tab.updateHotkeyVisibility();
-	tab.searchComponent.inputEl.blur();
-};
-
 export const getCommandCondition = async function (
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
@@ -827,7 +789,7 @@ export const getHkeyCondition = async function (
 };
 
 export async function openGitHubRepo(plugin: PluginInfo | PluginCommInfo) {
-	if (plugin.repo !== "") {
+	if ("repo" in plugin) {
 		const repoURL = `https://github.com/${plugin.repo}`;
 		window.open(repoURL, "_blank"); // open
 	} else {
@@ -1054,7 +1016,8 @@ function contextMenuQPS(
 							(item) => item.id === matchingItem.id
 						) as PluginCommInfo;
 						const manifest = await getManifest(pluginCominfo);
-						try { await modal.app.plugins.installPlugin(pluginCominfo.repo, lastVersion, manifest);}catch{console.error("install failed");
+						try { await modal.app.plugins.installPlugin(pluginCominfo.repo, lastVersion, manifest); } catch {
+							console.error("install failed");
 						}
 						new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
 						matchingItem.version = lastVersion
@@ -1416,30 +1379,4 @@ const createClearGroupsMenuItem = (
 	});
 };
 
-export async function getLatestPluginVersion(
-	modal: CPModal | QPSModal,
-	plugin: PluginCommInfo | PluginInfo
-) {
-	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
-	let latestVersion: string | null = null;
 
-	for (const version in pluginInfo) {
-		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-			const numericVersion = version
-				.replace(/^v/, '')
-				.split('.')
-				// .map(Number)
-				.join(".")
-
-			if (!latestVersion || compareVersions(numericVersion, latestVersion) > 0) {
-				latestVersion = numericVersion;
-			}
-		}
-	}
-
-	if (!latestVersion) {
-		console.debug("no last version?"); // shouldn't happen
-		return;
-	}
-	return latestVersion
-}

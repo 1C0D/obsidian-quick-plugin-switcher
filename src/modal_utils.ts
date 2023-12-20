@@ -3,6 +3,8 @@ import { QPSModal } from "./main_modal";
 import { GroupData, Notice, PluginCommInfo, PluginInfo } from "obsidian";
 import { confirm } from "./secondary_modals";
 import { CPModal } from "./community-plugins_modal";
+import { getHkeyCondition } from "./modal_components";
+import { compareVersions } from "./utils";
 
 /**
  * Reset most switched values.
@@ -267,7 +269,7 @@ export async function rmvAllGroupsFromPlugin(
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	if (pluginItem.repo !== "") {
+	if ("repo" in pluginItem) {
 		const itemID = pluginItem.id;
 		const { pluginsTagged } = settings;
 		const taggedItem = pluginsTagged[itemID];
@@ -319,4 +321,64 @@ export function isInstalled(item: any) {
 export async function reOpenModal(modal: QPSModal | CPModal) {
 	modal.searchInit = false;
 	await modal.onOpen();
+}
+
+export async function openPluginSettings(
+	modal: QPSModal | CPModal,
+	pluginItem: PluginInfo | PluginCommInfo
+) {
+	const pluginSettings = (modal.app as any).setting.openTabById(
+		pluginItem.id
+	);
+	if (!pluginSettings) {
+		new Notice("No settings on this plugin", 2500);
+		return;
+	}
+	await (modal.app as any).setting.open();
+	await pluginSettings?.display();
+}
+
+export const showHotkeysFor = async function (
+	modal: QPSModal | CPModal,
+	pluginItem: PluginInfo | PluginCommInfo
+) {
+	const condition = await getHkeyCondition(modal, pluginItem);
+	if (!condition) {
+		new Notice("No HotKeys on this plugin", 2500);
+		return;
+	}
+	await (this.app as any).setting.open();
+	await (this.app as any).setting.openTabById("hotkeys");
+	const tab = await (this.app as any).setting.activeTab;
+	tab.searchComponent.inputEl.value = pluginItem.name + ":";
+	tab.updateHotkeyVisibility();
+	tab.searchComponent.inputEl.blur();
+};
+
+export async function getLatestPluginVersion(
+	modal: CPModal | QPSModal,
+	plugin: PluginCommInfo | PluginInfo
+) {
+	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
+	let latestVersion: string | null = null;
+
+	for (const version in pluginInfo) {
+		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
+			const numericVersion = version
+				.replace(/^v/, '')
+				.split('.')
+				// .map(Number)
+				.join(".")
+
+			if (!latestVersion || compareVersions(numericVersion, latestVersion) > 0) {
+				latestVersion = numericVersion;
+			}
+		}
+	}
+
+	if (!latestVersion) {
+		console.debug("no last version?"); // shouldn't happen
+		return;
+	}
+	return latestVersion
 }

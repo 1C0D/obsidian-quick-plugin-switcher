@@ -9,7 +9,6 @@ import {
 	PackageInfoData,
 	Platform,
 	PluginCommInfo,
-	PluginInfo,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -19,9 +18,6 @@ import {
 	isEnabled,
 	removeItem,
 } from "./utils";
-import {
-	GroupsComm,
-} from "./types/variables";
 import {
 	getCirclesItem,
 	getEmojiForGroup,
@@ -48,6 +44,7 @@ import {
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal } from "./main_modal";
 import * as path from "path";
+import { GroupsComm } from "./types/variables";
 
 declare global {
 	interface Window {

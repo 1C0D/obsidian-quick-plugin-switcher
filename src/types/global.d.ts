@@ -4,8 +4,11 @@ import { CommFilters, Filters } from './variables';
 declare module "obsidian" {
     interface App {
         setting: Setting,
-        plugins: Plugins
+        plugins: Plugins,
+        commands: Commands;
     }
+
+    interface Commands{executeCommandById: (commandId: string) => boolean;}
 
     interface Plugins {
         manifests: Record<string, PluginManifest>
@@ -28,7 +31,6 @@ declare module "obsidian" {
         id: string;
         desc: string;
         dir: string;
-        repo: PackageData;
         author: string;
         authorUrl?: string;
         desktopOnly: boolean;
@@ -63,7 +65,7 @@ declare module "obsidian" {
             { name: string; delayed: boolean; time: number; applied: boolean }
         >;
         showHotKeys: boolean;
-        showReset:boolean;
+        showReset: boolean;
         // commnunity plugins
         pluginStats: PackageInfoData;
         pluginsTagged: PluginsTaggedInfo;

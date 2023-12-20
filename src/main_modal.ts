@@ -9,13 +9,40 @@ import {
 	ToggleComponent,
 	setIcon,
 } from "obsidian";
-
-import { Groups } from "./types/variables";
-import QuickPluginSwitcher from "./main";
-import { addSearch, byGroupDropdowns, doSearch, findMatchingItem, getElementFromMousePosition, handleContextMenu, handleDblClick, itemTextComponent, itemToggleClass, modeSort, mostSwitchedResetButton, openGitHubRepo, openPluginSettings, searchDivButtons, showHotkeysFor } from "./modal_components";
-import { createInput, delayedReEnable, getCirclesItem, getEmojiForGroup, groupNotEmpty, openDirectoryInFileManager, pressDelay, reOpenModal, rmvAllGroupsFromPlugin, setGroupTitle, togglePlugin } from "./modal_utils";
-import { DescriptionModal } from "./secondary_modals";
 import { removeItem } from "./utils";
+import QuickPluginSwitcher from "./main";
+import {
+	modeSort,
+	mostSwitchedResetButton,
+	itemToggleClass,
+	itemTextComponent,
+	openGitHubRepo,
+	searchDivButtons,
+	handleContextMenu,
+	doSearch,
+	addSearch,
+	handleDblClick,
+	getElementFromMousePosition,
+	findMatchingItem,
+	byGroupDropdowns,
+} from "./modal_components";
+import {
+	createInput,
+	delayedReEnable,
+	getCirclesItem,
+	getEmojiForGroup,
+	setGroupTitle,
+	groupNotEmpty,
+	openDirectoryInFileManager,
+	pressDelay,
+	rmvAllGroupsFromPlugin,
+	togglePlugin,
+	reOpenModal,
+	openPluginSettings,
+	showHotkeysFor,
+} from "./modal_utils";
+import { DescriptionModal } from "./secondary_modals";
+import { Groups } from "./types/variables";
 import { addButton } from "./settings";
 
 export class QPSModal extends Modal {
@@ -77,7 +104,7 @@ export class QPSModal extends Modal {
 		this.addHeader(this.header);
 		await addSearch(this, this.search, "Search plugins");
 		searchDivButtons(this, this.search);
-		this.addGroups(this, this.groups);
+		this.addGroups(this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
 		await this.addItems(settings.search);
 	}
@@ -106,7 +133,7 @@ export class QPSModal extends Modal {
 		byGroupDropdowns(this, contentEl);
 	};
 
-	addGroups(modal: QPSModal, contentEl: HTMLElement): void {
+	addGroups(contentEl: HTMLElement): void {
 		const groups = Object.values(Groups);
 
 		for (let i = 1; i < groups.length; i++) {
@@ -203,7 +230,7 @@ export class QPSModal extends Modal {
 				const input = createInput(itemContainer, currentValue);
 
 				if (!pluginItem.delayed) {
-					input?.addEventListener("keydown", async (event:KeyboardEvent) => {
+					input?.addEventListener("keydown", async (event: KeyboardEvent) => {
 						if (event.key === "Enter") {
 							setTimeout(async () => {
 								this.addDelay(pluginItem, input);
@@ -219,7 +246,7 @@ export class QPSModal extends Modal {
 					});
 				} else {
 					pluginItem.delayed = false;
-					await (this.app as any).plugins.enablePluginAndSave(
+					await this.app.plugins.enablePluginAndSave(
 						pluginItem.id
 					);
 					this.isDblClick = false;
@@ -356,7 +383,7 @@ const handleHotkeysQPS = async (
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroups;
-	// const pluginSettings = (modal.app as any).setting.openTabById(
+	// const pluginSettings = modal.app.setting.openTabById(
 	// 	pluginItem.id
 	// );
 	// const condition = await getHkeyCondition(modal, pluginItem);	
@@ -451,3 +478,4 @@ const handleHotkeysQPS = async (
 		}
 	}
 };
+

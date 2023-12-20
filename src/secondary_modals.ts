@@ -13,16 +13,9 @@ import {
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
-import { isInstalled } from "./modal_utils";
-import {
-	getCommandCondition,
-	getHkeyCondition,
-	getLatestPluginVersion,
-	openGitHubRepo,
-	openPluginSettings,
-	showHotkeysFor,
-} from "./modal_components";
+import { getLatestPluginVersion, isInstalled, openPluginSettings, showHotkeysFor } from "./modal_utils";
 import { isEnabled } from "./utils";
+import { openGitHubRepo, getCommandCondition, getHkeyCondition } from "./modal_components";
 
 type ConfirmCallback = (confirmed: boolean) => void;
 
@@ -214,7 +207,7 @@ export class ReadMeModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					const lastVersion = await getLatestPluginVersion(this.modal, pluginItem);
-					const manifest = await getManifest(pluginItem);
+const manifest = await getManifest(pluginItem);
 					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion??"", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();

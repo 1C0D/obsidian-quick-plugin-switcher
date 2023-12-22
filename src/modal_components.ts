@@ -79,40 +79,26 @@ export async function addSearch(
 		.setClass("qps-search-component");
 }
 
-function doSearchForQPS(
+export function doSearchQPS(
 	value: string,
 	pluginsList: PluginInfo[]
 ) {
 	const lowerCaseValue = value.toLowerCase();
-	return pluginsList.filter((item: PluginInfo) => {
-	[item.name, item.author]
-.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
-	});
+	return pluginsList.filter((item: PluginInfo) =>
+		[item.name, item.author]
+			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
+	);
 }
 
-function doSearchForCP(
+export function doSearchCPM(
 	value: string,
 	pluginsList: PluginCommInfo[]
 ) {
 	const lowerCaseValue = value.toLowerCase();
-	return pluginsList.filter((item: PluginCommInfo) => {
-		[item.name, item.description, item.author]
+	return pluginsList.filter((item: PluginCommInfo) =>
+		[item.name, item.description,item.author]
 			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
-	});
-}
-
-export function doSearch(
-	modal: QPSModal | CPModal,
-	value: string,
-	pluginsList: PluginInfo[] | PluginCommInfo[]
-) {
-
-	if (modal instanceof QPSModal) {
-		return doSearchForQPS(value, pluginsList as PluginInfo[]);
-	} else {
-		return doSearchForCP(value, pluginsList as PluginCommInfo[]);
-	}
-
+	);
 }
 
 export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanElement) => {
@@ -609,7 +595,7 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 			if (targetGroupIcon) {
 				groupNumber = groupNbFromEmoticon(targetGroupIcon)
 			} else {
-				const groupName = targetGroup.textContent;
+				const groupName = targetGroup?.textContent;
 				groupNumber = groupNbFromGrpName(groupName!)
 			}
 			const inGroup = getPluginsInGroup(modal, groupNumber)
@@ -620,7 +606,7 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	} else if (clickCount === 2) {
 		clearTimeout(timer)
 		if (targetGroup) {
-			const groupName = targetGroup.textContent;
+			const groupName = targetGroup?.textContent;
 			const groupNumber = groupNbFromGrpName(groupName!)
 			editGroupName(modal, targetGroup, groupNumber);
 		}

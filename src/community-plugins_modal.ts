@@ -27,7 +27,7 @@ import {
 } from "./modal_utils";
 import {
 	addSearch,
-	doSearch,
+	doSearchCPM,
 	findMatchingItem,
 	handleClick,
 	handleContextMenu,
@@ -219,7 +219,7 @@ export class CPModal extends Modal {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { commPlugins, pluginStats } = settings;
-		let listItems = doSearch(this, value, commPlugins) as PluginCommInfo[];
+		let listItems = doSearchCPM(value, commPlugins) as PluginCommInfo[];
 		listItems = cpmModeSort(this, listItems);
 		sortItemsByDownloads(listItems, pluginStats);
 		await this.drawItemsAsync(listItems, pluginStats, value)

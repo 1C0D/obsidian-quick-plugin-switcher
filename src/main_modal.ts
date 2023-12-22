@@ -18,11 +18,11 @@ import {
 	openGitHubRepo,
 	searchDivButtons,
 	handleContextMenu,
-	doSearch,
 	addSearch,
 	handleDblClick,
 	findMatchingItem,
 	handleClick,
+	doSearchQPS,
 } from "./modal_components";
 import {
 	createInput,
@@ -215,9 +215,9 @@ export class QPSModal extends Modal {
 		const { settings } = plugin;
 		const { allPluginsList } = settings;
 		// const previousValue = settings.search;
-		let listItems = doSearch(this, value, allPluginsList) as PluginInfo[];
-		// Sort for chosen mode
+		let listItems = doSearchQPS(value, allPluginsList) as PluginInfo[];
 		listItems = modeSort(plugin, listItems);
+		// Sort for chosen mode
 		// toggle plugin
 		for (const pluginItem of listItems) {
 			// don't show hiddens except if Filters.ByGroup

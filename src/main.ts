@@ -70,8 +70,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			"toggle-right",
 			"Quick Plugin Switcher",
 			async (evt: MouseEvent) => {
-				this.getPluginsInfo();
-				this.getLength();
+				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
 				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
 			}
@@ -81,8 +80,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			id: "quick-plugin-switcher-modal",
 			name: "open modal",
 			callback: async () => {
-				this.getPluginsInfo();
-				this.getLength();
+				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
 				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
 			},
@@ -215,6 +213,7 @@ export default class QuickPluginSwitcher extends Plugin {
 					enabled: isEnabled(this, manifests[key].id) || false,
 					switched: 0,
 					groupInfo: {
+						hidden:false,
 						groupIndices: [],
 						groupWasEnabled: false,
 					},
@@ -226,8 +225,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			}
 		}
 		settings.allPluginsList = stillInstalled;
-		await this.saveSettings();
 		this.getLength();
+		await this.saveSettings();
 	}
 
 	getLength() {

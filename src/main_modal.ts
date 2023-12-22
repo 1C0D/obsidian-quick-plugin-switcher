@@ -12,7 +12,6 @@ import {
 import { removeItem } from "./utils";
 import QuickPluginSwitcher from "./main";
 import {
-	modeSort,
 	mostSwitchedResetButton,
 	itemToggleClass,
 	itemTextComponent,
@@ -22,28 +21,26 @@ import {
 	doSearch,
 	addSearch,
 	handleDblClick,
-	getElementFromMousePosition,
 	findMatchingItem,
-	byGroupDropdowns,
+	handleClick,
 } from "./modal_components";
 import {
 	createInput,
 	delayedReEnable,
-	getCirclesItem,
-	getEmojiForGroup,
-	setGroupTitle,
-	groupNotEmpty,
 	openDirectoryInFileManager,
 	pressDelay,
-	rmvAllGroupsFromPlugin,
 	togglePlugin,
 	reOpenModal,
 	openPluginSettings,
 	showHotkeysFor,
+	getElementFromMousePosition,
+	modeSort,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
-import { Groups } from "./types/variables";
+import { Filters, Groups } from "./types/variables";
 import { addButton } from "./settings";
+import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, groupNotEmpty, rmvAllGroupsFromPlugin } from "./groups";
+import { CPModal } from "./community-plugins_modal";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;
@@ -62,6 +59,32 @@ export class QPSModal extends Modal {
 		this.plugin = plugin;
 	}
 
+	getMousePosition = (event: MouseEvent) => {
+		this.mousePosition = { x: event.clientX, y: event.clientY };
+	};
+	getHandleKeyDown = async (event: KeyboardEvent) => {
+		await handleKeyDown(event, this);
+	}
+	getHandleContextMenu = (evt: MouseEvent) => {
+		if (this.isDblClick) return;
+		handleContextMenu(evt, this);
+	}
+	getHandleDblClick = (evt: MouseEvent) => {
+		if (this.isDblClick) return;
+		handleDblClick(evt, this);
+	}
+	getHandleClick = async (evt: MouseEvent) => {
+		await handleClick(evt, this);
+	}
+
+	removeListeners(){
+		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
+		document.removeEventListener("keydown", this.getHandleKeyDown);
+		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
+		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
+		this.modalEl.removeEventListener("click", this.getHandleClick);
+	}
+
 	container() {
 		const { contentEl } = this;
 		this.modalEl.addClass("qps-modal");
@@ -74,33 +97,22 @@ export class QPSModal extends Modal {
 		if (this.plugin.settings.showReset) addButton(contentEl, this.plugin)
 		this.items = contentEl.createEl("div", { cls: "qps-items" });
 
-		this.modalEl.addEventListener("mousemove", (event) => {
-			this.mousePosition = { x: event.clientX, y: event.clientY };
-		});
-
-		document.addEventListener("keydown", (event) => {
-			handleKeyDown(event, this);
-		});
-
-		this.modalEl.addEventListener("contextmenu", (evt) => {
-			if (this.isDblClick) return;
-			handleContextMenu(evt, this);
-		});
-
-		this.modalEl.addEventListener("dblclick", (evt) => {
-			if (this.isDblClick) return;
-			handleDblClick(evt, this);
-		});
+		this.modalEl.addEventListener("mousemove", this.getMousePosition);
+		document.addEventListener("keydown", this.getHandleKeyDown);
+		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
+		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
+		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 
 	async onOpen() {
+		this.removeListeners()
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		if (this.searchInit) settings.search = "";
 		else this.searchInit = true;
 		contentEl.empty();
 		this.container();
-		setGroupTitle(this, plugin, Groups, settings.numberOfGroups);
+		setGroupTitle(this, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
 		await addSearch(this, this.search, "Search plugins");
 		searchDivButtons(this, this.search);
@@ -158,6 +170,15 @@ export class QPSModal extends Modal {
 					const span = cont.createEl("span", {
 						cls: "qps-groups-name",
 						text: `${groupKey}`,
+					},(el)=>{
+						const { plugin } = this;
+						const { settings } = plugin;
+						const hidden = settings.groups[i]?.hidden
+						if (hidden) {
+							el.style.textDecoration = "line-through"
+						} else {
+							el.style.textDecoration = "none"
+						}
 					});
 
 					const groupNumberText = `(<span class="shortcut-number">${i}</span>)`;
@@ -197,9 +218,12 @@ export class QPSModal extends Modal {
 		let listItems = doSearch(this, value, allPluginsList) as PluginInfo[];
 		// Sort for chosen mode
 		listItems = modeSort(plugin, listItems);
-
 		// toggle plugin
 		for (const pluginItem of listItems) {
+			// don't show hiddens except if Filters.ByGroup
+			if (settings.filters !== Filters.ByGroup && pluginItem.groupInfo.hidden === true) {
+				continue}
+
 			if (
 				(settings.filters === "enabled" && !pluginItem.enabled) ||
 				(settings.filters === "disabled" && pluginItem.enabled)
@@ -274,37 +298,23 @@ export class QPSModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
-		document.removeEventListener("mousemove", (event) => {
-			this.mousePosition = { x: event.clientX, y: event.clientY };
-		});
-
-		document.removeEventListener("keydown", (event) => {
-			handleKeyDown(event, this);
-		});
-
-		this.modalEl.removeEventListener("contextmenu", (evt) => {
-			if (this.isDblClick) return;
-			handleContextMenu(evt, this);
-		});
-
-		this.modalEl.removeEventListener("dblclick", (evt) => {
-			if (this.isDblClick) return;
-			handleDblClick(evt, this);
-		});
+		this.removeListeners()
 	}
 }
 
-function circleCSSModif(
-	modal: QPSModal,
+export function circleCSSModif(
+	modal: QPSModal|CPModal,
 	el: HTMLSpanElement,
 	groupIndex: number
 ) {
-	const { settings } = modal.plugin;
 	const { color } = getEmojiForGroup(groupIndex);
 	el.style.backgroundColor = color;
-	el.textContent = (
-		settings.groups[groupIndex].time ? settings.groups[groupIndex].time : ""
-	).toString();
+	if(modal instanceof QPSModal){
+		const { settings } = modal.plugin;
+		el.textContent = (
+			settings.groups[groupIndex]?.time ? settings.groups[groupIndex].time : ""
+		).toString();
+	}
 }
 
 const itemTogglePluginButton = (
@@ -357,8 +367,7 @@ const addGroupCircles = (input: HTMLElement, item: PluginInfo) => {
 	}
 };
 
-function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
-	// const key = event.key;
+async function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 	const elementFromPoint = getElementFromMousePosition(event, modal);
 	const pluginItemBlock = elementFromPoint?.closest(
 		".qps-item-line"
@@ -368,7 +377,7 @@ function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 		modal.searchTyping = false;
 		const matchingItem = findMatchingItem(modal, pluginItemBlock);
 		if (matchingItem) {
-			handleHotkeysQPS(modal, event, matchingItem as PluginInfo);
+			await handleHotkeysQPS(modal, event, matchingItem as PluginInfo);
 		}
 	} else {
 		modal.searchTyping = true;
@@ -383,10 +392,6 @@ const handleHotkeysQPS = async (
 	const { plugin } = modal;
 	const { settings } = plugin;
 	const numberOfGroups = settings.numberOfGroups;
-	// const pluginSettings = modal.app.setting.openTabById(
-	// 	pluginItem.id
-	// );
-	// const condition = await getHkeyCondition(modal, pluginItem);	
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(pluginItem),
@@ -403,7 +408,7 @@ const handleHotkeysQPS = async (
 	const taggedItem = settings.pluginsTagged[itemID];
 	if (!taggedItem) {
 		settings.pluginsTagged[itemID] = {
-			groupInfo: { groupIndices: [] },
+			groupInfo: { groupIndices: [], hidden: false },
 		};
 		await modal.plugin.saveSettings();
 		await reOpenModal(modal);

@@ -1,10 +1,12 @@
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { GroupData, Notice, PluginCommInfo, PluginInfo } from "obsidian";
+import { Notice, PluginCommInfo, PluginInfo } from "obsidian";
 import { confirm } from "./secondary_modals";
 import { CPModal } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
 import { compareVersions } from "./utils";
+import { Filters } from "./types/variables";
+import { getIndexFromSelectedGroup } from "./groups";
 
 /**
  * Reset most switched values.
@@ -30,86 +32,14 @@ export const sortSwitched = (listItems: PluginInfo[]) => {
 	listItems.sort((a, b) => b.switched - a.switched);
 };
 
-export const setGroupTitle = (
+export const getCommandCondition = async function (
 	modal: QPSModal | CPModal,
-	plugin: Plugin,
-	Groups: GroupData,
-	numberOfGroups: number
-) => {
-	const { settings } = plugin;
-	const currentGroupKeys = Object.keys(Groups);
-
-	// delete groups if new value < previous value (when moving slider in prefs)
-	for (let i = 1; i < currentGroupKeys.length; i++) {
-		const key = currentGroupKeys[i];
-		delete Groups[key];
-	}
-
-	for (let i = 1; i <= numberOfGroups; i++) {
-		if (modal instanceof CPModal) {
-			if (settings.groupsComm[i]?.name === undefined) {
-				settings.groupsComm[i] = {
-					name: "",
-				};
-			}
-			const groupKey =
-				plugin.settings.groupsComm[i]?.name !== ""
-					? plugin.settings.groupsComm[i]?.name
-					: `Group${i}`;
-			Groups[`Group${i}`] = `${groupKey}`;
-		} else {
-			if (settings.groups[i]?.name === undefined) {
-				settings.groups[i] = {
-					name: "",
-					delayed: false,
-					time: 0,
-					applied: false,
-				};
-			}
-			const groupKey =
-				plugin.settings.groups[i]?.name !== ""
-					? plugin.settings.groups[i]?.name
-					: `Group${i}`;
-			Groups[`Group${i}`] = `${groupKey}`;
-		}
-	}
-};
-
-export const getEmojiForGroup = (groupNumber: number) => {
-	const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟤", "🟢", "🟣"];
-	const colors = [
-		"#FFD700",
-		"#0000FF",
-		"#FF0000",
-		"#FFFFFF",
-		"#A52A2A",
-		"#00FF00",
-		"#800080",
-	];
-	return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
-};
-
-export const getCirclesItem = (indices: number[]) => {
-	//move this to modal utilities
-	const len = indices.length;
-	let background = "";
-	if (len === 1) {
-		const { color } = getEmojiForGroup(indices[len - 1]);
-		background = `background: ${color};`;
-	} else if (len === 2) {
-		const { color: color1 } = getEmojiForGroup(indices[len - 2]);
-		const { color: color2 } = getEmojiForGroup(indices[len - 1]);
-		background = `background: linear-gradient(90deg, ${color1} 50%, ${color2} 50%);`;
-	}
-
-	const content = `<div
-            style="${background}"
-            class="qps-item-line-group"
-            >
-            &nbsp;
-            </div>
-            `;
-	return content;
+	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
+) {
+	const pluginCommands = await (modal.app as any).setting.openTabById(
+		pluginItem.id
+	)?.app?.commands.commands;
+	return pluginCommands;
 };
 
 export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
@@ -170,124 +100,52 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export function groupNotEmpty(groupIndex: number, modal: QPSModal | CPModal) {
-	const { plugin } = modal;
+export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 	const { settings } = plugin;
-	if (modal instanceof QPSModal) {
-		return settings.allPluginsList.some(
-			(plugin) =>
-				plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
-		);
-	} else {
-		for (const pluginKey in settings.pluginsTagged) {
-			const plugin = settings.pluginsTagged[pluginKey];
-			const groupIndices = plugin.groupInfo.groupIndices || [];
-
-			if (groupIndices.includes(groupIndex)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-}
-
-export const getPluginsInGroup = (
-	modal: QPSModal | CPModal,
-	groupNumber: number
-) => {
-	const { plugin } = modal;
-	const { settings } = plugin;
-	if (modal instanceof QPSModal)
-		return settings.allPluginsList.filter(
-			(i: PluginInfo) =>
-				i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
-		);
-	else {
-		const pluginsWithGroup: PluginCommInfo[] = [];
-
-		Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
-			const plugin = settings.pluginsTagged[pluginKey];
-			const groupIndices = plugin.groupInfo.groupIndices || [];
-
-			if (groupIndices.includes(groupNumber)) {
-				const matchingPlugin = settings.commPlugins.find(
-					(plugin) => plugin.id === pluginKey
-				);
-				if (matchingPlugin) {
-					pluginsWithGroup.push(matchingPlugin);
-				}
-			}
+	// after reset MostSwitched
+	if (plugin.reset) {
+		const allPluginsList = settings.allPluginsList;
+		allPluginsList.forEach((i) => {
+			i.switched = 0;
 		});
-
-		return pluginsWithGroup;
+		plugin.reset = false;
 	}
+	// EnabledFirst
+	if (settings.filters === Filters.EnabledFirst) {
+		const enabledItems = listItems.filter((i) => i.enabled);
+		const disabledItems = listItems.filter((i) => !i.enabled);
+		sortByName(enabledItems);
+		sortByName(disabledItems);
+		listItems = [...enabledItems, ...disabledItems];
+	}
+	// ByGroup
+	else if (settings.filters === Filters.ByGroup) {
+		const groupIndex = getIndexFromSelectedGroup(
+			settings.selectedGroup as string
+		);
+		if (groupIndex !== 0) {
+			const groupedItems = listItems.filter((i) => {
+				return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+			});
+			listItems = groupedItems;
+			sortByName(listItems);
+		} else {
+			sortByName(listItems);
+		}
+	}
+	// MostSwitched
+	else if (settings.filters === Filters.MostSwitched) {
+		// && !plugin.reset
+		sortByName(listItems);
+		sortSwitched(listItems);
+	}
+	// All
+	else {
+		sortByName(listItems);
+	}
+
+	return listItems;
 };
-
-// const getPluginsWithGroup = (modal: CPModal, groupNumber: number) => {
-// 	const { plugin } = modal;
-// 	const { settings } = plugin;
-// 	const pluginsWithGroup: PluginCommInfo[] = [];
-
-// 	Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
-// 		const plugin = settings.pluginsTagged[pluginKey];
-// 		const groupIndices = plugin.groupInfo.groupIndices || [];
-
-// 		if (groupIndices.includes(groupNumber)) {
-// 			const matchingPlugin = modal.pluginsList.find(
-// 				(plugin) => plugin.id === pluginKey
-// 			);
-// 			if (matchingPlugin) {
-// 				pluginsWithGroup.push(matchingPlugin);
-// 			}
-// 		}
-// 	});
-
-// 	return pluginsWithGroup;
-// };
-
-export function getIndexFromSelectedGroup(str: string) {
-	if (str === "SelectGroup") return 0;
-	else return parseInt(str.slice(-1));
-}
-
-export function groupNameFromIndex(groups: GroupData, index: number) {
-	for (let key in groups) {
-		if (key.endsWith(index.toString())) {
-			return key;
-		}
-	}
-	return null;
-}
-
-
-// removing groups ---------------
-export async function rmvAllGroupsFromPlugin(
-	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo
-) {
-	const { plugin } = modal;
-	const { settings } = plugin;
-
-	if ("repo" in pluginItem) {
-		const itemID = pluginItem.id;
-		const { pluginsTagged } = settings;
-		const taggedItem = pluginsTagged[itemID];
-		if (!taggedItem) return;
-		delete pluginsTagged[itemID];
-		await plugin.saveSettings();
-		if (modal instanceof CPModal) {
-			await plugin.saveSettings();
-			await reOpenModal(modal);
-		}
-	} else {
-		if (pluginItem.groupInfo) {
-			pluginItem.groupInfo.groupIndices = [];
-			await plugin.saveSettings();
-			await reOpenModal(modal);
-		}
-	}
-}
 
 export function createInput(el: HTMLElement | null, currentValue: string) {
 	if (el) {
@@ -367,7 +225,6 @@ export async function getLatestPluginVersion(
 			const numericVersion = version
 				.replace(/^v/, '')
 				.split('.')
-				// .map(Number)
 				.join(".")
 
 			if (!latestVersion || compareVersions(numericVersion, latestVersion) > 0) {
@@ -381,4 +238,35 @@ export async function getLatestPluginVersion(
 		return;
 	}
 	return latestVersion
+}
+
+export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
+	const regex = /!\[([^\]]*)\]\(([^)]*)\)/g;
+	return content
+		.replace(/\/blob\//g, "/raw/")
+		.replace(regex, (match, alt, url) => {
+			if (!url.startsWith("http")) {
+				if (url.startsWith(".")) {
+					url = `https://github.com/${pluginItem.repo
+						}/raw/HEAD${url.substr(1)}`;
+				} else {
+					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
+				}
+			}
+			return `![${alt}](${url})`;
+		});
+}
+
+export function getElementFromMousePosition(
+	evt: MouseEvent | KeyboardEvent,
+	modal: QPSModal | CPModal
+) {
+	if (modal.mousePosition) {
+		const elementFromPoint = document.elementFromPoint(
+			modal.mousePosition.x,
+			modal.mousePosition.y
+		);
+		return elementFromPoint;
+	}
+	return null;
 }

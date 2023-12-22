@@ -24,9 +24,10 @@
 
 /* circles */
 .qps-item-line-group {
+  /* position: relative; */
   display: inline-block;
-  width: 1.2rem;
-  height: 1.3rem;
+  width: 1.2em;
+  height: 1.2em;
   border-radius: 50%;
 }
 
@@ -109,6 +110,13 @@
 
 .qps-community-groups {
   flex-flow: row wrap;
+}
+
+.qps-groups {
+  position: sticky;
+  top: 0;
+  background-color: rgba(0, 0, 0, 0.546);
+  z-index: 1;
 }
 
 .qps-header .dropdown {

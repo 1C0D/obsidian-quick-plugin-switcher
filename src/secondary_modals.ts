@@ -13,11 +13,10 @@ import {
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
-import { getLatestPluginVersion, isInstalled, openPluginSettings, showHotkeysFor } from "./modal_utils";
-import { isEnabled } from "./utils";
-import { openGitHubRepo, getCommandCondition, getHkeyCondition } from "./modal_components";
-
-type ConfirmCallback = (confirmed: boolean) => void;
+import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubLinks, openPluginSettings, showHotkeysFor } from "./modal_utils";
+import { getSelectedContent, isEnabled } from "./utils";
+import { openGitHubRepo, getHkeyCondition } from "./modal_components";
+import { translation } from "./translate";
 
 // for plugin description
 export class DescriptionModal extends Modal {
@@ -57,6 +56,8 @@ export class DescriptionModal extends Modal {
 		contentEl.empty();
 	}
 }
+
+type ConfirmCallback = (confirmed: boolean) => void;
 
 class ConfirmModal extends Modal {
 	constructor(
@@ -137,30 +138,30 @@ export async function confirm(
 	);
 }
 
-export class NewVersion extends Modal {
-	constructor(app: App, public plugin: QuickPluginSwitcher) {
-		super(app);
-		this.plugin = plugin;
-	}
+// export class NewVersion extends Modal {
+// 	constructor(app: App, public plugin: QuickPluginSwitcher) {
+// 		super(app);
+// 		this.plugin = plugin;
+// 	}
 
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		const content = `
-        <b>Warning:</b><br>
-        For this new feature(request) adding a delay to plugin(s) at start,
-        default values need to be restored. Sorry for the inconvenience.<br><br>
-        `;
-		contentEl.createDiv("", (el: HTMLDivElement) => {
-			el.innerHTML = content;
-		});
-	}
+// 	onOpen() {
+// 		const { contentEl } = this;
+// 		contentEl.empty();
+// 		const content = `
+//         <b>Warning:</b><br>
+//         For this new feature(request) adding a delay to plugin(s) at start,
+//         default values need to be restored. Sorry for the inconvenience.<br><br>
+//         `;
+// 		contentEl.createDiv("", (el: HTMLDivElement) => {
+// 			el.innerHTML = content;
+// 		});
+// 	}
 
-	async onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
+// 	async onClose() {
+// 		const { contentEl } = this;
+// 		contentEl.empty();
+// 	}
+// }
 
 export class ReadMeModal extends Modal {
 	comp: Component;
@@ -207,8 +208,8 @@ export class ReadMeModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					const lastVersion = await getLatestPluginVersion(this.modal, pluginItem);
-const manifest = await getManifest(pluginItem);
-					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion??"", manifest);
+					const manifest = await getManifest(pluginItem);
+					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
 				});
@@ -323,86 +324,4 @@ const manifest = await getManifest(pluginItem);
 		contentEl.empty();
 		this.comp.unload();
 	}
-}
-
-function getSelectedContent() {
-	const selection = window.getSelection();
-	return selection?.toString();
-}
-
-function canTranslate() {
-	return this.plugin.translator && this.plugin.translator.valid;
-}
-
-async function translate(text: string, from: string) {
-	let to = "";
-	const plugin = (this.app as any).plugins.plugins.translate;
-	if (!plugin) {
-		new Notice(
-			"install obsidian-translate and select a translator"
-		);
-		return;
-	}
-	if (!canTranslate) {
-		new Notice("translator not valid. check your settings", 4000);
-		return;
-	}
-	const loaded_settings = await plugin.loadData();
-
-	if (loaded_settings.target_language_preference === "last") {
-		to = loaded_settings.last_used_target_languages[0];
-	} else if (loaded_settings.target_language_preference === "specific") {
-		to = loaded_settings.default_target_language;
-	} else if (loaded_settings.target_language_preference === "display") {
-		to = plugin.current_language;
-	}
-
-	return plugin.translator.translate(text, from, to);
-}
-
-async function translation(selectedContent: string) {
-	const translated = await translate(selectedContent, "en");
-	if (!translated) return;
-	const translation = translated.translation;
-	if (!translation) {
-		new Notice("translator not valid. check your settings", 4000);
-		return;
-	}
-	new TranslateModal(this.app, translation).open();
-}
-
-export class TranslateModal extends Modal {
-	constructor(app: App, public message: string) {
-		super(app);
-		this.modalEl.addClass("translate-modal");
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		const lines = this.message.split("\n");
-		lines.forEach((line) => contentEl.createEl("p").setText(line));
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
-	const regex = /!\[([^\]]*)\]\(([^)]*)\)/g;
-	return content
-		.replace(/\/blob\//g, "/raw/")
-		.replace(regex, (match, alt, url) => {
-			if (!url.startsWith("http")) {
-				if (url.startsWith(".")) {
-					url = `https://github.com/${pluginItem.repo
-						}/raw/HEAD${url.substr(1)}`;
-				} else {
-					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
-				}
-			}
-			return `![${alt}](${url})`;
-		});
 }

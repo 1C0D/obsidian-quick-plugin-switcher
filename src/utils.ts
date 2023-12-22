@@ -92,3 +92,8 @@ export function hasKeyStartingWith(obj: Record<string, any>, prefix: string): bo
 	}
 	return false;
 }
+
+export function getSelectedContent() {
+	const selection = window.getSelection();
+	return selection?.toString();
+}

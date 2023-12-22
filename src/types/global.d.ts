@@ -8,7 +8,7 @@ declare module "obsidian" {
         commands: Commands;
     }
 
-    interface Commands{executeCommandById: (commandId: string) => boolean;}
+    interface Commands { executeCommandById: (commandId: string) => boolean; }
 
     interface Plugins {
         manifests: Record<string, PluginManifest>
@@ -26,7 +26,7 @@ declare module "obsidian" {
         getFullPath: (normalizedPath: string) => string;
     }
 
-    export interface PluginInfo {
+    interface PluginInfo {
         name: string;
         id: string;
         desc: string;
@@ -42,16 +42,18 @@ declare module "obsidian" {
         time: number;
     }
 
-    export interface PluginGroupInfo {
+    interface PluginGroupInfo {
+        hidden: boolean;
         groupIndices: number[];
         groupWasEnabled: boolean;
     }
 
-    export interface PluginTaggedGroupInfo {
+    interface PluginTaggedGroupInfo {
+        hidden: boolean;
         groupIndices: number[];
     }
 
-    export interface QPSSettings {
+    interface QPSSettings {
         lastFetchExe: number;
         savedVersion: string;
         allPluginsList: PluginInfo[];
@@ -62,7 +64,7 @@ declare module "obsidian" {
         numberOfGroups: number;
         groups: Record<
             number,
-            { name: string; delayed: boolean; time: number; applied: boolean }
+            { name: string; delayed: boolean; time: number; applied: boolean, hidden:boolean }
         >;
         showHotKeys: boolean;
         showReset: boolean;
@@ -73,24 +75,25 @@ declare module "obsidian" {
         filtersComm: keyof typeof CommFilters;
         selectedGroupComm: string;
         numberOfGroupsComm: number;
-        groupsComm: Record<number, { name: string }>;
+        groupsComm: Record<number, { name: string, hidden: boolean }>;
     }
 
-    export interface GroupData {
+    interface GroupData {
         [key: string]: string;
     }
 
-    export type KeyToSettingsMapType = {
+    type KeyToSettingsMapType = {
         [key: string]: () => Promise<void> | void;
     };
 
     // community plugins
-    export interface PluginCommInfo {
+    interface PluginCommInfo {
         name: string;
         id: string;
         description: string;
         author: string;
         repo: string;
+        hidden:boolean;
         groupInfo?: PluginTaggedGroupInfo;
     }
 
@@ -101,7 +104,7 @@ declare module "obsidian" {
         [version: string]: number;
     }
 
-    export interface PackageInfoData {
+    interface PackageInfoData {
         [packageName: string]: PackageData;
     }
 
@@ -110,7 +113,7 @@ declare module "obsidian" {
         groupInfo: PluginTaggedGroupInfo;
     }
 
-    export interface PluginsTaggedInfo {
+    interface PluginsTaggedInfo {
         [key: string]: GroupKeY;
     }
 }

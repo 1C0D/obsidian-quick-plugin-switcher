@@ -618,7 +618,7 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 	const { plugin } = modal
 	const { settings } = plugin
 	if (modal instanceof QPSModal) {
-		settings.groups[groupNumber].hidden = !settings.groups[groupNumber].hidden
+		settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
 		inGroup.forEach((p) => {
 			p.groupInfo!.hidden = !p.groupInfo!.hidden
 		})

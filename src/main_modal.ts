@@ -77,7 +77,7 @@ export class QPSModal extends Modal {
 		await handleClick(evt, this);
 	}
 
-	removeListeners(){
+	removeListeners() {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
@@ -170,7 +170,7 @@ export class QPSModal extends Modal {
 					const span = cont.createEl("span", {
 						cls: "qps-groups-name",
 						text: `${groupKey}`,
-					},(el)=>{
+					}, (el) => {
 						const { plugin } = this;
 						const { settings } = plugin;
 						const hidden = settings.groups[i]?.hidden
@@ -200,7 +200,7 @@ export class QPSModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (i)ℹ️ (s)⚙️ (h)⌨️ `,
+					text: ` (ctrl)ℹ️ (s)⚙️ (h)⌨️ `,
 				});
 				el.createSpan({
 					cls: "qps-hk-desc-last-part",
@@ -222,7 +222,8 @@ export class QPSModal extends Modal {
 		for (const pluginItem of listItems) {
 			// don't show hiddens except if Filters.ByGroup
 			if (settings.filters !== Filters.ByGroup && pluginItem.groupInfo.hidden === true) {
-				continue}
+				continue
+			}
 
 			if (
 				(settings.filters === "enabled" && !pluginItem.enabled) ||
@@ -303,13 +304,13 @@ export class QPSModal extends Modal {
 }
 
 export function circleCSSModif(
-	modal: QPSModal|CPModal,
+	modal: QPSModal | CPModal,
 	el: HTMLSpanElement,
 	groupIndex: number
 ) {
 	const { color } = getEmojiForGroup(groupIndex);
 	el.style.backgroundColor = color;
-	if(modal instanceof QPSModal){
+	if (modal instanceof QPSModal) {
 		const { settings } = modal.plugin;
 		el.textContent = (
 			settings.groups[groupIndex]?.time ? settings.groups[groupIndex].time : ""
@@ -397,7 +398,6 @@ const handleHotkeysQPS = async (
 		g: async () => await openGitHubRepo(pluginItem),
 		s: async () => await openPluginSettings(modal, pluginItem),
 		h: async () => await showHotkeysFor(modal, pluginItem),
-		i: () => new DescriptionModal(plugin.app, plugin, pluginItem).open(),
 	};
 	if (Platform.isDesktopApp)
 		KeyToSettingsMap["f"] = async () =>
@@ -435,6 +435,8 @@ const handleHotkeysQPS = async (
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
+	} else if (evt.metaKey || evt.ctrlKey) {
+		new DescriptionModal(plugin.app, plugin, pluginItem).open()
 	} else if (
 		(keyPressed === "Delete" ||
 			keyPressed === "Backspace" ||

@@ -209,7 +209,7 @@ export class CPModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (i,🖱️x2)Readme`,
+					text: ` (ctrl)Readme`,
 				});
 			}
 		);
@@ -368,8 +368,8 @@ function sortItemsByDownloads(
 function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm } = settings;
-	if (settings.filtersComm !== "byGroup") 
-	listItems = listItems.filter((item) => item.hidden !== true)
+	if (settings.filtersComm !== "byGroup")
+		listItems = listItems.filter((item) => item.hidden !== true)
 	if (filtersComm === "installed") {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => installedPlugins.includes(item.id));
@@ -433,7 +433,6 @@ const handleHotkeysCPM = async (
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(pluginItem),
-		i: () => new ReadMeModal(plugin.app, modal, pluginItem).open(),
 	};
 
 	const { pluginsTagged } = settings;
@@ -459,6 +458,8 @@ const handleHotkeysCPM = async (
 		}
 	} else if (keyPressed in KeyToSettingsMap) {
 		KeyToSettingsMap[keyPressed]();
+	} else if (evt.metaKey || evt.ctrlKey) {
+		new ReadMeModal(plugin.app, modal, pluginItem).open()
 	} else if (
 		keyPressed === "Delete" ||
 		keyPressed === "Backspace" ||

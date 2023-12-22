@@ -96,7 +96,7 @@ export function doSearchCPM(
 ) {
 	const lowerCaseValue = value.toLowerCase();
 	return pluginsList.filter((item: PluginCommInfo) =>
-		[item.name, item.description,item.author]
+		[item.name, item.description, item.author]
 			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
 	);
 }
@@ -617,14 +617,19 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number, inGroup: PluginCommInfo[] | PluginInfo[]) {
 	const { plugin } = modal
 	const { settings } = plugin
+	
+	if(!inGroup.length) new Notice("empty group",3000)
 	if (modal instanceof QPSModal) {
-		settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
-		inGroup.forEach((p) => {
+		if (settings.groups[groupNumber]) {
+			settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
+		}
+		inGroup.forEach(p => {
 			p.groupInfo!.hidden = !p.groupInfo!.hidden
 		})
-	} else if (modal instanceof CPModal) {
-		console.log("settings.groupsComm[groupNumber].", settings.groupsComm[groupNumber])
-		settings.groupsComm[groupNumber].hidden = !settings.groupsComm[groupNumber]?.hidden;
+	} else {
+		if (settings.groups[groupNumber]) {
+			settings.groupsComm[groupNumber].hidden = !settings.groupsComm[groupNumber]?.hidden;
+		}
 		(inGroup as PluginCommInfo[]).forEach((p) => {
 			p.hidden = !p.hidden
 		})

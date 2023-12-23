@@ -588,6 +588,8 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 		".qps-groups-name"
 	) as HTMLElement;
 
+	if (!targetGroupIcon && !targetGroup) return
+
 	clickCount++;
 	if (clickCount === 1) {
 		timer = setTimeout(async () => {
@@ -618,9 +620,9 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 	const { plugin } = modal
 	const { settings } = plugin
 	
-	if(!inGroup.length) new Notice("empty group",3000)
 	if (modal instanceof QPSModal) {
 		if (settings.groups[groupNumber]) {
+			if (!settings.groups[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000) }
 			settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
 		}
 		inGroup.forEach(p => {
@@ -628,6 +630,7 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 		})
 	} else {
 		if (settings.groups[groupNumber]) {
+			if (!settings.groupsComm[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000) }
 			settings.groupsComm[groupNumber].hidden = !settings.groupsComm[groupNumber]?.hidden;
 		}
 		(inGroup as PluginCommInfo[]).forEach((p) => {

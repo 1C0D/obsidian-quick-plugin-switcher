@@ -108,7 +108,7 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 		.setCta()
 		.setClass("update-button")
 		.setTooltip(
-			"Search for updateS"
+			"Search for updates"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
 			modal.app.setting.open();
@@ -619,22 +619,38 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number, inGroup: PluginCommInfo[] | PluginInfo[]) {
 	const { plugin } = modal
 	const { settings } = plugin
-	
+
 	if (modal instanceof QPSModal) {
 		if (settings.groups[groupNumber]) {
-			if (!settings.groups[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000) }
+			if (!settings.groups[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000); return }
 			settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
 		}
 		inGroup.forEach(p => {
-			p.groupInfo!.hidden = !p.groupInfo!.hidden
+			if (settings.groups[groupNumber].hidden)
+				p.groupInfo!.hidden = true
+			else {
+				let prevent = false;
+				for (const i of p.groupInfo?.groupIndices!) {
+					if (settings.groups[i].hidden) prevent = true
+				}
+				if (!prevent) p.groupInfo!.hidden = false
+			}
 		})
 	} else {
 		if (settings.groups[groupNumber]) {
-			if (!settings.groupsComm[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000) }
+			if (!settings.groupsComm[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000); return }
 			settings.groupsComm[groupNumber].hidden = !settings.groupsComm[groupNumber]?.hidden;
 		}
 		(inGroup as PluginCommInfo[]).forEach((p) => {
-			p.hidden = !p.hidden
+			if (settings.groupsComm[groupNumber].hidden)
+				p.hidden = true
+			else {
+				let prevent = false;
+				for (const i of settings.pluginsTagged[p.id].groupInfo?.groupIndices) {
+					if (settings.groupsComm[i].hidden) prevent = true
+				}
+				if (!prevent) p.hidden = false
+			}
 		})
 	}
 	await plugin.saveSettings()

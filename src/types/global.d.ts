@@ -1,5 +1,5 @@
 import 'obsidian'
-import { CommFilters, Filters } from './variables';
+import { CommFilters, Filters, SortBy } from './variables';
 
 declare module "obsidian" {
     interface App {
@@ -58,6 +58,7 @@ declare module "obsidian" {
         savedVersion: string;
         allPluginsList: PluginInfo[];
         wasEnabled: string[];
+        sortBy: keyof typeof SortBy;
         filters: keyof typeof Filters;
         selectedGroup: string;
         search: string;

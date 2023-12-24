@@ -23,6 +23,10 @@ export const CommFilters: GroupData = {
 	ByGroup: "byGroup",
 };
 
+export const SortBy: GroupData = {
+	Downloads: "by downloads",
+	Alpha: "by alphanum",
+};
 
 export const Groups: GroupData = {
 	SelectGroup: "All",
@@ -37,6 +41,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	savedVersion: "0.0.0",
 	allPluginsList: [],
 	wasEnabled: [],
+	sortBy: SortBy.downloads,
 	filters: Filters.All,
 	selectedGroup: "SelectGroup",
 	search: "",

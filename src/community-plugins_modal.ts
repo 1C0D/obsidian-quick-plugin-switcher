@@ -39,7 +39,7 @@ import { ReadMeModal } from "./secondary_modals";
 import { QPSModal, circleCSSModif } from "./main_modal";
 import * as path from "path";
 import { GroupsComm } from "./types/variables";
-import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
+import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
 
 declare global {
 	interface Window {
@@ -139,7 +139,7 @@ export class CPModal extends Modal {
 			.addOptions({
 				all: `All(${settings.commPlugins.length})`,
 				installed: `Installed(${getInstalled().length})`,
-				notInstalled: `Not Installed(${settings.commPlugins.length - getInstalled().length
+				notInstalled: Platform.isMobile ? "Not Installed" : `Not Installed(${settings.commPlugins.length - getInstalled().length
 					})`,
 				byGroup: `By Group`,
 			})
@@ -150,6 +150,7 @@ export class CPModal extends Modal {
 				await reOpenModal(this);
 			});
 
+		getFilters(this, contentEl)
 		byGroupDropdowns(this, contentEl);
 	};
 
@@ -222,7 +223,7 @@ export class CPModal extends Modal {
 		let listItems = doSearchCPM(value, commPlugins) as PluginCommInfo[];
 		listItems = cpmModeSort(this, listItems);
 		sortItemsByDownloads(listItems, pluginStats);
-		await this.drawItemsAsync(listItems, pluginStats, value)
+		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value)
 	}
 
 	hightLightSpan(value: string, text: string) {
@@ -237,10 +238,18 @@ export class CPModal extends Modal {
 	async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
 		const batchSize = 50;
 		let index = 0;
+		const { plugin } = this;
+		const { settings } = plugin;
 
 		while (index < listItems.length) {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
+				if (item.hidden && !settings.pluginsTagged[item.id].groupInfo.groupIndices.length) {
+					item.hidden = false
+				}//if removed from group
+				if (this.plugin.settings.filtersComm !== "byGroup") {
+					if (item.hidden) return
+				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
 				const name = this.hightLightSpan(value, item.name);
@@ -368,8 +377,6 @@ function sortItemsByDownloads(
 function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm } = settings;
-	if (settings.filtersComm !== "byGroup")
-		listItems = listItems.filter((item) => item.hidden !== true)
 	if (filtersComm === "installed") {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => installedPlugins.includes(item.id));

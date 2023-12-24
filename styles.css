@@ -119,7 +119,8 @@
   z-index: 1;
 }
 
-.qps-header .dropdown {
+.qps-header .dropdown,
+.qps-community-header .dropdown {
   margin-left: 20px;
 }
 

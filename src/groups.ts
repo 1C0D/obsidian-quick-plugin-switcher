@@ -2,10 +2,31 @@ import { DropdownComponent, GroupData, Menu, Notice, PluginCommInfo, PluginInfo 
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled, getLatestPluginVersion } from "./modal_utils";
-import { Filters, Groups, CommFilters, GroupsComm } from "./types/variables";
+import { Filters, Groups, CommFilters, GroupsComm, SortBy } from "./types/variables";
 import { removeItem } from "./utils";
 import { createClearGroupsMenuItem } from "./modal_components";
 
+export const getFilters = (
+    modal: CPModal,
+    contentEl: HTMLElement
+) => {
+    const { plugin } = modal;
+    const { settings } = plugin;
+    if (settings.filtersComm === CommFilters.ByGroup) return
+    const dropdownOptions: Record<string, string> = {}
+    for (const key in SortBy){
+        dropdownOptions[key]= SortBy[key]
+    }
+
+    new DropdownComponent(contentEl)
+        .addOptions(dropdownOptions)
+        .setValue(settings.sortBy as string)
+        .onChange(async (value) => {
+            settings.sortBy = value;
+            await plugin.saveSettings();
+            await reOpenModal(modal);
+        });
+}
 
 export const byGroupDropdowns = (
     modal: QPSModal | CPModal,

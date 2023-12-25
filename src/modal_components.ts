@@ -24,7 +24,7 @@ import {
 	showHotkeysFor,
 	getElementFromMousePosition,
 } from "./modal_utils";
-import { hasKeyStartingWith, isEnabled, removeItem } from "./utils";
+import { hasKeyStartingWith, isEnabled } from "./utils";
 import {
 	CPModal,
 	getManifest,
@@ -132,9 +132,11 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		.setTooltip(
 			"community plugins: you can tag plugins with groups, install by group..."
 		)
-		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
-			modal.close();
+		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
+			await plugin.exeAfterDelay(plugin.pluginsCommInfo.bind(plugin));
+			await plugin.getPluginsCommInfo()
 			new CPModal(modal.app, plugin).open();
+			modal.close();
 		});
 };
 
@@ -298,7 +300,7 @@ export const powerButton = (modal: QPSModal, el: HTMLSpanElement) => {
 					const groupIndex = getIndexFromSelectedGroup(groupKey);
 					const inGroup = settings.allPluginsList.filter((plugin) => {
 						return (
-							plugin.groupInfo.groupIndices?.indexOf(
+							plugin.groupInfo.groupIndices.indexOf(
 								groupIndex
 							) !== -1
 						);
@@ -623,17 +625,17 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 	if (modal instanceof QPSModal) {
 		if (settings.groups[groupNumber]) {
 			if (!settings.groups[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000); return }
-			settings.groups[groupNumber].hidden = !settings.groups[groupNumber]?.hidden
+			settings.groups[groupNumber].hidden = !settings.groups[groupNumber].hidden
 		}
-		inGroup.forEach(p => {
+		(inGroup as PluginInfo[]).forEach(p => {
 			if (settings.groups[groupNumber].hidden)
-				p.groupInfo!.hidden = true
+				p.groupInfo.hidden = true
 			else {
 				let prevent = false;
-				for (const i of p.groupInfo?.groupIndices!) {
+				for (const i of p.groupInfo.groupIndices) {
 					if (settings.groups[i].hidden) prevent = true
 				}
-				if (!prevent) p.groupInfo!.hidden = false
+				if (!prevent) p.groupInfo.hidden = false
 			}
 		})
 	} else {
@@ -646,7 +648,7 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 				p.hidden = true
 			else {
 				let prevent = false;
-				for (const i of settings.pluginsTagged[p.id].groupInfo?.groupIndices) {
+				for (const i of p.groupCommInfo.groupIndices) {
 					if (settings.groupsComm[i].hidden) prevent = true
 				}
 				if (!prevent) p.hidden = false
@@ -907,10 +909,8 @@ export const createClearGroupsMenuItem = (
 						await reOpenModal(modal);
 						new Notice(`All groups empty`, 2500);
 					} else {
-						const { settings } = modal.plugin;
-						let { pluginsTagged, commPlugins } = settings;
-						for (const item of commPlugins) {
-							delete pluginsTagged[item.id];
+						for (const i of plugin.settings.commPlugins) {
+							i.groupCommInfo.groupIndices = [];
 						}
 						await modal.plugin.saveSettings();
 						await reOpenModal(modal);

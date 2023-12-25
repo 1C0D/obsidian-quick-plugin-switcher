@@ -84,16 +84,12 @@ export default class QPSSettingTab extends PluginSettingTab {
 									350
 								);
 								if (confirmReset) {
-									const { commPlugins, pluginsTagged } =
+									const { commPlugins } =
 										settings;
 
 									commPlugins.forEach((plugin) => {
 										let hasValueGreaterThanValue = false;
-										const taggedItem =
-											pluginsTagged[plugin.id];
-										if (!taggedItem) return;
-										const { groupInfo } = taggedItem;
-										let { groupIndices } = groupInfo;
+										let groupIndices = plugin.groupCommInfo.groupIndices;
 										for (const groupIndex of groupIndices) {
 											if (groupIndex > value) {
 												hasValueGreaterThanValue = true;

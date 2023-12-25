@@ -14,14 +14,13 @@ export const getFilters = (
     const { settings } = plugin;
     if (settings.filtersComm === CommFilters.ByGroup) return
     const dropdownOptions: Record<string, string> = {}
-    for (const key in SortBy){
-        dropdownOptions[key]= SortBy[key]
+    for (const key in SortBy) {
+        dropdownOptions[key] = SortBy[key as keyof typeof SortBy]
     }
-
     new DropdownComponent(contentEl)
         .addOptions(dropdownOptions)
-        .setValue(settings.sortBy as string)
-        .onChange(async (value) => {
+        .setValue(settings.sortBy)
+        .onChange(async (value: keyof typeof SortBy) => {
             settings.sortBy = value;
             await plugin.saveSettings();
             await reOpenModal(modal);
@@ -50,14 +49,14 @@ export const byGroupDropdowns = (
             const groupIndex = getIndexFromSelectedGroup(groupKey);
             if (groupKey === "SelectGroup") {
                 dropdownOptions[groupKey] = groups[groupKey] + `(${length})`;
-            } else if (groupNotEmpty(groupIndex, modal)) {
+            } else if (!groupIsEmpty(groupIndex, modal)) {
                 dropdownOptions[groupKey] =
                     getEmojiForGroup(groupIndex).emoji + groups[groupKey];
             }
         }
         new DropdownComponent(contentEl)
             .addOptions(dropdownOptions)
-            .setValue(settings.selectedGroup as string)
+            .setValue(settings.selectedGroup)
             .onChange(async (value) => {
                 settings.selectedGroup = value;
                 await plugin.saveSettings();
@@ -301,26 +300,13 @@ export const getPluginsInGroup = (
     if (modal instanceof QPSModal)
         return settings.allPluginsList.filter(
             (i: PluginInfo) =>
-                i.groupInfo.groupIndices?.indexOf(groupNumber) !== -1
+                i.groupInfo.groupIndices.indexOf(groupNumber) !== -1
         ) as PluginInfo[]
     else {
-        const pluginsWithGroup: PluginCommInfo[] = [];
-
-        Object.keys(settings.pluginsTagged).forEach((pluginKey) => {
-            const plugin = settings.pluginsTagged[pluginKey];
-            const groupIndices = plugin.groupInfo.groupIndices || [];
-
-            if (groupIndices.includes(groupNumber)) {
-                const matchingPlugin = settings.commPlugins.find(
-                    (plugin) => plugin.id === pluginKey
-                );
-                if (matchingPlugin) {
-                    pluginsWithGroup.push(matchingPlugin);
-                }
-            }
-        })
-
-        return pluginsWithGroup as PluginCommInfo[]
+        return settings.commPlugins.filter(
+            (i: PluginCommInfo) =>
+                i.groupCommInfo.groupIndices.indexOf(groupNumber) !== -1
+        ) as PluginCommInfo[]
     }
 };
 
@@ -377,7 +363,7 @@ export function addRemoveItemGroupMenuItems(
     submenu: Menu,
     pluginItem: PluginInfo
 ) {
-    const {plugin} = modal
+    const { plugin } = modal
     const { settings } = plugin;
     Object.keys(Groups).forEach((groupKey) => {
         const { lengthGroup, groupIndex, groupValue } = getGroupIndexLength(
@@ -385,7 +371,7 @@ export function addRemoveItemGroupMenuItems(
             groupKey
         );
         const getGroup =
-            pluginItem.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+            pluginItem.groupInfo.groupIndices.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
             submenu.addItem((subitem) => {
                 subitem.setTitle(`${groupValue}`).onClick(async () => {
@@ -396,7 +382,7 @@ export function addRemoveItemGroupMenuItems(
                                 index
                             );
                             await plugin.saveSettings();
-                            if (!groupNotEmpty(groupIndex, modal)) {
+                            if (groupIsEmpty(groupIndex, modal)) {
                                 settings.selectedGroup = "SelectGroup";
                             }
                             break;
@@ -415,15 +401,13 @@ const getGroupIndexLength = (modal: QPSModal | CPModal, groupKey: string) => {
     let lengthGroup, groupValue;
     if (modal instanceof QPSModal) {
         lengthGroup = settings.allPluginsList.filter(
-            (i) => i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+            (i) => i.groupInfo.groupIndices.indexOf(groupIndex) !== -1
         ).length;
         groupValue = Groups[groupKey as keyof typeof Groups];
     } else {
-        lengthGroup = Object.keys(settings.pluginsTagged).filter((id) => {
-            const plugin = settings.pluginsTagged[id];
-            const groupIndices = plugin.groupInfo.groupIndices;
-            return groupIndices?.indexOf(groupIndex) !== -1;
-        }).length;
+        lengthGroup = settings.commPlugins.filter(
+            (i) => i.groupCommInfo.groupIndices.indexOf(groupIndex) !== -1
+        ).length;
         groupValue = GroupsComm[groupKey as keyof typeof GroupsComm];
     }
 
@@ -452,22 +436,21 @@ export function addRemoveGroupMenuItems(
                 if (modal instanceof QPSModal) {
                     for (const i of settings.allPluginsList) {
                         const index =
-                            i.groupInfo.groupIndices?.indexOf(groupNumber);
+                            i.groupInfo.groupIndices.indexOf(groupNumber);
                         if (index !== -1) {
-                            i.groupInfo.groupIndices?.splice(index, 1);
+                            i.groupInfo.groupIndices.splice(index, 1);
                             pluginsRemoved = true;
                         }
                     }
                 } else {
-                    const taggedItem = settings.pluginsTagged;
-                    Object.keys(taggedItem).forEach((id) => {
-                        const plugin = taggedItem[id];
-                        const groupIndices = plugin.groupInfo.groupIndices;
-                        plugin.groupInfo.groupIndices = groupIndices.filter(
-                            (index) => index !== groupNumber
-                        );
-                        pluginsRemoved = true;
-                    });
+                    for (const i of settings.commPlugins) {
+                        const index =
+                            i.groupCommInfo.groupIndices.indexOf(groupNumber);
+                        if (index !== -1) {
+                            i.groupCommInfo.groupIndices.splice(index, 1);
+                            pluginsRemoved = true;
+                        }
+                    }
                 }
                 await plugin.saveSettings();
                 await reOpenModal(modal);
@@ -589,26 +572,19 @@ export const getCirclesItem = (indices: number[]) => {
     return content;
 };
 
-
-export function groupNotEmpty(groupIndex: number, modal: QPSModal | CPModal) {
+export function groupIsEmpty(groupIndex: number, modal: QPSModal | CPModal) {
     const { plugin } = modal;
     const { settings } = plugin;
     if (modal instanceof QPSModal) {
-        return settings.allPluginsList.some(
+        return !settings.allPluginsList.some(
             (plugin) =>
-                plugin.groupInfo.groupIndices?.indexOf(groupIndex) !== -1
+                plugin.groupInfo.groupIndices.indexOf(groupIndex) !== -1
         );
     } else {
-        for (const pluginKey in settings.pluginsTagged) {
-            const plugin = settings.pluginsTagged[pluginKey];
-            const groupIndices = plugin.groupInfo.groupIndices || [];
-
-            if (groupIndices.includes(groupIndex)) {
-                return true;
-            }
-        }
-
-        return false;
+        return !settings.commPlugins.some(
+            (plugin) =>
+                plugin.groupCommInfo.groupIndices.indexOf(groupIndex) !== -1
+        );
     }
 }
 
@@ -632,26 +608,15 @@ export async function rmvAllGroupsFromPlugin(
     pluginItem: PluginInfo | PluginCommInfo
 ) {
     const { plugin } = modal;
-    const { settings } = plugin;
-
     if ("repo" in pluginItem) {
-        const itemID = pluginItem.id;
-        const { pluginsTagged } = settings;
-        const taggedItem = pluginsTagged[itemID];
-        if (!taggedItem) return;
-        delete pluginsTagged[itemID];
-        await plugin.saveSettings();
-        if (modal instanceof CPModal) {
-            await plugin.saveSettings();
-            await reOpenModal(modal);
-        }
+        pluginItem.groupCommInfo.groupIndices = [] 
+        plugin.settings.selectedGroupComm = "SelectGroup";
     } else {
-        if (pluginItem.groupInfo) {
-            pluginItem.groupInfo.groupIndices = [];
-            await plugin.saveSettings();
-            await reOpenModal(modal);
-        }
+        pluginItem.groupInfo.groupIndices = [];
+        plugin.settings.selectedGroup = "SelectGroup";       
     }
+    await plugin.saveSettings();
+    await reOpenModal(modal);
 }
 
 export function groupNbFromEmoticon(el: HTMLElement) {
@@ -659,6 +624,6 @@ export function groupNbFromEmoticon(el: HTMLElement) {
     return parseInt(groupNameEl?.querySelector("span")?.textContent ?? "")
 }
 
-export function groupNbFromGrpName(groupName:string|undefined){
+export function groupNbFromGrpName(groupName: string | undefined) {
     return parseInt(groupName?.match(/\((\d+)\)$/)?.[1] as string);
 }

@@ -72,7 +72,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			async (evt: MouseEvent) => {
 				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
-				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
+				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
+				await this.getPluginsCommInfo()
 			}
 		);
 
@@ -82,7 +83,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			callback: async () => {
 				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
-				await exeAfterDelay(this, this.commPluginsInfo.bind(this));
+				await this.exeAfterDelay(this.pluginsCommInfo.bind(this)); 
+				await this.getPluginsCommInfo()
 			},
 		});
 	}
@@ -183,12 +185,12 @@ export default class QuickPluginSwitcher extends Plugin {
 					}
 				}
 				const {
-					name = "",
-					description = "",
-					dir = "",
-					version = "",
-					author = "",
-					authorUrl = "",
+					name,
+					description,
+					dir,
+					version,
+					author,
+					authorUrl,
 					isDesktopOnly = false
 				} = manifests[key];
 
@@ -202,13 +204,13 @@ export default class QuickPluginSwitcher extends Plugin {
 				continue;
 			} else {
 				const notInListInfo: PluginInfo = {
-					name: manifests[key].name || "",
-					id: manifests[key].id || "",
-					desc: manifests[key].description || "",
-					dir: manifests[key].dir || "",
-					version: manifests[key].version || "",
-					author: manifests[key].author || "",
-					authorUrl: manifests[key].authorUrl || "",
+					name: manifests[key].name,
+					id: manifests[key].id,
+					desc: manifests[key].description,
+					dir: manifests[key].dir,
+					version: manifests[key].version,
+					author: manifests[key].author,
+					authorUrl: manifests[key].authorUrl,
 					desktopOnly: manifests[key].isDesktopOnly || false,
 					enabled: isEnabled(this, manifests[key].id) || false,
 					switched: 0,
@@ -241,8 +243,8 @@ export default class QuickPluginSwitcher extends Plugin {
 		).length;
 	}
 
-	async commPluginsInfo() {
-		console.debug("fetching'''''''''''''''''''''''''");
+	async pluginsCommInfo() {
+		console.log("fetching'''''''''''''''''''''''''");
 		let plugins, stats;
 		try {
 			plugins = await fetchData(commPlugins);
@@ -254,11 +256,41 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.settings.commPlugins = plugins;
 			this.settings.pluginStats = stats;
 			await this.saveSettings();
-			console.debug("fetched");
+			console.timeLog("fetched");
 			return true;
 		}
 		return false;
 	}
+
+	async getPluginsCommInfo(){
+		this.settings.commPlugins.forEach((item:PluginCommInfo)=> {
+			if(!item.hidden) item.hidden= false
+			if (!item.groupCommInfo) item.groupCommInfo = { hidden:false, groupIndices:[] }
+			if (!item.downloads) item.downloads = this.settings.pluginStats[item.id]?.downloads||0
+			if (!item.updated) item.updated = this.settings.pluginStats[item.id]?.updated||0
+		})
+		await this.saveSettings();
+	}
+
+	exeAfterDelay = async (
+		func: () => Promise<boolean>
+	) => {
+		const currentTime: number = Date.now();
+		// delay 3min
+		if (currentTime - this.settings.lastFetchExe >= 120000) {
+			const ret = await func();
+			if (ret === true) {
+				this.settings.lastFetchExe = currentTime;
+				await this.saveSettings();
+			} else {
+				console.log("community plugins udpate failed, check your connexion");
+			}
+		} else {
+			console.log(
+				"fetched less than 2 min, community plugins not updated"
+			);
+		}
+	};
 
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };
@@ -276,24 +308,4 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 }
 
-const exeAfterDelay = async (
-	_this: QuickPluginSwitcher,
-	func: () => Promise<boolean>
-) => {
-	const { settings } = _this;
-	const currentTime: number = Date.now();
-	// delay 3min
-	if (currentTime - settings.lastFetchExe >= 180000) {
-		const ret = await func();
-		if (ret === true) {
-			settings.lastFetchExe = currentTime;
-			await _this.saveSettings();
-		} else {
-			console.log("community plugins udpate failed, check your connexion");
-		}
-	} else {
-		console.log(
-			"fetched less than 3 min, community plugins not updated"
-		);
-	}
-};
+

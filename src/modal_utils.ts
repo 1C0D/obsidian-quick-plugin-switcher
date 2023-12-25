@@ -125,7 +125,7 @@ export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
-				return i.groupInfo.groupIndices?.indexOf(groupIndex) !== -1;
+				return i.groupInfo.groupIndices.indexOf(groupIndex) !== -1;
 			});
 			listItems = groupedItems;
 			sortByName(listItems);

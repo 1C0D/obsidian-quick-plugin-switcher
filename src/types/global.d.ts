@@ -22,6 +22,7 @@ declare module "obsidian" {
     }
 
     interface Setting extends Modal { openTabById: (id: string) => Record<string, any>; }
+
     interface DataAdapter {
         getFullPath: (normalizedPath: string) => string;
     }
@@ -48,10 +49,11 @@ declare module "obsidian" {
         groupWasEnabled: boolean;
     }
 
-    interface PluginTaggedGroupInfo {
+    interface PluginCommGroupInfo {
         hidden: boolean;
         groupIndices: number[];
     }
+
 
     interface QPSSettings {
         lastFetchExe: number;
@@ -71,7 +73,6 @@ declare module "obsidian" {
         showReset: boolean;
         // commnunity plugins
         pluginStats: PackageInfoData;
-        pluginsTagged: PluginsTaggedInfo;
         commPlugins: PluginCommInfo[];
         filtersComm: keyof typeof CommFilters;
         selectedGroupComm: string;
@@ -95,7 +96,9 @@ declare module "obsidian" {
         author: string;
         repo: string;
         hidden:boolean;
-        groupInfo?: PluginTaggedGroupInfo;
+        groupCommInfo: PluginCommGroupInfo;
+        downloads:number;
+        updated:number;
     }
 
     //releases
@@ -107,14 +110,5 @@ declare module "obsidian" {
 
     interface PackageInfoData {
         [packageName: string]: PackageData;
-    }
-
-    //comm plugins tagged
-    interface GroupKeY {
-        groupInfo: PluginTaggedGroupInfo;
-    }
-
-    interface PluginsTaggedInfo {
-        [key: string]: GroupKeY;
     }
 }

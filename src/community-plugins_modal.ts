@@ -38,7 +38,7 @@ import {
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal, circleCSSModif } from "./main_modal";
 import * as path from "path";
-import { GroupsComm } from "./types/variables";
+import { CommFilters, GroupsComm, SortBy } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
 
 declare global {
@@ -143,8 +143,8 @@ export class CPModal extends Modal {
 					})`,
 				byGroup: `By Group`,
 			})
-			.setValue(settings.filtersComm as string)
-			.onChange(async (value) => {
+			.setValue(settings.filtersComm)
+			.onChange(async (value: keyof typeof CommFilters) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
 				await reOpenModal(this);
@@ -222,13 +222,13 @@ export class CPModal extends Modal {
 		const { commPlugins, pluginStats } = settings;
 		let listItems = doSearchCPM(value, commPlugins) as PluginCommInfo[];
 		listItems = cpmModeSort(this, listItems);
-		sortItemsByDownloads(listItems, pluginStats);
+		sortItemsBy.bind(this)(listItems, pluginStats);
 		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value)
 	}
 
 	hightLightSpan(value: string, text: string) {
 		if (value.trim() === '') {
-			return text; // Retourne le texte original si la valeur est vide
+			return text;
 		} else {
 			const regex = new RegExp(`(${value})`, 'gi');
 			return text.replace(regex, `<span class="highlighted">$&</span>`);
@@ -238,16 +238,14 @@ export class CPModal extends Modal {
 	async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
 		const batchSize = 50;
 		let index = 0;
-		const { plugin } = this;
-		const { settings } = plugin;
 
 		while (index < listItems.length) {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
-				if (item.hidden && !settings.pluginsTagged[item.id].groupInfo.groupIndices.length) {
+				if (item.hidden && !item.groupCommInfo.groupIndices.length) {
 					item.hidden = false
 				}//if removed from group
-				if (this.plugin.settings.filtersComm !== "byGroup") {
+				if (this.plugin.settings.filtersComm !== CommFilters.ByGroup) {
 					if (item.hidden) return
 				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
@@ -358,44 +356,41 @@ export async function getManifest(item: PluginCommInfo) {
 	return null;
 }
 
-function sortItemsByDownloads(
+function sortItemsBy(
 	listItems: PluginCommInfo[],
-	pluginStats: PackageInfoData
 ) {
-	listItems.sort((a, b) => {
-		const pluginAStats = pluginStats[a.id];
-		const pluginBStats = pluginStats[b.id];
+	if (this.plugin.settings.sortBy === "Downloads") {
+		listItems.sort((a, b) => {
+			return b.downloads - a.downloads;
+		});
+	} else if (this.plugin.settings.sortBy === "Updated") {
+		listItems.sort((a, b) => {
+			return b.updated - a.updated;
+		});
 
-		if (pluginAStats && pluginBStats) {
-			return pluginBStats.downloads - pluginAStats.downloads;
-		}
-
-		return 0;
-	});
+	} else if (this.plugin.settings.sortBy === "Alpha") {
+		listItems.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		})
+	}
 }
 
 function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm } = settings;
-	if (filtersComm === "installed") {
+	if (filtersComm === CommFilters.Installed) {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => installedPlugins.includes(item.id));
-	} else if (filtersComm === "notInstalled") {
+	} else if (filtersComm === CommFilters.NotInstalled) {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => !installedPlugins.includes(item.id));
-	} else if (filtersComm === "byGroup") {
+	} else if (filtersComm === CommFilters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup as string
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
-				const { pluginsTagged } = settings;
-				const taggedItem = pluginsTagged[i.id];
-				if (taggedItem) {
-					const { groupInfo } = taggedItem;
-					const { groupIndices } = groupInfo;
-					return groupIndices?.indexOf(groupIndex) !== -1;
-				} else return false;
+				return i.groupCommInfo.groupIndices.indexOf(groupIndex) !== -1;
 			});
 			return groupedItems;
 		} else return listItems;
@@ -442,18 +437,8 @@ const handleHotkeysCPM = async (
 		g: async () => await openGitHubRepo(pluginItem),
 	};
 
-	const { pluginsTagged } = settings;
 	const keyPressed = evt.key;
-	const itemID = pluginItem.id;
-	let taggedItem = pluginsTagged[itemID];
-	if (!taggedItem) {
-		pluginsTagged[itemID] = {
-			groupInfo: { groupIndices: [], hidden: false },
-		};
-	}
-	taggedItem = pluginsTagged[itemID];
-	const { groupInfo } = taggedItem;
-	const { groupIndices } = groupInfo;
+	let groupIndices = pluginItem.groupCommInfo.groupIndices;
 	const key = parseInt(keyPressed);
 	if (key > 0 && key <= numberOfGroups) {
 		if (groupIndices.length === 6) return;
@@ -473,7 +458,7 @@ const handleHotkeysCPM = async (
 		keyPressed === "0"
 	) {
 		if (groupIndices.length === 1) {
-			delete pluginsTagged[itemID];
+			pluginItem.groupCommInfo.groupIndices = [];
 			await plugin.saveSettings();
 			await reOpenModal(modal);
 		} else if (groupIndices.length > 1) {
@@ -496,18 +481,15 @@ const handleHotkeysCPM = async (
 					item
 						.setTitle(`${emoji} group ${groupIndex}`)
 						.onClick(async () => {
-							if (groupInfo) {
-								groupInfo.groupIndices = removeItem(
-									groupIndices,
-									groupIndex
-								);
-								await plugin.saveSettings();
-								await reOpenModal(modal);
-							}
+							groupIndices = removeItem(
+								groupIndices,
+								groupIndex
+							);
+							await plugin.saveSettings();
+							await reOpenModal(modal);
 						})
 				);
 			}
-
 			menu.showAtPosition(modal.mousePosition);
 		}
 	}
@@ -518,12 +500,8 @@ const addGroupCircles = (
 	el: HTMLElement,
 	item: PluginCommInfo
 ) => {
-	const { settings } = modal.plugin;
-	const key = item.id;
-	const taggedItem = settings.pluginsTagged[key];
-	if (!taggedItem) return;
-	const indices = taggedItem.groupInfo.groupIndices;
-	if (indices?.length) {
+	const indices = item.groupCommInfo.groupIndices;
+	if (indices.length) {
 		if (indices.length < 3) {
 			const content = getCirclesItem(indices);
 			el.insertAdjacentHTML("afterend", content);

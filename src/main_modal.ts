@@ -39,7 +39,7 @@ import {
 import { DescriptionModal } from "./secondary_modals";
 import { Filters, Groups } from "./types/variables";
 import { addButton } from "./settings";
-import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, groupNotEmpty, rmvAllGroupsFromPlugin } from "./groups";
+import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, rmvAllGroupsFromPlugin, groupIsEmpty } from "./groups";
 import { CPModal } from "./community-plugins_modal";
 
 export class QPSModal extends Modal {
@@ -133,8 +133,8 @@ export class QPSModal extends Modal {
 				mostSwitched: `Most Switched(${plugin.lengthAll})`,
 				byGroup: `By Group`,
 			})
-			.setValue(settings.filters as string)
-			.onChange(async (value) => {
+			.setValue(settings.filters)
+			.onChange(async (value: keyof typeof Filters) => {
 				settings.filters = value;
 				await plugin.saveSettings();
 				await reOpenModal(this);
@@ -226,8 +226,8 @@ export class QPSModal extends Modal {
 			}
 
 			if (
-				(settings.filters === "enabled" && !pluginItem.enabled) ||
-				(settings.filters === "disabled" && pluginItem.enabled)
+				(settings.filters === Filters.Enabled && !pluginItem.enabled) ||
+				(settings.filters === Filters.Disabled && pluginItem.enabled)
 			) {
 				continue;
 			}
@@ -404,16 +404,14 @@ const handleHotkeysQPS = async (
 			await openDirectoryInFileManager(modal, pluginItem);
 
 	const keyPressed = evt.key;
-	const itemID = pluginItem.id;
-	const taggedItem = settings.pluginsTagged[itemID];
-	if (!taggedItem) {
-		settings.pluginsTagged[itemID] = {
-			groupInfo: { groupIndices: [], hidden: false },
-		};
+	if (!pluginItem.groupInfo) {
+		pluginItem.groupInfo = {
+			groupIndices: [], groupWasEnabled: false, hidden: false
+		}
 		await modal.plugin.saveSettings();
 		await reOpenModal(modal);
 	}
-	if (!taggedItem || modal.pressed) {
+	if (modal.pressed) {
 		return;
 	}
 	pressDelay(modal);
@@ -447,7 +445,7 @@ const handleHotkeysQPS = async (
 		if (groupIndices.length === 1) {
 			const groupIndex = groupIndices[0];
 			pluginItem.groupInfo.groupIndices = [];
-			if (!groupNotEmpty(groupIndex, modal)) {
+			if (groupIsEmpty(groupIndex, modal)) {
 				settings.selectedGroup = "SelectGroup";
 			}
 			await plugin.saveSettings();

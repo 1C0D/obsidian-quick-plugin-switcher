@@ -1,8 +1,8 @@
-import readline from 'readline';
+import * as readline from 'readline';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from "fs";
+import { readFile, writeFile } from "fs/promises";
 import dedent from 'dedent';
-import semver from 'semver';
+import * as semver from 'semver';
 
 function updateVersion() {
     const rl = readline.createInterface({
@@ -15,11 +15,11 @@ function updateVersion() {
         patch(1.0.1) -> type 1 or p
         minor(1.1.0) -> type 2 or min
         major(2.0.0) -> type 3 or maj
-    \n`, (updateType) => {
+    \n`, async (updateType) => {
         rl.close();
 
         // Increment version for chosen type
-        const currentVersion = process.env.npm_package_version;
+        const currentVersion = process.env.npm_package_version || '1.0.0';
         let targetVersion;
 
         switch (updateType.trim()) {
@@ -36,11 +36,15 @@ function updateVersion() {
                 targetVersion = semver.inc(currentVersion, 'major');
                 break;
             default:
-                console.log("wrong type");
-                process.exit(1);
+                if (semver.valid(updateType.trim())) {
+                    targetVersion = updateType.trim();
+                } else {
+                    console.log("Invalid version");
+                    process.exit(1);
+                }
         }
 
-        updateManifestVersions(targetVersion);
+        await updateManifestVersions(targetVersion!);
 
         // Git add, commit et push
         execSync(`git add -A && git commit -m "Updated to version ${targetVersion}" && git push`);
@@ -49,27 +53,27 @@ function updateVersion() {
     });
 }
 
-function updateManifestVersions(targetVersion) {
+async function updateManifestVersions(targetVersion: string) {
     // Read minAppVersion from manifest.json and bump version to target version
-    let manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+    let manifest = JSON.parse(await readFile("manifest.json", "utf8"));
     const { minAppVersion } = manifest;
     manifest.version = targetVersion;
-    writeFileSync("manifest.json", JSON.stringify(manifest, null, "\t"));
+    await writeFile("manifest.json", JSON.stringify(manifest, null, "\t"));
 
     // Update versions.json with target version and minAppVersion from manifest.json
-    let versions = JSON.parse(readFileSync("versions.json", "utf8"));
+    let versions = JSON.parse(await readFile("versions.json", "utf8"));
     versions[targetVersion] = minAppVersion;
-    writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
+    await writeFile("versions.json", JSON.stringify(versions, null, "\t"));
 
     // Update package.json
-    let packageJsn = JSON.parse(readFileSync("package.json", "utf8"));
+    let packageJsn = JSON.parse(await readFile("package.json", "utf8"));
     packageJsn.version = targetVersion;
-    writeFileSync("package.json", JSON.stringify(packageJsn, null, "\t"));
+    await writeFile("package.json", JSON.stringify(packageJsn, null, "\t"));
 
     // Update package-lock.json
-    let packageLockJsn = JSON.parse(readFileSync("package-lock.json", "utf8"));
+    let packageLockJsn = JSON.parse(await readFile("package-lock.json", "utf8"));
     packageLockJsn.version = targetVersion;
-    writeFileSync("package-lock.json", JSON.stringify(packageLockJsn, null, "\t"));
+    await writeFile("package-lock.json", JSON.stringify(packageLockJsn, null, "\t"));
 }
 
 updateVersion();

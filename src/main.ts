@@ -256,7 +256,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.settings.commPlugins = plugins;
 			this.settings.pluginStats = stats;
 			await this.saveSettings();
-			console.timeLog("fetched");
+			console.log("fetched");
 			return true;
 		}
 		return false;

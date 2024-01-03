@@ -74,13 +74,9 @@ export async function addSearch(
 						modal.items.empty();
 						modal.addItems(value);
 					}
-				})
-				setTimeout(() => {
-					search.inputEl.focus();
-					
-				}, 200);
+				});
 		})
-		.setClass("qps-search-component").containerEl?.focus()
+		.setClass("qps-search-component");
 }
 
 export function doSearchQPS(

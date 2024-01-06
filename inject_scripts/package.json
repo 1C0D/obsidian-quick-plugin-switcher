@@ -1,19 +1,14 @@
 {
-  "name": "batch-inject",
-  "version": "1.0.0",
-  "description": "",
-  "main": "inject.mjs",
-  "dependencies": {
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/semver": "^7.5.6",
+    "dedent": "^1.5.1",
     "dotenv": "^16.3.1",
-    "fs": "^0.0.1-security",
     "fs-extra": "^11.2.0",
-    "fs.promises": "^0.1.2",
     "json-stringify-pretty-compact": "^4.0.0",
-    "node-fetch": "^3.3.2",
     "path": "^0.12.7",
-    "request": "^2.88.2"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "readline": "^1.3.0",
+    "semver": "^7.5.4",
+    "tsx": "^4.7.0"
+  }
 }

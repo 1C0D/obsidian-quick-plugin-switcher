@@ -21,5 +21,4 @@ data.json
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 
-#my bat to directly open VSC and run npm
-a.bat
+inject_scripts/

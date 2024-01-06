@@ -2,7 +2,7 @@ import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
 import * as dotenv from 'dotenv';
-import * as fs from 'fs/promises';
+dotenv.config()
 
 const banner =
 	`/*
@@ -40,37 +40,14 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
+	define: {
+		'process.env.DEBUG': JSON.stringify(prod ? "false" : "true")
+	},
 });
 
 if (prod) {
-	await updateEnvVariable('DEBUG_ACTIVATED', false);
-	await updateEnvVariable('FORCED_DEBUG_METHOD', '');
 	await context.rebuild();
 	process.exit(0);
 } else {
-	await updateEnvVariable('DEBUG_ACTIVATED', true);
-	await updateEnvVariable('FORCED_DEBUG_METHOD', 'debug');
 	await context.watch();
-}
-
-async function updateEnvVariable(variableName: string, newValue: any) {
-	try {
-		// Load environment variables from the .env file
-		const envConfig = dotenv.parse(await fs.readFile('.env'));
-
-		// Modify the value of the specified variable
-		envConfig[variableName] = newValue;
-
-		// Generate a new string with the updated variables
-		const updatedEnv = Object.keys(envConfig)
-			.map(key => `${key}=${envConfig[key]}`)
-			.join('\n');
-
-		// Write the new string to the .env file
-		await fs.writeFile('.env', updatedEnv);
-
-		console.log(`${variableName} updated to ${newValue}`);
-	} catch (error) {
-		console.error(`error updating value ${variableName}:`, error);
-	}
 }

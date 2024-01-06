@@ -33,20 +33,20 @@ export async function updateTargetPathInEnv(newPath: string) {
     await fs.writeFile('.env', `TARGET_PATH=${newPath}`);
 }
 
-export async function updateEnvVariable(variableName: string, newValue: any) {
+export async function updateEnvVariable(variableName:string, newValue:any) {
     try {
-        // Load environment variables from the .env file
+        // Charger les variables d'environnement depuis le fichier .env
         const envConfig = dotenv.parse(await fs.readFile('.env'));
 
-        // Modify the value of the specified variable
+        // Modifier la valeur de la variable spécifiée
         envConfig[variableName] = newValue;
 
-        // Generate a new string with the updated variables
+        // Générer une nouvelle chaîne de caractères avec les variables mises à jour
         const updatedEnv = Object.keys(envConfig)
             .map(key => `${key}=${envConfig[key]}`)
             .join('\n');
 
-        // Write the new string to the .env file
+        // Écrire la nouvelle chaîne de caractères dans le fichier .env
         await fs.writeFile('.env', updatedEnv);
 
         console.log(`${variableName} updated to ${newValue}`);

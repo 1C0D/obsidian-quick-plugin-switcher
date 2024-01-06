@@ -1,41 +1,37 @@
 import fs from 'fs-extra';
 import path from 'path';
 import stringify from 'json-stringify-pretty-compact';
-import * as dotenv from 'dotenv';
-
+import dotenv from 'dotenv';
 
 // Path to the current directory and root directory
 const currentDir = process.cwd();
 const rootDir = path.resolve(currentDir, '../');
 
 // Function to copy the 'scripts' folder to the root directory
-function copyFolderToRoot(folderName) {
-    const sourceDir = path.join(currentDir, "to_copy", folderName);
-    const sourceExists = fs.existsSync(sourceDir);
+function copyFolderToRoot(itemName) {
+    const relativePath = itemName.split("/").slice(-1)[0]
+    const sourceDir = path.join(currentDir, "to_copy", relativePath);
+    const destinationDir = path.join(rootDir, itemName);
+    const destinationExists = fs.existsSync(destinationDir);
 
-    if (sourceExists) {
-        const destinationDir = path.join(rootDir, folderName);
-        const destinationExists = fs.existsSync(destinationDir);
-
-        if (destinationExists) {
-            fs.removeSync(destinationDir);
-        }
-
-        fs.copySync(sourceDir, destinationDir, { overwrite: true });
-        console.log(`Successfully copied the "${folderName}" folder to the root directory.`);
-    } else {
-        console.log(`The "${folderName}" folder does not exist in the current directory.`);
+    if (destinationExists) {
+        fs.removeSync(destinationDir);
     }
+
+    fs.copySync(sourceDir, destinationDir, { overwrite: true });
+    console.log(`Successfully copied the "${itemName}" folder to the root directory.`);
+
 }
 
 function copyScriptsToRoot() {
     copyFolderToRoot('scripts');
     copyFolderToRoot('.github');
-    copyFolderToRoot('esbuild.config.mts');
+    copyFolderToRoot('esbuild.config.mjs');
+    copyFolderToRoot('src/Console.ts');
+
+
     if (fs.existsSync('../.env')) {
         updateEnvVariable("TARGET_PATH", "")
-        updateEnvVariable("DEBUG_ACTIVATED", false)
-        updateEnvVariable("FORCED_DEBUG_METHOD", "")
         console.log(".env file updated successfully");
     } else {
         console.log(".env file not found");
@@ -49,6 +45,7 @@ async function updateEnvVariable(variableName, newValue) {
         const envConfig = dotenv.parse(await fs.readFile('../.env'));
 
         // Modify the value of the specified variable
+        if ((variableName in envConfig)) return
         envConfig[variableName] = newValue;
 
         // Generate a new string with the updated variables
@@ -70,9 +67,9 @@ function updatePackageJsonScripts() {
     const packageJsonPath = path.join(rootDir, 'package.json');
 
     const scriptsToAdd = {
-        dev: 'tsx esbuild.config.mts',
-        build: 'tsc -noEmit -skipLibCheck && tsx esbuild.config.mts production',
-        start: 'tsx scripts/start.mjs',
+        dev: 'tsx esbuild.config.mjs',
+        build: 'tsc -noEmit -skipLibCheck && tsx esbuild.config.mjs production',
+        start: 'npm i && tsx scripts/start.mjs',
         version: 'tsx scripts/update-version.mts',
         acp: 'tsx scripts/acp.mts',
         bacp: "tsx scripts/acp.mts -b",

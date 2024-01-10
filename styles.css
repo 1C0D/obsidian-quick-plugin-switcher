@@ -103,7 +103,7 @@
 .qps-groups {
   display: flex;
   align-items: center;
-  margin-left: 10px;
+  margin-left: 5px;
   margin-right: 10px;
   margin-bottom: 5px;
 }
@@ -121,13 +121,21 @@
 
 .qps-header .dropdown,
 .qps-community-header .dropdown {
-  margin-left: 20px;
+  margin-left: 5px;
 }
 
 .qps-search-component {
   align-items: flex-start;
   padding-bottom: 0;
   margin-bottom: 5px
+}
+
+.qps-comm-invert {
+  margin-left: 5px;
+}
+
+.qps-comm-invert input {
+  vertical-align: middle;
 }
 
 .qps-hk-desc {
@@ -145,14 +153,12 @@
 }
 
 .qps-toggle-plugins {
-  /* align-items: flex-end; */
   margin-left: auto;
   margin-bottom: 5px;
 }
 
 .qps-toggle-plugins button {
   margin-left: 5px;
-  /* margin-right: 10px; */
   margin-bottom: 5px;
 }
 

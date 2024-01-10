@@ -63,5 +63,6 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	selectedGroupComm: "SelectGroup",
 	numberOfGroupsComm: 4,
 	groupsComm: {},
+	invertFilters: false
 };
 

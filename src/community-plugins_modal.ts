@@ -28,6 +28,7 @@ import {
 	findMatchingItem,
 	handleContextMenu,
 	handleDblClick,
+	invert,
 	openGitHubRepo,
 	searchCommDivButton,
 } from "./modal_components";
@@ -146,6 +147,7 @@ export class CPModal extends Modal {
 
 		getFilters(this, contentEl)
 		byGroupDropdowns(this, contentEl);
+		invert(this, contentEl);
 	};
 
 	addGroups(modal: CPModal, contentEl: HTMLElement): void {
@@ -219,8 +221,7 @@ export class CPModal extends Modal {
 		const { commPlugins, pluginStats } = settings;
 		let listItems = doSearchCPM(value, commPlugins);
 		listItems = cpmModeSort(this, listItems);
-		const length = listItems.length
-		sortItemsBy.bind(this)(listItems, pluginStats);
+		sortItemsBy.bind(this)(this, listItems);
 		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value)
 	}
 
@@ -357,20 +358,22 @@ export async function getManifest(modal: CPModal | QPSModal, id: string | undefi
 }
 
 function sortItemsBy(
+	modal: CPModal,
 	listItems: PluginCommInfo[],
 ) {
+	const { settings } = modal.plugin;
 	if (this.plugin.settings.sortBy === "Downloads") {
 		listItems.sort((a, b) => {
-			return b.downloads - a.downloads;
+			return settings.invertFilters ? a.downloads - b.downloads: b.downloads - a.downloads;
 		});
 	} else if (this.plugin.settings.sortBy === "Updated") {
 		listItems.sort((a, b) => {
-			return b.updated - a.updated;
+			return settings.invertFilters ? a.updated - b.updated: b.updated - a.updated;
 		});
 
 	} else if (this.plugin.settings.sortBy === "Alpha") {
 		listItems.sort((a, b) => {
-			return a.name.localeCompare(b.name);
+			return settings.invertFilters ? b.name.localeCompare(a.name): a.name.localeCompare(b.name);
 		})
 	}
 }
@@ -386,7 +389,7 @@ function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 		return listItems.filter((item) => !installedPlugins.includes(item.id));
 	} else if (filtersComm === CommFilters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
-			settings.selectedGroup as string
+			settings.selectedGroup
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {

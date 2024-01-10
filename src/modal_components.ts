@@ -31,7 +31,7 @@ import {
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
-import { Filters, Groups } from "./types/variables";
+import { CommFilters, Filters, Groups } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
 import { Console } from "./Console";
@@ -126,6 +126,36 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 			wantedButton?.click()
 		});
 };
+
+export const invert = (
+	modal: QPSModal | CPModal,
+	contentEl: HTMLElement
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+
+	if (modal instanceof QPSModal && settings.filters === Filters.ByGroup || modal instanceof CPModal && settings.filtersComm === CommFilters.ByGroup
+	) return
+
+	contentEl.createDiv({ text: " invert ", cls: "qps-comm-invert" }, (el) => {
+		el.createEl("input",
+			{
+				attr: {
+					cls: "qps-invert-button",
+					type: "checkbox",
+					checked: settings.invertFilters,
+				}
+			}, (checkbox) => {
+				checkbox
+					.checked = settings.invertFilters
+				checkbox.onchange = () => {
+					settings.invertFilters = checkbox.checked
+					plugin.saveSettings()
+					reOpenModal(modal)
+				}
+			})
+	});
+}
 
 export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;

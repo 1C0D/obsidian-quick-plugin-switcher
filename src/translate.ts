@@ -6,7 +6,7 @@ function canTranslate() {
 
 async function translate(text: string, from: string) {
     let to = "";
-    const plugin = (this.app as any).plugins.plugins.translate;
+    const plugin = this.app.plugins.plugins.translate;
     if (!plugin) {
         new Notice(
             "install obsidian-translate and select a translator"

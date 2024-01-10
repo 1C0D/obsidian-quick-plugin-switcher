@@ -2,13 +2,10 @@ import { readFileSync, existsSync, readdirSync, writeFileSync } from "fs";
 import {
 	App,
 	DropdownComponent,
-	KeyToSettingsMapType,
 	Menu,
 	Modal,
 	Notice,
-	PackageInfoData,
 	Platform,
-	PluginCommInfo,
 	setIcon,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
@@ -29,7 +26,6 @@ import {
 	addSearch,
 	doSearchCPM,
 	findMatchingItem,
-	handleClick,
 	handleContextMenu,
 	handleDblClick,
 	openGitHubRepo,
@@ -38,8 +34,9 @@ import {
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal, circleCSSModif } from "./main_modal";
 import * as path from "path";
-import { CommFilters, GroupsComm, SortBy } from "./types/variables";
+import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
+import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./types/global";
 
 declare global {
 	interface Window {
@@ -56,7 +53,7 @@ export class CPModal extends Modal {
 	hotkeysDesc: HTMLElement;
 	isDblClick = false;
 	pressed = false;
-	mousePosition: any;
+	mousePosition: { x: number; y: number };
 	searchInit = true;
 
 	constructor(app: App, public plugin: QuickPluginSwitcher) {
@@ -78,16 +75,14 @@ export class CPModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
-	getHandleClick = async (evt: MouseEvent) => {
-		await handleClick(evt, this);
-	}
+
+	// Add H to hide groups on handlekeydown
 
 	removeListeners() {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.removeEventListener("click", this.getHandleClick);
 	}
 
 	container() {
@@ -109,7 +104,6 @@ export class CPModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 
 	async onOpen() {
@@ -117,7 +111,7 @@ export class CPModal extends Modal {
 		const { plugin, contentEl } = this;
 		const { settings } = plugin;
 		if (this.searchInit) settings.search = "";
-		else this.searchInit = true;
+		this.searchInit = true;
 		contentEl.empty();
 		this.container();
 		setGroupTitle(this, GroupsComm, settings.numberOfGroupsComm);
@@ -137,9 +131,9 @@ export class CPModal extends Modal {
 		//dropdown filters
 		new DropdownComponent(contentEl)
 			.addOptions({
-				all: `All(${settings.commPlugins.length})`,
+				all: `All(${Object.keys(settings.commPlugins).length})`,
 				installed: `Installed(${getInstalled().length})`,
-				notInstalled: Platform.isMobile ? "Not Installed" : `Not Installed(${settings.commPlugins.length - getInstalled().length
+				notInstalled: Platform.isMobile ? "Not Installed" : `Not Installed(${Object.keys(settings.commPlugins).length - getInstalled().length
 					})`,
 				byGroup: `By Group`,
 			})
@@ -196,6 +190,9 @@ export class CPModal extends Modal {
 				}
 			);
 		}
+		contentEl.createSpan({
+			text: `> (h)👁️ (🖱️x2)name`,
+		});
 	}
 
 	setHotKeysdesc(): void {
@@ -220,8 +217,9 @@ export class CPModal extends Modal {
 		const { plugin } = this;
 		const { settings } = plugin;
 		const { commPlugins, pluginStats } = settings;
-		let listItems = doSearchCPM(value, commPlugins) as PluginCommInfo[];
+		let listItems = doSearchCPM(value, commPlugins);
 		listItems = cpmModeSort(this, listItems);
+		const length = listItems.length
 		sortItemsBy.bind(this)(listItems, pluginStats);
 		await this.drawItemsAsync.bind(this)(listItems, pluginStats, value)
 	}
@@ -259,7 +257,7 @@ export class CPModal extends Modal {
 					{ cls: "qps-community-item-name" },
 					(el: HTMLElement) => {
 						el.innerHTML = name;
-						if (isInstalled(item)) {
+						if (isInstalled(item.id)) {
 							el.createSpan({ cls: "installed-span", text: "installed" });
 						}
 						if (isEnabled(this, item.id)) {
@@ -344,8 +342,10 @@ export async function getReadMe(item: PluginCommInfo) {
 	return null;
 }
 
-export async function getManifest(item: PluginCommInfo) {
-	const repo = item.repo;
+export async function getManifest(modal: CPModal | QPSModal, id: string | undefined) {
+	if (!id) return null
+	const { commPlugins } = modal.plugin.settings
+	const repo = commPlugins[id].repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/master/manifest.json`;
 	try {
 		const response = await fetch(repoURL);
@@ -390,7 +390,7 @@ function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
-				return i.groupCommInfo.groupIndices.indexOf(groupIndex) !== -1;
+				return i.groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
 			});
 			return groupedItems;
 		} else return listItems;
@@ -400,7 +400,7 @@ function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
 }
 
 const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
-	const elementFromPoint = getElementFromMousePosition(event, modal);
+	const elementFromPoint = getElementFromMousePosition(modal);
 	const targetBlock = elementFromPoint?.closest(
 		".qps-comm-block"
 	) as HTMLElement;
@@ -549,12 +549,11 @@ export async function installFromList(modal: CPModal, enable = false) {
 		try {
 			const pluginList = JSON.parse(contenu);
 			if (Array.isArray(pluginList)) {
-				const plugins = modal.plugin.settings.commPlugins.filter(
-					(plugin) => {
-						return pluginList.includes(plugin.id);
+				const plugins = Object.keys(modal.plugin.settings.commPlugins).filter(
+					(id) => {
+						return pluginList.includes(id);
 					}
 				);
-
 				await installAllPluginsInGroup(modal, plugins, enable);
 			} else {
 				console.error("this file is not a JSON list.");
@@ -639,7 +638,6 @@ export async function installPluginFromOtherVault(
 				const manifestContent = readFileSync(manifestJsonPath, "utf-8");
 				const manifestData = JSON.parse(manifestContent);
 				const pluginId = manifestData.id;
-
 				installedPlugins.push(pluginId);
 			}
 		}
@@ -649,8 +647,8 @@ export async function installPluginFromOtherVault(
 			return;
 		}
 
-		const plugins = modal.plugin.settings.commPlugins.filter((plugin) => {
-			return installedPlugins.includes(plugin.id);
+		const plugins = Object.keys(modal.plugin.settings.commPlugins).filter((id) => {
+			return installedPlugins.includes(id);
 		});
 		await installAllPluginsInGroup(modal, plugins, enable);
 	}

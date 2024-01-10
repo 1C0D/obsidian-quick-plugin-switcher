@@ -35,24 +35,23 @@ export default class QPSSettingTab extends PluginSettingTab {
 									350
 								);
 								if (confirmReset) {
-									settings.allPluginsList.forEach(
-										(plugin) => {
-											let hasValueGreaterThanValue =
-												false;
-											for (const groupIndex of plugin
-												.groupInfo.groupIndices) {
-												if (groupIndex > value) {
-													hasValueGreaterThanValue =
-														true;
-													break;
-												}
-											}
-											if (hasValueGreaterThanValue) {
-												plugin.groupInfo.groupIndices =
-													[];
+									const { installed } = settings
+									for (const key in installed) {
+										let hasValueGreaterThanValue =
+											false;
+										for (const groupIndex of installed[key].groupInfo.groupIndices) {
+											if (groupIndex > value) {
+												hasValueGreaterThanValue =
+													true;
+												break;
 											}
 										}
-									);
+										if (hasValueGreaterThanValue) {
+											installed[key].groupInfo.groupIndices =
+												[];
+										}
+									}
+
 									settings.numberOfGroups = value;
 									await plugin.saveSettings();
 								} else {
@@ -64,6 +63,8 @@ export default class QPSSettingTab extends PluginSettingTab {
 							settings.numberOfGroups = value;
 							await plugin.saveSettings();
 						}
+						settings.numberOfGroups = value;
+						await plugin.saveSettings();
 					});
 			});
 
@@ -86,20 +87,21 @@ export default class QPSSettingTab extends PluginSettingTab {
 								if (confirmReset) {
 									const { commPlugins } =
 										settings;
-
-									commPlugins.forEach((plugin) => {
+									for (const key in commPlugins) {
 										let hasValueGreaterThanValue = false;
-										let groupIndices = plugin.groupCommInfo.groupIndices;
-										for (const groupIndex of groupIndices) {
-											if (groupIndex > value) {
-												hasValueGreaterThanValue = true;
-												break;
+										let groupIndices = commPlugins[key].groupCommInfo.groupIndices;
+										if (groupIndices) {
+											for (const groupIndex of groupIndices) {
+												if (groupIndex > value) {
+													hasValueGreaterThanValue = true;
+													break;
+												}
 											}
 										}
 										if (hasValueGreaterThanValue) {
 											groupIndices = [];
 										}
-									});
+									};
 									settings.numberOfGroupsComm = value;
 									await plugin.saveSettings();
 								} else {
@@ -114,7 +116,7 @@ export default class QPSSettingTab extends PluginSettingTab {
 					});
 			});
 
-		addButton(containerEl, plugin)
+		// addButton(containerEl, plugin)
 
 		new Setting(containerEl)
 			.setName("Show hotkeys line reminder")
@@ -139,37 +141,37 @@ export default class QPSSettingTab extends PluginSettingTab {
 			});
 	}
 
-	
-}
-
-export function addButton(containerEl: HTMLElement, plugin: QuickPluginSwitcher) {
-	return new Setting(containerEl)
-		.setName("Reset all values")
-		.setDesc("Don't do this, unless you really need to")
-		.addButton((btn) => {
-			btn.setIcon("alert-octagon")
-				.setTooltip("Reset all values")
-				.onClick(async () => {
-					const confirmReset = await confirm(
-						"Do you want to reset all values?",
-						300
-					);
-					if (confirmReset) {
-						if (
-							plugin.settings.hasOwnProperty("allPluginsList")
-						) {
-							plugin.settings.allPluginsList = [];
-						}
-						if (plugin.settings.hasOwnProperty("groups")) {
-							plugin.settings.groups = {};
-						}
-						await plugin.saveSettings();
-						// new Notice("Reset done", 2500);
-						(this.app as any).commands.executeCommandById('app:reload')
-					} else {
-						new Notice("Operation cancelled", 2500);
-					}
-				});
-		});
 
 }
+
+// export function addButton(containerEl: HTMLElement, plugin: QuickPluginSwitcher) {
+// 	return new Setting(containerEl)
+// 		.setName("Reset all values")
+// 		.setDesc("Don't do this, unless you really need to")
+// 		.addButton((btn) => {
+// 			btn.setIcon("alert-octagon")
+// 				.setTooltip("Reset all values")
+// 				.onClick(async () => {
+// 					const confirmReset = await confirm(
+// 						"Do you want to reset all values?",
+// 						300
+// 					);
+// 					if (confirmReset) {
+// 						if (
+// 							plugin.settings.hasOwnProperty("allPluginsList")
+// 						) {
+// 							plugin.settings.allPluginsList = [];
+// 						}
+// 						if (plugin.settings.hasOwnProperty("groups")) {
+// 							plugin.settings.groups = {};
+// 						}
+// 						await plugin.saveSettings();
+// 						// new Notice("Reset done", 2500);
+// 						(this.app as any).commands.executeCommandById('app:reload')
+// 					} else {
+// 						new Notice("Operation cancelled", 2500);
+// 					}
+// 				});
+// 		});
+
+// }

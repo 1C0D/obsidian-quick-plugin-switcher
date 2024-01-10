@@ -1,5 +1,6 @@
 import 'obsidian'
 import { CommFilters, Filters, SortBy } from './variables';
+import { PluginManifest } from 'obsidian';
 
 declare module "obsidian" {
     interface App {
@@ -7,8 +8,6 @@ declare module "obsidian" {
         plugins: Plugins,
         commands: Commands;
     }
-
-    interface Commands { executeCommandById: (commandId: string) => boolean; }
 
     interface Plugins {
         manifests: Record<string, PluginManifest>
@@ -21,94 +20,94 @@ declare module "obsidian" {
         enablePluginAndSave: (id: string) => Promise<void>;
     }
 
+    interface Commands { executeCommandById: (commandId: string) => boolean; }
+
     interface Setting extends Modal { openTabById: (id: string) => Record<string, any>; }
 
     interface DataAdapter {
         getFullPath: (normalizedPath: string) => string;
     }
 
-    interface PluginInfo {
-        name: string;
-        id: string;
-        desc: string;
-        dir: string;
-        author: string;
-        authorUrl?: string;
-        desktopOnly: boolean;
-        version: string;
-        enabled: boolean;
-        switched: number;
-        groupInfo: PluginGroupInfo;
-        delayed: boolean;
-        time: number;
-    }
+}
 
-    interface PluginGroupInfo {
-        hidden: boolean;
-        groupIndices: number[];
-        groupWasEnabled: boolean;
-    }
+interface StringString {
+    [key: string]: string;
+}
 
-    interface PluginCommGroupInfo {
-        hidden: boolean;
-        groupIndices: number[];
-    }
+interface PluginInstalled extends PluginManifest {
+    enabled: boolean;
+    switched: number;
+    groupInfo: PluginGroupInfo;
+    delayed: boolean;
+    time: number
+}
 
 
-    interface QPSSettings {
-        lastFetchExe: number;
-        savedVersion: string;
-        allPluginsList: PluginInfo[];
-        wasEnabled: string[];
-        sortBy: keyof typeof SortBy;
-        filters: keyof typeof Filters;
-        selectedGroup: string;
-        search: string;
-        numberOfGroups: number;
-        groups: Record<
-            number,
-            { name: string; delayed: boolean; time: number; applied: boolean, hidden:boolean }
-        >;
-        showHotKeys: boolean;
-        showReset: boolean;
-        // commnunity plugins
-        pluginStats: PackageInfoData;
-        commPlugins: PluginCommInfo[];
-        filtersComm: keyof typeof CommFilters;
-        selectedGroupComm: string;
-        numberOfGroupsComm: number;
-        groupsComm: Record<number, { name: string, hidden: boolean }>;
-    }
 
-    interface GroupData {
-        [key: string]: string;
-    }
+interface PluginGroupInfo {
+    hidden: boolean;
+    groupIndices: number[];
+    groupWasEnabled: boolean;
+}
 
-    type KeyToSettingsMapType = {
-        [key: string]: () => Promise<void> | void;
-    };
+interface PluginCommGroupInfo {
+    hidden: boolean;
+    groupIndices: number[];
+}
 
-    // community plugins
-    interface PluginCommInfo {
-        name: string;
-        id: string;
-        description: string;
-        author: string;
-        repo: string;
-        hidden:boolean;
-        groupCommInfo: PluginCommGroupInfo;
-        downloads:number;
-        updated:number;
-    }
 
-    //releases
-    interface PackageData {
-        downloads: number;
-        updated: number;
-        [version: string]: number;
-    }
+interface QPSSettings {
+    lastFetchExe: number;
+    savedVersion: string;
+    installed: Record<string, PluginInstalled>;
+    wasEnabled: string[];
+    sortBy: keyof typeof SortBy;
+    filters: keyof typeof Filters;
+    selectedGroup: string;
+    search: string;
+    numberOfGroups: number;
+    groups: Record<
+        number,
+        { name: string; delayed: boolean; time: number; applied: boolean, hidden: boolean }
+    >;
+    showHotKeys: boolean;
+    showReset: boolean;
+    // commnunity plugins
+    pluginStats: PackageInfoData; 
+    commPlugins: Record<string, PluginCommInfo>;
+    filtersComm: keyof typeof CommFilters;
+    selectedGroupComm: string;
+    numberOfGroupsComm: number;
+    groupsComm: Record<number, { name: string, hidden: boolean }>;
+}
 
-    interface PackageInfoData {
-        [packageName: string]: PackageData;
-    }
+type KeyToSettingsMapType = {
+    [key: string]: () => Promise<void> | void;
+};
+
+interface CommPlugin {
+    name: string;
+    id: string;
+    description: string;
+    author: string;
+    repo: string;
+}
+
+// community plugins
+interface PluginCommInfo extends CommPlugin {
+    hidden: boolean;
+    groupCommInfo: PluginCommGroupInfo;
+    downloads: number;
+    updated: number;
+}
+
+//releases
+interface PackageInfoData {
+    [packageName: string]: PackageData;
+}
+
+interface PackageData {
+    downloads: number;
+    updated: number;
+    [version: string]: number;
 }

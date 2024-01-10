@@ -6,8 +6,6 @@ import {
 	Menu,
 	Modal,
 	Notice,
-	PluginCommInfo,
-	PluginInfo,
 	Scope,
 	Setting,
 } from "obsidian";
@@ -17,13 +15,14 @@ import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubL
 import { getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 
 // for plugin description
 export class DescriptionModal extends Modal {
 	constructor(
 		app: App,
 		public plugin: QuickPluginSwitcher,
-		public pluginItem: PluginInfo
+		public pluginItem: PluginInstalled
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -48,7 +47,7 @@ export class DescriptionModal extends Modal {
 				text: pluginItem.authorUrl,
 				href: pluginItem.authorUrl,
 			});
-		contentEl.createEl("p", { text: pluginItem.desc });
+		contentEl.createEl("p", { text: pluginItem.description });
 	}
 
 	onClose() {
@@ -184,6 +183,7 @@ export class ReadMeModal extends Modal {
 		const { contentEl, pluginItem } = this;
 		// this.modalEl.addClass("read-me-modal");
 		contentEl.empty();
+		const id = pluginItem.id;
 
 		contentEl
 			.createEl("p", {
@@ -202,13 +202,13 @@ export class ReadMeModal extends Modal {
 			});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
-		if (!isInstalled(pluginItem)) {
+		if (!isInstalled(id)) {
 			new ButtonComponent(divButtons)
 				.setButtonText("Install")
 				.setCta()
 				.onClick(async () => {
-					const lastVersion = await getLatestPluginVersion(this.modal, pluginItem);
-					const manifest = await getManifest(pluginItem);
+					const lastVersion = await getLatestPluginVersion(this.modal, id);
+					const manifest = await getManifest(this.modal,id);
 					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();

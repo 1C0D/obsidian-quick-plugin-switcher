@@ -1,5 +1,5 @@
-export function isEnabled(modal:any, name: string): boolean {
-	return (modal.app as any).plugins.enabledPlugins.has(name);
+export function isEnabled(modal:any, id: string): boolean {
+	return modal.app.plugins.enabledPlugins.has(id);
 }
 
 export function removeItem<T>(arr: Array<T>, value: T): Array<T> {
@@ -72,16 +72,16 @@ export function calculateTimeElapsed(datePasted: Date): string {
 }
 
 export function compareVersions(v1: any, v2: any) {
-	const [v1Maj, v1Min, v1Patch] = v1.split('.');
-	const [v2Maj, v2Min, v2Patch] = v2.split('.');
+	const [Maj1, Min1, Patch1] = v1.split('.');
+	const [Maj2, Min2, Patch2] = v2.split('.');
 
-	if (v1Maj === v2Maj) {
-		if (v1Min === v2Min) {
-			return v1Patch - v2Patch;
+	if (Maj1 === Maj2) {
+		if (Min1 === Min2) {
+			return Patch1 - Patch2;
 		}
-		return v1Min - v2Min;
+		return Min1 - Min2;
 	}
-	return v1Maj - v2Maj;
+	return Maj1 - Maj2;
 }
 
 export function hasKeyStartingWith(obj: Record<string, any>, prefix: string): boolean {

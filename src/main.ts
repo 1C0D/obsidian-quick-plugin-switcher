@@ -1,34 +1,37 @@
+import { Plugin } from 'obsidian';
 import { around } from "monkey-around";
-import { PackageInfoData, Plugin, PluginCommInfo, PluginInfo, QPSSettings } from "obsidian";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import QPSSettingTab from "./settings";
 import { fetchData } from "./community-plugins_modal";
-import { commPlugins, commPluginStats, DEFAULT_SETTINGS } from "./types/variables";
+import { CommPlugin, PackageInfoData,  QPSSettings } from "./types/global";
+import { COMMPLUGINS, COMMPLUGINSTATS, DEFAULT_SETTINGS } from './types/variables';
+import { Console } from './Console';
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
-	reset = false;
 	lengthAll = 0;
 	lengthDisabled = 0;
 	lengthEnabled = 0;
-	commPlugins: PluginCommInfo[];
-	pluginStats: PackageInfoData;
+	reset = false;
 
 	async onload() {
 		await this.loadSettings();
 		this.app.workspace.onLayoutReady(async () => {
-			const { settings } = this;
-			const allPluginsList = settings.allPluginsList || [];
-			const manifests = (this.app as any).plugins.manifests || {};
-			// plugin have been deleted from obsidian UI ?
-			let stillInstalled: PluginInfo[] = [];
+			const installed = this.settings.installed || {};
+			const manifests = this.app.plugins.manifests || {};
 
-			for (const plugin of allPluginsList) {
-				if (Object.keys(manifests).includes(plugin.id))
-					stillInstalled.push(plugin);
+			// plugin have been deleted from obsidian UI ?
+			let stillInstalled: string[] = [];
+			for (const pluginId in installed) {
+				if (pluginId in manifests)
+					stillInstalled.push(pluginId);
+				else {
+					delete installed[pluginId]
+				}
 			}
 
+			//wrapper enable/disable&save
 			const { wrapper1, wrapper2 } = this.wrapDisableEnablePluginAndSave(
 				stillInstalled,
 				async () => {
@@ -40,30 +43,29 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.register(wrapper2);
 
 			// plugin has been toggled from obsidian UI ? or if is delayed unabled
-			for (const plugin of stillInstalled) {
+			for (const id of stillInstalled) {
 				if (
-					isEnabled(this, plugin.id) !== plugin.enabled &&
-					!plugin.delayed //because if delayed isEnabled false
+					isEnabled(this, id) !== installed[id].enabled &&
+					!installed[id].delayed //because if delayed isEnabled false
 				) {
-					plugin.enabled = !plugin.enabled;
+					installed[id].enabled = !installed[id].enabled;
 				}
 			}
 			await this.saveSettings();
 
 			//delay at start
-			for (const pluginItem of stillInstalled) {
-				if (pluginItem.delayed && pluginItem.enabled) {
-					const time = pluginItem.time * 1000 || 0;
+			for (const id of stillInstalled) {
+				if (installed[id].delayed && installed[id].enabled) {
+					const time = installed[id].time * 1000 || 0;
 					setTimeout(
 						async () =>
-							await (this.app as any).plugins.enablePlugin(
-								pluginItem.id
-							),
+							await this.app.plugins.enablePlugin(id),
 						time
 					);
 				}
 			}
 		});
+
 		this.addSettingTab(new QPSSettingTab(this.app, this));
 
 		this.addRibbonIcon(
@@ -73,7 +75,6 @@ export default class QuickPluginSwitcher extends Plugin {
 				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
-				await this.getPluginsCommInfo()
 			}
 		);
 
@@ -83,25 +84,24 @@ export default class QuickPluginSwitcher extends Plugin {
 			callback: async () => {
 				await this.getPluginsInfo();
 				new QPSModal(this.app, this).open();
-				await this.exeAfterDelay(this.pluginsCommInfo.bind(this)); 
-				await this.getPluginsCommInfo()
+				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
 			},
 		});
 	}
 
-	wrapDisableEnablePluginAndSave(stillInstalled: PluginInfo[], cb: () => {}) {
-		const manifests = (this.app as any).plugins.manifests || {};
-		const wrapper1 = around((this.app as any).plugins, {
+	wrapDisableEnablePluginAndSave(stillInstalled: string[], cb: () => {}) {
+		const installed = this.settings.installed || {};
+		const wrapper1 = around(this.app.plugins, {
 			disablePluginAndSave(oldMethod) {
 				return async function (pluginId: string) {
-					if (stillInstalled) {
-						const plugin = stillInstalled.find(
-							(plugin) =>
-								plugin.id === pluginId &&
-								!isEnabled(this, manifests[pluginId].id)
+					if (stillInstalled.length) {
+						const id = stillInstalled.find(
+							(id) =>
+								id === pluginId &&
+								!isEnabled(this, pluginId)
 						);
-						if (plugin && plugin.delayed && plugin.time > 0) {
-							plugin.enabled = false;
+						if (id && installed[id].delayed && installed[id].time > 0) {
+							installed[id].enabled = false;
 							cb();
 						}
 					}
@@ -109,24 +109,25 @@ export default class QuickPluginSwitcher extends Plugin {
 				};
 			},
 		});
-		const wrapper2 = around((this.app as any).plugins, {
+
+		const wrapper2 = around(this.app.plugins, {
 			enablePluginAndSave(oldMethod) {
 				return async function (pluginId: string) {
 					let altReturn = false;
-					if (stillInstalled) {
-						const plugin = stillInstalled.find(
-							(plugin) =>
-								plugin.id === pluginId &&
-								isEnabled(this, manifests[pluginId].id)
+					if (stillInstalled.length) {
+						const id = stillInstalled.find(
+							(id) =>
+								id === pluginId &&
+								isEnabled(this, id)
 						);
-						if (plugin && plugin.delayed && plugin.time > 0) {
-							plugin.enabled = true;
+						if (id && installed[id].delayed && installed[id].time > 0) {
+							installed[id].enabled = true;
 							altReturn = true;
 							cb();
 						}
 					}
 					if (altReturn)
-						return (this.app as any).plugins.enablePlugin.call(
+						return this.app.plugins.enablePlugin.call(
 							this,
 							pluginId
 						);
@@ -139,137 +140,138 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	async getPluginsInfo() {
-		const { settings } = this;
-
-		const allPluginsList = settings.allPluginsList || [];
-		const manifests = (this.app as any).plugins.manifests || {};
+		const installed = this.settings.installed || {};
+		const manifests = this.app.plugins.manifests || {};
 
 		// plugin have been deleted from obsidian UI ?
-		let stillInstalled: PluginInfo[] = [];
-		let uninstalled: PluginInfo[] = [];
+		let stillInstalled: string[] = [];
 
-		for (const plugin of allPluginsList) {
-			if (Object.keys(manifests).includes(plugin.id))
-				stillInstalled.push(plugin);
+		for (const id in installed) {
+			if (id in manifests)
+				stillInstalled.push(id);
 			else {
-				uninstalled.push(plugin);
+				Console.log("shouldn't happen there, plugin have been deleted from obsidian UI", id);
+				delete installed[id]
 			}
 		}
 
-		for (const key of Object.keys(manifests)) {
+		for (const key in manifests) {
 			// plugin has been toggled from obsidian UI ? or if is delayed unabled
-			const pluginInList = stillInstalled.find(
-				(plugin) => plugin.id === manifests[key].id
+			const inListId = stillInstalled.find(
+				(id) => id === key
 			);
 
-			if (pluginInList) {
+			if (inListId) {
 				if (
-					isEnabled(this, manifests[key].id) !==
-					pluginInList.enabled &&
-					!pluginInList.delayed
+					isEnabled(this, key) !==
+					installed[key].enabled &&
+					!installed[key].delayed
 				) {
-					pluginInList.enabled = !pluginInList.enabled;
+					installed[key].enabled = !installed[key].enabled;
 				} else if (
-					pluginInList.delayed &&
-					isEnabled(this, manifests[key].id) !== pluginInList.enabled
+					installed[key].delayed &&
+					isEnabled(this, key) !== installed[key].enabled
 				) {
-					if (isEnabled(this, manifests[key].id)) {
-						pluginInList.enabled = true;
-						await (this.app as any).plugins.disablePluginAndSave(
-							pluginInList.id
+					if (isEnabled(this, key)) {
+						installed[key].enabled = true;
+						await this.app.plugins.disablePluginAndSave(
+							key
 						);
-						await (this.app as any).plugins.enablePlugin(
-							pluginInList.id
+						await this.app.plugins.enablePlugin(
+							key
 						);
-						pluginInList.switched++;
+						installed[key].switched++;
 					}
 				}
-				const {
-					name,
-					description,
-					dir,
-					version,
-					author,
-					authorUrl,
-					isDesktopOnly = false
-				} = manifests[key];
-
-				pluginInList.name = name
-				pluginInList.desc = description
-				pluginInList.dir = dir
-				pluginInList.version = version
-				pluginInList.author = author
-				pluginInList.authorUrl = authorUrl
-				pluginInList.desktopOnly = isDesktopOnly
-				continue;
+				installed[key] = {
+					...installed[key], ...manifests[key]
+				}
 			} else {
-				const notInListInfo: PluginInfo = {
-					name: manifests[key].name,
-					id: manifests[key].id,
-					desc: manifests[key].description,
-					dir: manifests[key].dir,
-					version: manifests[key].version,
-					author: manifests[key].author,
-					authorUrl: manifests[key].authorUrl,
-					desktopOnly: manifests[key].isDesktopOnly || false,
-					enabled: isEnabled(this, manifests[key].id) || false,
+				const complement = {
+					enabled: isEnabled(this, key) || false,
 					switched: 0,
 					groupInfo: {
-						hidden:false,
+						hidden: false,
 						groupIndices: [],
 						groupWasEnabled: false,
 					},
 					delayed: false,
 					time: 0,
-				};
+				}
 
-				stillInstalled.push(notInListInfo);
+				installed[key] = {
+					...manifests[key], ...complement,
+				}
 			}
 		}
-		settings.allPluginsList = stillInstalled;
 		this.getLength();
 		await this.saveSettings();
 	}
 
 	getLength() {
-		const { settings } = this;
-		const allPluginsList = settings.allPluginsList || [];
-		this.lengthAll = allPluginsList.length;
-		this.lengthEnabled = settings.allPluginsList.filter(
-			(plugin) => plugin.enabled
-		).length;
-		this.lengthDisabled = settings.allPluginsList.filter(
-			(plugin) => !plugin.enabled
-		).length;
+		const installed = this.settings.installed;
+		this.lengthAll = Object.keys(installed).length;
+		this.lengthEnabled = 0;
+		this.lengthDisabled = 0;
+
+		for (const key in installed) {
+			if (installed[key].enabled) {
+				this.lengthEnabled++;
+			} else {
+				this.lengthDisabled++;
+			}
+		}
 	}
 
 	async pluginsCommInfo() {
 		console.log("fetching'''''''''''''''''''''''''");
-		let plugins, stats;
+		let plugins: CommPlugin[], stats: PackageInfoData;
 		try {
-			plugins = await fetchData(commPlugins);
-			stats = await fetchData(commPluginStats);
+			plugins = await fetchData(COMMPLUGINS);
+			stats = await fetchData(COMMPLUGINSTATS);
 		} catch {
 			return false;
 		}
-		if (plugins || stats) {
-			this.settings.commPlugins = plugins;
-			this.settings.pluginStats = stats;
+		if (plugins && stats) {
+	
+			const { commPlugins, pluginStats } = this.settings
+
+			for (const plugin of plugins) {
+				let updateStats;
+				if (plugin.id in pluginStats) {
+					updateStats = {
+						downloads: pluginStats[plugin.id].downloads || 0,
+						updated: pluginStats[plugin.id].updated || 0
+					}
+				} else {
+					updateStats = {
+						downloads: 0,
+						updated: 0
+					}
+				}
+
+				if (plugin.id in commPlugins) {
+					commPlugins[plugin.id] = { ...commPlugins[plugin.id], ...plugin, ...updateStats };
+				} else {
+					const complement = {
+						hidden: false,
+						groupCommInfo: {
+							hidden: false,
+							groupIndices: []
+						},
+						...updateStats
+					}
+					commPlugins[plugin.id] = { ...plugin, ...complement };
+				}
+			}
+
+			this.settings.pluginStats = { ...this.settings.pluginStats, ...stats };
+
 			await this.saveSettings();
 			console.log("fetched");
 			return true;
 		}
 		return false;
-	}
-
-	async getPluginsCommInfo(){
-		this.settings.commPlugins.forEach((item:PluginCommInfo)=> {
-			if(!item.hidden) item.hidden= false
-			if (!item.groupCommInfo) item.groupCommInfo = { hidden:false, groupIndices:[] }
-			if (!item.downloads) item.downloads = this.settings.pluginStats[item.id]?.downloads||0
-			if (!item.updated) item.updated = this.settings.pluginStats[item.id]?.updated||0
-		})
-		await this.saveSettings();
 	}
 
 	exeAfterDelay = async (
@@ -294,8 +296,12 @@ export default class QuickPluginSwitcher extends Plugin {
 
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };
-		if ("mobileSettings" in previousSettings) {
-			delete previousSettings.mobileSettings;
+		if ("allPluginsList" in previousSettings) {
+			delete previousSettings.allPluginsList;
+			delete previousSettings.pluginStats;
+			delete previousSettings.commPlugins;
+
+			Console.log("allPluginsList... has been deleted");
 		}
 
 		this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
@@ -308,4 +314,38 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 }
 
+const info =
+	`item dans allPluginsList
+{
+    "name": "Close Similar Tabs",
+    "id": "close-similar-tabs",
+    "desc": "Avoid to have a file opened several times in your tabs. (+setting: by window or everywhere)",
+    "dir": ".obsidian/plugins/Obsidian-Close-Similar-Tabs",
+    "version": "2.3.6",
+    "author": "1C0D",
+    "authorUrl": "",
+    "desktopOnly": false,
+    "enabled": false,
+    "switched": 0,
+    "groupInfo": {
+        "hidden": false,
+        "groupIndices": [],
+        "groupWasEnabled": false
+    },
+    "delayed": false,
+    "time": 0
+}
+item dans manifests
+{
+    "id": "close-similar-tabs",
+    "name": "Close Similar Tabs",
+    "version": "2.3.6",
+    "minAppVersion": "0.15.0",
+    "description": "Avoid to have a file opened several times in your tabs. (+setting: by window or everywhere)",
+    "author": "1C0D",
+    "authorUrl": "",
+    "isDesktopOnly": false,
+    "dir": ".obsidian/plugins/Obsidian-Close-Similar-Tabs"
+}
+`
 

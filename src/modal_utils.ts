@@ -1,12 +1,13 @@
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { Notice, PluginCommInfo, PluginInfo } from "obsidian";
+import { Notice } from "obsidian";
 import { confirm } from "./secondary_modals";
 import { CPModal } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
 import { compareVersions } from "./utils";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
+import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
 
 /**
  * Reset most switched values.
@@ -24,40 +25,43 @@ export const reset = async (modal: QPSModal) => {
 	}
 };
 
-export const sortByName = (listItems: PluginInfo[]) => {
-	listItems.sort((a, b) => a.name.localeCompare(b.name));
+export const sortByName = (plugin: Plugin, listItems: string[]) => {
+	const { settings } = plugin;
+	const { installed } = settings;
+	listItems.sort((a, b) => installed[a].name.localeCompare(installed[b].name));
 };
 
-export const sortSwitched = (listItems: PluginInfo[]) => {
-	listItems.sort((a, b) => b.switched - a.switched);
+export const sortSwitched = (plugin: Plugin, listItems: string[]) => {
+	const { settings } = plugin;
+	const { installed } = settings;
+	listItems.sort((a, b) => installed[b].switched - installed[a].switched);
 };
 
 export const getCommandCondition = async function (
 	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo | Record<string, string>
+	item: PluginInstalled | PluginCommInfo
+	// | StringString
 ) {
-	const pluginCommands = await (modal.app as any).setting.openTabById(
-		pluginItem.id
+	const pluginCommands = await modal.app.setting.openTabById(
+		item.id
 	)?.app?.commands.commands;
 	return pluginCommands;
 };
 
-export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInfo) => {
+export const togglePlugin = async (modal: QPSModal, pluginItem: PluginInstalled) => {
 	const { plugin } = modal;
-
 	pluginItem.enabled = !pluginItem.enabled;
 	pluginItem.enabled
-		? await conditionalEnable(modal, pluginItem)
-		: await (modal.app as any).plugins.disablePluginAndSave(pluginItem.id);
+		? await conditionalEnable(modal, pluginItem.id)
+		: await modal.app.plugins.disablePluginAndSave(pluginItem.id);
 	plugin.getLength();
-	await plugin.saveSettings();
 	await reOpenModal(modal);
 };
 
 //desktop only
 export async function openDirectoryInFileManager(
 	modal: QPSModal,
-	pluginItem: PluginInfo
+	pluginItem: PluginInstalled
 ) {
 	let shell = window.electron.remote.shell;
 	const filePath = (modal.app as any).vault.adapter.getFullPath(
@@ -74,25 +78,29 @@ export async function openDirectoryInFileManager(
 }
 
 export const delayedReEnable = async (
-	_this: QPSModal,
-	pluginItem: PluginInfo
+	modal: QPSModal,
+	id: string
 ) => {
-	await (_this.app as any).plugins.disablePluginAndSave(pluginItem.id);
-	await (_this.app as any).plugins
-		.enablePlugin(pluginItem.id)
-		.then((pluginItem.enabled = true));
+	const { plugin } = modal;
+	const { settings } = plugin;
+	const { installed } = settings;
+	await modal.app.plugins.disablePluginAndSave(id);
+	await modal.app.plugins
+		.enablePlugin(id)
+	installed[id].enabled = true
 };
 
 export const conditionalEnable = async (
 	modal: QPSModal,
-	pluginItem: PluginInfo
+	id: string
 ) => {
-	if (pluginItem.delayed && pluginItem.time > 0) {
-		await (modal.app as any).plugins.enablePlugin(pluginItem.id);
+	const { installed } = modal.plugin.settings;
+	if (installed[id].delayed && installed[id].time > 0) {
+		await modal.app.plugins.enablePlugin(id);
 		await modal.plugin.saveSettings();
 	} else {
-		pluginItem.switched++; // besoin que là?
-		await (modal.app as any).plugins.enablePluginAndSave(pluginItem.id);
+		installed[id].switched++; // besoin que là?
+		await modal.app.plugins.enablePluginAndSave(id);
 	}
 };
 
@@ -100,48 +108,48 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export const modeSort = (plugin: Plugin, listItems: PluginInfo[]) => {
+export const modeSort = (plugin: Plugin, listItems: string[]) => {
 	const { settings } = plugin;
+	const { installed } = settings;
 	// after reset MostSwitched
 	if (plugin.reset) {
-		const allPluginsList = settings.allPluginsList;
-		allPluginsList.forEach((i) => {
-			i.switched = 0;
+		listItems.forEach((id) => {
+			installed[id].switched = 0;
 		});
 		plugin.reset = false;
 	}
 	// EnabledFirst
 	if (settings.filters === Filters.EnabledFirst) {
-		const enabledItems = listItems.filter((i) => i.enabled);
-		const disabledItems = listItems.filter((i) => !i.enabled);
-		sortByName(enabledItems);
-		sortByName(disabledItems);
+		const enabledItems = listItems.filter((id) => installed[id].enabled);
+		const disabledItems = listItems.filter((id) => !installed[id].enabled);
+		sortByName(plugin, enabledItems);
+		sortByName(plugin, disabledItems);
 		listItems = [...enabledItems, ...disabledItems];
 	}
 	// ByGroup
 	else if (settings.filters === Filters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
-			settings.selectedGroup as string
+			settings.selectedGroup
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
-				return i.groupInfo.groupIndices.indexOf(groupIndex) !== -1;
+				return installed[i].groupInfo.groupIndices.indexOf(groupIndex) !== -1;
 			});
 			listItems = groupedItems;
-			sortByName(listItems);
+			sortByName(plugin, listItems);
 		} else {
-			sortByName(listItems);
+			sortByName(plugin, listItems);
 		}
 	}
 	// MostSwitched
 	else if (settings.filters === Filters.MostSwitched) {
 		// && !plugin.reset
-		sortByName(listItems);
-		sortSwitched(listItems);
+		sortByName(plugin, listItems);
+		sortSwitched(plugin, listItems);
 	}
 	// All
 	else {
-		sortByName(listItems);
+		sortByName(plugin, listItems);
 	}
 
 	return listItems;
@@ -172,42 +180,53 @@ export function getInstalled() {
 	return Object.keys(this.app.plugins.manifests);
 }
 
-export function isInstalled(item: any) {
-	return getInstalled().includes(item.id);
+export function isInstalled(id: string) {
+	return getInstalled().includes(id);
 }
 
-export async function reOpenModal(modal: QPSModal | CPModal) {
-	modal.searchInit = false;
+export async function reOpenModal(modal: QPSModal | CPModal,searchInit=false) {
+	await modal.plugin.saveSettings();
+	modal.searchInit = searchInit;
 	await modal.onOpen();
 }
 
 export async function openPluginSettings(
 	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo
+	pluginItem: PluginInstalled | PluginCommInfo
 ) {
-	const pluginSettings = (modal.app as any).setting.openTabById(
+	if (!(pluginItem as PluginInstalled).enabled) {
+		new Notice("Plugin disabled, no Settings to show", 3500);
+		return;
+	}
+
+	const pluginSettings = modal.app.setting.openTabById(
 		pluginItem.id
 	);
 	if (!pluginSettings) {
-		new Notice("No settings on this plugin", 2500);
+		new Notice("No Settings on this plugin", 2500);
 		return;
 	}
-	await (modal.app as any).setting.open();
+	await modal.app.setting.open();
 	await pluginSettings?.display();
 }
 
 export const showHotkeysFor = async function (
 	modal: QPSModal | CPModal,
-	pluginItem: PluginInfo | PluginCommInfo
+	pluginItem: PluginInstalled | PluginCommInfo
 ) {
+	if (!(pluginItem as PluginInstalled).enabled) {
+		new Notice("Plugin disabled, no HotKeys to show", 3500);
+		return;
+	}
+
 	const condition = await getHkeyCondition(modal, pluginItem);
 	if (!condition) {
 		new Notice("No HotKeys on this plugin", 2500);
 		return;
 	}
-	await (this.app as any).setting.open();
-	await (this.app as any).setting.openTabById("hotkeys");
-	const tab = await (this.app as any).setting.activeTab;
+	await this.app.setting.open();
+	await this.app.setting.openTabById("hotkeys");
+	const tab = await this.app.setting.activeTab;
 	tab.searchComponent.inputEl.value = pluginItem.name + ":";
 	tab.updateHotkeyVisibility();
 	tab.searchComponent.inputEl.blur();
@@ -215,9 +234,9 @@ export const showHotkeysFor = async function (
 
 export async function getLatestPluginVersion(
 	modal: CPModal | QPSModal,
-	plugin: PluginCommInfo | PluginInfo
+	id: string
 ) {
-	const pluginInfo = modal.plugin.settings.pluginStats[plugin.id];
+	const pluginInfo = modal.plugin.settings.pluginStats[id];
 	let latestVersion: string | null = null;
 
 	for (const version in pluginInfo) {
@@ -258,7 +277,6 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
 }
 
 export function getElementFromMousePosition(
-	evt: MouseEvent | KeyboardEvent,
 	modal: QPSModal | CPModal
 ) {
 	if (modal.mousePosition) {

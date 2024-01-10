@@ -1,11 +1,17 @@
-import { GroupData, QPSSettings } from "obsidian";
+import { QPSSettings, StringString } from "./global";
 
-export const commPlugins =
+export const COMMPLUGINS =
 	"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";
 
-export const commPluginStats =
+export const COMMPLUGINSTATS =
 	"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json";
 
+
+declare global {
+	interface Window {
+		electron: any;
+	}
+}	
 
 export const Filters = {
 	All: "all",
@@ -29,18 +35,18 @@ export const SortBy = {
 	Updated: "by update"
 };
 
-export const Groups: GroupData = {
+export const Groups: StringString = {
 	SelectGroup: "All",
 };
 
-export const GroupsComm: GroupData = {
+export const GroupsComm: StringString = {
 	SelectGroup: "All",
 };
 
 export const DEFAULT_SETTINGS: QPSSettings = {
 	lastFetchExe: 0,
 	savedVersion: "0.0.0",
-	allPluginsList: [],
+	installed: {},
 	wasEnabled: [],
 	sortBy: "Downloads",
 	filters: "All",
@@ -52,11 +58,10 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	showReset: false,
 	// commnunity plugins
 	pluginStats: {},
-	commPlugins: [],
+	commPlugins: {},
 	filtersComm: "All",
 	selectedGroupComm: "SelectGroup",
 	numberOfGroupsComm: 4,
 	groupsComm: {},
 };
-
 

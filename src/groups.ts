@@ -79,18 +79,17 @@ export const addDelayToGroup = (
     if (!input) return;
 
     input.onblur = async () => {
-        setDelay(input, settings, groupNumber, span, modal);
+        await setDelay(input, settings, groupNumber, span, modal);
     }
 
     input.onkeydown = async (event) => {
         if (event.key === "Enter") {
-            setDelay(input, settings, groupNumber, span, modal);
+            await setDelay(input, settings, groupNumber, span, modal);
         }
     }
 
-    const setDelay = (input: HTMLInputElement, settings: any, groupNumber: number, span: HTMLElement, modal: CPModal | QPSModal) => {
+    const setDelay = async (input: HTMLInputElement, settings: any, groupNumber: number, span: HTMLElement, modal: CPModal | QPSModal) => {
         // setTimeout to avoid input from being cleared before the input is set
-        setTimeout(async () => {
             const value = parseInt(input.value) || 0;
             settings.groups[groupNumber].time = value;
             span.textContent = `${value}`;
@@ -98,7 +97,7 @@ export const addDelayToGroup = (
                 await applyGroupDelay(inGroup, groupNumber, modal);
             }
             await reOpenModal(modal);
-        }, 100);
+
     }
 
 }
@@ -113,10 +112,11 @@ const applyGroupDelay = async (inGroup: string[], groupNumber: number, modal: CP
         installed[id].delayed = condition;
         settings.groups[groupNumber].applied = condition;
         if (installed[id].enabled) {
-            modal.app.plugins.disablePluginAndSave(id);
-            condition ? modal.app.plugins.enablePlugin(id) : modal.app.plugins.enablePluginAndSave(id);
+            await modal.app.plugins.disablePluginAndSave(id);
+            condition ? await modal.app.plugins.enablePlugin(id) : await modal.app.plugins.enablePluginAndSave(id);
+            installed[id].enabled = true
         }
-    }
+    }    
 }
 
 const groupMenuQPS = (

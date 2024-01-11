@@ -24,16 +24,16 @@ import {
 } from "./modal_utils";
 import {
 	addSearch,
+	checkbox,
 	doSearchCPM,
 	findMatchingItem,
 	handleContextMenu,
 	handleDblClick,
-	invert,
 	openGitHubRepo,
 	searchCommDivButton,
 } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
-import { QPSModal, circleCSSModif } from "./main_modal";
+import { QPSModal, circleCSSModif, toggleVisibility } from "./main_modal";
 import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
@@ -138,7 +138,7 @@ export class CPModal extends Modal {
 					})`,
 				byGroup: `By Group`,
 			})
-			.setValue(settings.filtersComm)
+			.setValue(settings.filtersComm as string)
 			.onChange(async (value: keyof typeof CommFilters) => {
 				settings.filtersComm = value;
 				await plugin.saveSettings();
@@ -147,7 +147,7 @@ export class CPModal extends Modal {
 
 		getFilters(this, contentEl)
 		byGroupDropdowns(this, contentEl);
-		invert(this, contentEl);
+		checkbox(this, contentEl,"Inv");
 	};
 
 	addGroups(modal: CPModal, contentEl: HTMLElement): void {
@@ -364,16 +364,16 @@ function sortItemsBy(
 	const { settings } = modal.plugin;
 	if (this.plugin.settings.sortBy === "Downloads") {
 		listItems.sort((a, b) => {
-			return settings.invertFilters ? a.downloads - b.downloads: b.downloads - a.downloads;
+			return settings.invertFiltersComm ? a.downloads - b.downloads : b.downloads - a.downloads;
 		});
 	} else if (this.plugin.settings.sortBy === "Updated") {
 		listItems.sort((a, b) => {
-			return settings.invertFilters ? a.updated - b.updated: b.updated - a.updated;
+			return settings.invertFiltersComm ? a.updated - b.updated : b.updated - a.updated;
 		});
 
 	} else if (this.plugin.settings.sortBy === "Alpha") {
 		listItems.sort((a, b) => {
-			return settings.invertFilters ? b.name.localeCompare(a.name): a.name.localeCompare(b.name);
+			return settings.invertFiltersComm ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
 		})
 	}
 }
@@ -408,6 +408,13 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 		".qps-comm-block"
 	) as HTMLElement;
 
+	const targetGroupIcon = elementFromPoint?.closest(
+		".qps-circle-title-group"
+	) as HTMLElement;
+	const targetGroup = elementFromPoint?.closest(
+		".qps-groups-name"
+	) as HTMLElement;
+
 	if (targetBlock) {
 		modal.searchTyping = false;
 		const matchingItem = findMatchingItem(modal, targetBlock);
@@ -418,7 +425,11 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 				matchingItem as PluginCommInfo
 			);
 		}
-	} else {
+	} else if ((targetGroupIcon || targetGroup) && event.key === "h") {
+		modal.searchTyping = false;
+		await toggleVisibility(modal, targetGroupIcon, targetGroup);
+	}
+	else {
 		modal.searchTyping = true;
 	}
 };
@@ -437,7 +448,7 @@ const handleHotkeysCPM = async (
 	const numberOfGroups = settings.numberOfGroupsComm;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => await openGitHubRepo(pluginItem),
+		g: async () => await openGitHubRepo(modal, pluginItem),
 	};
 
 	const keyPressed = evt.key;

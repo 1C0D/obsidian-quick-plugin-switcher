@@ -64,8 +64,8 @@ export async function openDirectoryInFileManager(
 	pluginItem: PluginInstalled
 ) {
 	let shell = window.electron.remote.shell;
-	const filePath = (modal.app as any).vault.adapter.getFullPath(
-		pluginItem.dir
+	const filePath = modal.app.vault.adapter.getFullPath(
+		pluginItem.dir!
 	);
 	try {
 		await shell.openPath(filePath);

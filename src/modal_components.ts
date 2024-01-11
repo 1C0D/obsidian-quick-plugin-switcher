@@ -33,7 +33,7 @@ import {
 } from "./community-plugins_modal";
 import { CommFilters, Filters, Groups } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 import { Console } from "./Console";
 
 export const mostSwitchedResetButton = (
@@ -83,14 +83,18 @@ export async function addSearch(
 }
 
 export function doSearchQPS(
+	modal: QPSModal,
 	value: string,
 	plugins: Record<string, PluginInstalled>
-) {
+): string[] {
 	const lowerCaseValue = value.toLowerCase();
-	return Object.keys(plugins).filter((id) =>
-		[plugins[id].name, plugins[id].author]
-			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
-	);
+	const { byAuthor } = modal.plugin.settings;
+
+	return Object.keys(plugins).filter((id) => {
+		const { name, author } = plugins[id];
+		const list = byAuthor ? [name, author] : [name];
+		return list.some((prop) => prop.toLowerCase().includes(lowerCaseValue));
+	});
 }
 
 export function doSearchCPM(
@@ -127,32 +131,33 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 		});
 };
 
-export const invert = (
+export const checkbox = (
 	modal: QPSModal | CPModal,
-	contentEl: HTMLElement
+	contentEl: HTMLElement,
+	text: string,
 ) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
 
 	if (modal instanceof QPSModal && settings.filters === Filters.ByGroup || modal instanceof CPModal && settings.filtersComm === CommFilters.ByGroup
 	) return
-
-	contentEl.createDiv({ text: " invert ", cls: "qps-comm-invert" }, (el) => {
+	const isQPS = modal instanceof QPSModal
+	contentEl.createDiv({ text: text, cls: "qps-comm-invert" }, (el) => {
 		el.createEl("input",
 			{
 				attr: {
 					cls: "qps-invert-button",
 					type: "checkbox",
-					checked: settings.invertFilters,
+					checked: isQPS ? settings.byAuthor : settings.invertFiltersComm,
 				}
 			}, (checkbox) => {
 				checkbox
-					.checked = settings.invertFilters
-				checkbox.onchange = () => {
-					settings.invertFilters = checkbox.checked
-					plugin.saveSettings()
-					reOpenModal(modal)
-				}
+					.checked = isQPS ? settings.byAuthor : settings.invertFiltersComm,
+					checkbox.onchange = () => {
+						isQPS ? settings.byAuthor = checkbox.checked : settings.invertFiltersComm = checkbox.checked
+						plugin.saveSettings()
+						reOpenModal(modal)
+					}
 			})
 	});
 }
@@ -503,7 +508,7 @@ const pluginFeatureSubmenu = async (
 				.setTitle("Plugin github (g)")
 				.setIcon("github")
 				.onClick(async () => {
-					await openGitHubRepo(installed[id]);
+					await openGitHubRepo(modal, installed[id]);
 				})
 	);
 
@@ -544,39 +549,20 @@ export const getHkeyCondition = async function (
 	return hasKeyStartingWith(pluginCommands, item.id);
 };
 
-export async function openGitHubRepo(plugin: PluginInstalled | PluginCommInfo) {
-	const id = plugin.id;
+export const openGitHubRepo = async (modal: QPSModal | CPModal, plugin: PluginInstalled | PluginCommInfo) => {
+	let repo: string;
 	if ("repo" in plugin) {
-		const repoURL = `https://github.com/${plugin.repo}`;
-		window.open(repoURL, "_blank"); // open
+		repo = plugin.repo
 	} else {
-		try {
-			const response = await fetch(
-				"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-			);
-			const pluginsData: Array<any> = await response.json();
-
-			const pluginData = pluginsData.find(
-				(item) => item[id] === id
-			);
-			if (pluginData && pluginData.repo) {
-				const repoURL = `https://github.com/${pluginData.repo}`;
-				window.open(repoURL, "_blank"); // open browser in new tab
-			} else {
-				console.warn("Repo not found for the plugin.");
-				try {
-					const repoURL = `https://github.com/${plugin.author}/${id}`;
-					window.open(repoURL, "_blank");
-				} catch {
-					const repoURL = `https://github.com/${plugin.author}`;
-					window.open(repoURL, "_blank");
-					console.warn("Repo not found for the plugin.");
-				}
-			}
-		} catch (error) {
-			console.error("Error fetching plugin data:", error);
-		}
+		const key = plugin.id;
+		const { commPlugins } = modal.plugin.settings;
+		const matchingPlugin = Object.values(commPlugins).find(
+			(plugin) => plugin.id === key
+		);
+		repo = matchingPlugin?.repo ?? "";
 	}
+	const repoURL = `https://github.com/${repo}`;
+	window.open(repoURL, "_blank"); // open
 }
 
 export const searchDivButtons = (
@@ -615,43 +601,6 @@ export const searchCommDivButton = (
 
 let timer: ReturnType<typeof setTimeout>;
 let clickCount = 0;
-
-// export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
-// 	const elementFromPoint = getElementFromMousePosition(modal);
-// 	const targetGroupIcon = elementFromPoint?.closest(
-// 		".qps-circle-title-group"
-// 	) as HTMLElement;
-// 	const targetGroup = elementFromPoint?.closest(
-// 		".qps-groups-name"
-// 	) as HTMLElement;
-
-// 	if (!targetGroupIcon && !targetGroup) return
-
-// 	clickCount++;
-// 	if (clickCount === 1) {
-// 		// timer = setTimeout(async () => {
-// 		// 	let groupNumber: number;
-// 		// 	if (targetGroupIcon) {
-// 		// 		groupNumber = groupNbFromEmoticon(targetGroupIcon)
-// 		// 	} else {
-// 		// 		const groupName = targetGroup?.textContent;
-// 		// 		groupNumber = groupNbFromGrpName(groupName!)
-// 		// 	}
-// 		// 	const inGroup = getPluginsInGroup(modal, groupNumber)
-// 		// 	await hideOnCLick(modal, groupNumber, inGroup)
-// 			clickCount = 0
-// 		// }, 250)
-
-// 	} else if (clickCount === 2) {
-// 		clearTimeout(timer)
-// 		if (targetGroup) {
-// 			const groupName = targetGroup?.textContent;
-// 			const groupNumber = groupNbFromGrpName(groupName!)
-// 			editGroupName(modal, targetGroup, groupNumber);
-// 		}
-// 		clickCount = 0
-// 	}
-// }
 
 export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number, inGroup: string[]) {
 	const { plugin } = modal
@@ -737,7 +686,7 @@ export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 		editGroupName(modal, targetGroup, groupNumber);
 	}
 
-	if (targetGroupIcon) {
+	if (targetGroupIcon && modal instanceof QPSModal) {
 		const groupNumber = groupNbFromEmoticon(targetGroupIcon)
 		const inGroup = getPluginsInGroup(modal, groupNumber);
 		addDelayToGroup(modal as QPSModal, groupNumber, targetGroupIcon, inGroup);
@@ -854,6 +803,7 @@ export function contextMenuCPM(
 
 				const msg = isenabled ? "disabled" : "enabled";
 				new Notice(`${matchingItem.name} ${msg}`, 2500);
+				reOpenModal(modal);
 			});
 	});
 	menu.addItem((item) => {

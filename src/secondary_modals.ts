@@ -137,31 +137,6 @@ export async function confirm(
 	);
 }
 
-// export class NewVersion extends Modal {
-// 	constructor(app: App, public plugin: QuickPluginSwitcher) {
-// 		super(app);
-// 		this.plugin = plugin;
-// 	}
-
-// 	onOpen() {
-// 		const { contentEl } = this;
-// 		contentEl.empty();
-// 		const content = `
-//         <b>Warning:</b><br>
-//         For this new feature(request) adding a delay to plugin(s) at start,
-//         default values need to be restored. Sorry for the inconvenience.<br><br>
-//         `;
-// 		contentEl.createDiv("", (el: HTMLDivElement) => {
-// 			el.innerHTML = content;
-// 		});
-// 	}
-
-// 	async onClose() {
-// 		const { contentEl } = this;
-// 		contentEl.empty();
-// 	}
-// }
-
 export class ReadMeModal extends Modal {
 	comp: Component;
 	mousePosition: any;
@@ -181,7 +156,6 @@ export class ReadMeModal extends Modal {
 
 	async onOpen() {
 		const { contentEl, pluginItem } = this;
-		// this.modalEl.addClass("read-me-modal");
 		contentEl.empty();
 		const id = pluginItem.id;
 
@@ -198,7 +172,7 @@ export class ReadMeModal extends Modal {
 		new ButtonComponent(openRepo)
 			.setButtonText("GitHub Repo")
 			.onClick(async () => {
-				await openGitHubRepo(pluginItem);
+				await openGitHubRepo(this.modal,pluginItem);
 			});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });

@@ -21,6 +21,7 @@ import {
 	findMatchingItem,
 	doSearchQPS,
 	hideOnCLick,
+	checkbox,
 } from "./modal_components";
 import {
 	delayedReEnable,
@@ -108,6 +109,7 @@ export class QPSModal extends Modal {
 		setGroupTitle(this, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
 		await addSearch(this, this.search, "Search plugins");
+		checkbox(this, this.search, "+Author");
 		searchDivButtons(this, this.search);
 		this.addGroups(this.groups);
 		if (settings.showHotKeys) this.setHotKeysdesc();
@@ -126,8 +128,8 @@ export class QPSModal extends Modal {
 				mostSwitched: `Most Switched(${plugin.lengthAll})`,
 				byGroup: `By Group`,
 			})
-			.setValue(settings.filters)
-			.onChange(async (value: keyof typeof Filters) => {
+			.setValue(settings.filters as string)
+			.onChange(async (value) => {
 				settings.filters = value;
 				await reOpenModal(this);
 			});
@@ -210,7 +212,7 @@ export class QPSModal extends Modal {
 		const { settings } = plugin;
 		const { installed } = settings;
 		// const previousValue = settings.search;
-		let listItems = doSearchQPS(value, installed)
+		let listItems = doSearchQPS(this, value, installed)
 		listItems = modeSort(plugin, listItems);
 		// Sort for chosen mode
 		// toggle plugin
@@ -347,14 +349,15 @@ async function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 			await handleHotkeysQPS(modal, event, matchingItem as PluginInstalled);
 		}
 	} else if ((targetGroupIcon || targetGroup) && event.key === "h") {
+		modal.searchTyping = false;
 		await toggleVisibility(modal, targetGroupIcon, targetGroup);
 	} else {
 		modal.searchTyping = true;
 	}
 }
 
-const toggleVisibility = async (
-	modal: QPSModal,
+export const toggleVisibility = async (
+	modal: QPSModal | CPModal,
 	targetGroupIcon: HTMLElement,
 	targetGroup: HTMLElement,
 ) => {
@@ -379,7 +382,7 @@ const handleHotkeysQPS = async (
 	const numberOfGroups = settings.numberOfGroups;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => await openGitHubRepo(pluginItem),
+		g: async () => await openGitHubRepo(modal, pluginItem),
 		s: async () => await openPluginSettings(modal, pluginItem),
 		h: async () => await showHotkeysFor(modal, pluginItem),
 	};

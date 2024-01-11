@@ -4,8 +4,8 @@ import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import QPSSettingTab from "./settings";
 import { fetchData } from "./community-plugins_modal";
-import { CommPlugin, PackageInfoData,  QPSSettings } from "./types/global";
-import { COMMPLUGINS, COMMPLUGINSTATS, DEFAULT_SETTINGS } from './types/variables';
+import { CommPlugin, PackageInfoData, QPSSettings } from "./types/global";
+import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters } from './types/variables';
 import { Console } from './Console';
 
 export default class QuickPluginSwitcher extends Plugin {
@@ -73,6 +73,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			"Quick Plugin Switcher",
 			async (evt: MouseEvent) => {
 				await this.getPluginsInfo();
+				this.settings.filters = Filters.All
+				this.settings.filtersComm = CommFilters.All
 				new QPSModal(this.app, this).open();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
 			}
@@ -150,7 +152,6 @@ export default class QuickPluginSwitcher extends Plugin {
 			if (id in manifests)
 				stillInstalled.push(id);
 			else {
-				Console.log("shouldn't happen there, plugin have been deleted from obsidian UI", id);
 				delete installed[id]
 			}
 		}
@@ -224,7 +225,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	}
 
 	async pluginsCommInfo() {
-		console.log("fetching'''''''''''''''''''''''''");
+		Console.log("fetching'''''''''''''''''''''''''");
 		let plugins: CommPlugin[], stats: PackageInfoData;
 		try {
 			plugins = await fetchData(COMMPLUGINS);
@@ -233,7 +234,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			return false;
 		}
 		if (plugins && stats) {
-	
+
 			const { commPlugins, pluginStats } = this.settings
 
 			for (const plugin of plugins) {
@@ -268,7 +269,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			this.settings.pluginStats = { ...this.settings.pluginStats, ...stats };
 
 			await this.saveSettings();
-			console.log("fetched");
+			Console.log("fetched");
 			return true;
 		}
 		return false;
@@ -288,7 +289,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				console.log("community plugins udpate failed, check your connexion");
 			}
 		} else {
-			console.log(
+			Console.log(
 				"fetched less than 2 min, community plugins not updated"
 			);
 		}
@@ -313,39 +314,3 @@ export default class QuickPluginSwitcher extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
-const info =
-	`item dans allPluginsList
-{
-    "name": "Close Similar Tabs",
-    "id": "close-similar-tabs",
-    "desc": "Avoid to have a file opened several times in your tabs. (+setting: by window or everywhere)",
-    "dir": ".obsidian/plugins/Obsidian-Close-Similar-Tabs",
-    "version": "2.3.6",
-    "author": "1C0D",
-    "authorUrl": "",
-    "desktopOnly": false,
-    "enabled": false,
-    "switched": 0,
-    "groupInfo": {
-        "hidden": false,
-        "groupIndices": [],
-        "groupWasEnabled": false
-    },
-    "delayed": false,
-    "time": 0
-}
-item dans manifests
-{
-    "id": "close-similar-tabs",
-    "name": "Close Similar Tabs",
-    "version": "2.3.6",
-    "minAppVersion": "0.15.0",
-    "description": "Avoid to have a file opened several times in your tabs. (+setting: by window or everywhere)",
-    "author": "1C0D",
-    "authorUrl": "",
-    "isDesktopOnly": false,
-    "dir": ".obsidian/plugins/Obsidian-Close-Similar-Tabs"
-}
-`
-

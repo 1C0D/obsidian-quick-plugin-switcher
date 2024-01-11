@@ -79,7 +79,8 @@ interface QPSSettings {
     selectedGroupComm: string;
     numberOfGroupsComm: number;
     groupsComm: Record<number, { name: string, hidden: boolean }>;
-    invertFilters: boolean;
+    byAuthor: boolean;
+    invertFiltersComm: boolean;
 }
 
 type KeyToSettingsMapType = {

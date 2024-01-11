@@ -1,4 +1,4 @@
-import { Notice, PluginSettingTab, Setting } from "obsidian";
+import { PluginSettingTab, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
 
@@ -14,7 +14,6 @@ export default class QPSSettingTab extends PluginSettingTab {
 		const { settings } = plugin;
 
 		containerEl.empty();
-		containerEl.createEl("h4", { text: "Quick Plugin Switcher" });
 
 		let saveSettingsTimeout: ReturnType<typeof setTimeout>;
 		const { numberOfGroups, numberOfGroupsComm } = settings;
@@ -116,8 +115,6 @@ export default class QPSSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// addButton(containerEl, plugin)
-
 		new Setting(containerEl)
 			.setName("Show hotkeys line reminder")
 			.addToggle((toggle) => {
@@ -128,50 +125,5 @@ export default class QPSSettingTab extends PluginSettingTab {
 						this.plugin.saveSettings();
 					});
 			});
-
-		new Setting(containerEl)
-			.setName("Show reset in main modal (for dev)")
-			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.showReset)
-					.onChange(async (value) => {
-						this.plugin.settings.showReset = value;
-						await this.plugin.saveSettings();
-					});
-			});
 	}
-
-
 }
-
-// export function addButton(containerEl: HTMLElement, plugin: QuickPluginSwitcher) {
-// 	return new Setting(containerEl)
-// 		.setName("Reset all values")
-// 		.setDesc("Don't do this, unless you really need to")
-// 		.addButton((btn) => {
-// 			btn.setIcon("alert-octagon")
-// 				.setTooltip("Reset all values")
-// 				.onClick(async () => {
-// 					const confirmReset = await confirm(
-// 						"Do you want to reset all values?",
-// 						300
-// 					);
-// 					if (confirmReset) {
-// 						if (
-// 							plugin.settings.hasOwnProperty("allPluginsList")
-// 						) {
-// 							plugin.settings.allPluginsList = [];
-// 						}
-// 						if (plugin.settings.hasOwnProperty("groups")) {
-// 							plugin.settings.groups = {};
-// 						}
-// 						await plugin.saveSettings();
-// 						// new Notice("Reset done", 2500);
-// 						(this.app as any).commands.executeCommandById('app:reload')
-// 					} else {
-// 						new Notice("Operation cancelled", 2500);
-// 					}
-// 				});
-// 		});
-
-// }

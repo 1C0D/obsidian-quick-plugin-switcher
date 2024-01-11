@@ -20,8 +20,8 @@ export const getFilters = (
     }
     new DropdownComponent(contentEl)
         .addOptions(dropdownOptions)
-        .setValue(settings.sortBy)
-        .onChange(async (value: keyof typeof SortBy) => {
+        .setValue(settings.sortBy as string)
+        .onChange(async (value) => {
             settings.sortBy = value;
             await reOpenModal(modal);
         });
@@ -136,37 +136,6 @@ const groupMenuQPS = (
         })
     );
 
-    // menu.addItem((item) =>
-    //     item
-    //         .setTitle("Apply")
-    //         .setDisabled(
-    //             !inGroup.length || settings.groups[groupNumber]?.time === 0
-    //         )
-    //         .onClick(async () => {
-    //             await applyGroupDelay(inGroup, groupNumber, modal);
-    //             await reOpenModal(modal);
-    //         })
-    // );
-    // menu.addItem((item) =>
-    //     item
-    //         .setTitle("Reset")
-    //         .setDisabled(
-    //             !inGroup.length || settings.groups[groupNumber]?.time === 0
-    //         )
-    //         .onClick(async () => {
-    //             for (const id of inGroup) {
-    //                 installed[id].time = 0;
-    //                 installed[id].delayed = false;
-    //                 settings.groups[groupNumber].applied = false;
-    //                 if (installed[id].enabled) {
-    //                     await modal.app.plugins.enablePluginAndSave(id);
-    //                 }
-    //                 settings.groups[groupNumber].time = 0;
-    //                 await reOpenModal(modal);
-    //             }
-    //             plugin.saveSettings();
-    //         })
-    // );
     menu.addSeparator();
     const toEnable = inGroup.filter((id) => installed[id].enabled === false);
     menu.addItem((item) =>
@@ -552,15 +521,14 @@ export const editGroupName = (
 };
 
 export const getEmojiForGroup = (groupNumber: number) => {
-    const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟤", "🟢", "🟣"];
+    const emojis = ["🟡", "🔵", "🔴", "⚪️", "🟣", "🟢",];
     const colors = [
         "#FFD700",
         "#0000FF",
         "#FF0000",
         "#FFFFFF",
-        "#A52A2A",
-        "#00FF00",
         "#800080",
+        "#00FF00",
     ];
     return { emoji: emojis[groupNumber - 1], color: colors[groupNumber - 1] };
 };

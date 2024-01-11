@@ -13,7 +13,7 @@ declare global {
 	}
 }	
 
-export const Filters = {
+export const Filters:StringString = {
 	All: "all",
 	Enabled: "enabled",
 	Disabled: "disabled",
@@ -22,14 +22,14 @@ export const Filters = {
 	ByGroup: "byGroup",
 };
 
-export const CommFilters = {
+export const CommFilters:StringString = {
 	All: "all",
 	NotInstalled: "not installed",
 	Installed: "installed",
 	ByGroup: "byGroup",
 };
 
-export const SortBy = {
+export const SortBy:StringString = {
 	Downloads: "by downloads",
 	Alpha: "by alphanum",
 	Updated: "by update"
@@ -63,6 +63,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	selectedGroupComm: "SelectGroup",
 	numberOfGroupsComm: 4,
 	groupsComm: {},
-	invertFilters: false
+	byAuthor: false,
+	invertFiltersComm: false
 };
 

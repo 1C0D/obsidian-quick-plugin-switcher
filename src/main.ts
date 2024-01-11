@@ -72,9 +72,9 @@ export default class QuickPluginSwitcher extends Plugin {
 			"toggle-right",
 			"Quick Plugin Switcher",
 			async (evt: MouseEvent) => {
-				await this.getPluginsInfo();
 				this.settings.filters = Filters.All
 				this.settings.filtersComm = CommFilters.All
+				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
 			}
@@ -84,7 +84,9 @@ export default class QuickPluginSwitcher extends Plugin {
 			id: "quick-plugin-switcher-modal",
 			name: "open modal",
 			callback: async () => {
-				await this.getPluginsInfo();
+				this.settings.filters = Filters.All
+				this.settings.filtersComm = CommFilters.All
+				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
 			},
@@ -141,7 +143,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		return { wrapper1, wrapper2 };
 	}
 
-	async getPluginsInfo() {
+	async installedUpdate() {
 		const installed = this.settings.installed || {};
 		const manifests = this.app.plugins.manifests || {};
 
@@ -234,15 +236,14 @@ export default class QuickPluginSwitcher extends Plugin {
 			return false;
 		}
 		if (plugins && stats) {
-
 			const { commPlugins, pluginStats } = this.settings
 
 			for (const plugin of plugins) {
 				let updateStats;
-				if (plugin.id in pluginStats) {
+				if (plugin.id in stats) {
 					updateStats = {
-						downloads: pluginStats[plugin.id].downloads || 0,
-						updated: pluginStats[plugin.id].updated || 0
+						downloads: stats[plugin.id].downloads || 0,
+						updated: stats[plugin.id].updated || 0
 					}
 				} else {
 					updateStats = {
@@ -301,9 +302,11 @@ export default class QuickPluginSwitcher extends Plugin {
 			delete previousSettings.allPluginsList;
 			delete previousSettings.pluginStats;
 			delete previousSettings.commPlugins;
-
+			
 			Console.log("allPluginsList... has been deleted");
 		}
+		if ("showReset" in previousSettings) {	
+			delete previousSettings.showReset;}
 
 		this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
 		this.settings.savedVersion = this.manifest.version;

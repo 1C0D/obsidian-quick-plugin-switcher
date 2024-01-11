@@ -315,7 +315,7 @@ export class CPModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.removeListeners()
-		await this.plugin.getPluginsInfo();
+		await this.plugin.installedUpdate();
 		new QPSModal(this.app, this.plugin).open();
 	}
 }

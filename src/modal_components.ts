@@ -867,7 +867,7 @@ function contextMenuQPS(
 						}
 						new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
 						matchingItem.version = lastVersion
-						await modal.plugin.getPluginsInfo();
+						await modal.plugin.installedUpdate();
 						await reOpenModal(modal);
 					} else {
 						new Notice(`not a published plugin`, 2500);
@@ -880,7 +880,7 @@ function contextMenuQPS(
 				.onClick(async () => {
 					await this.app.plugins.uninstallPlugin(matchingItem.id);
 					new Notice(`${matchingItem.name} uninstalled`, 2500);
-					await modal.plugin.getPluginsInfo();
+					await modal.plugin.installedUpdate();
 					await reOpenModal(modal);
 				});
 		});

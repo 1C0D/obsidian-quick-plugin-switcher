@@ -11,7 +11,7 @@ import {
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
-import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubLinks, openPluginSettings, showHotkeysFor } from "./modal_utils";
+import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
 import { getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
@@ -172,7 +172,7 @@ export class ReadMeModal extends Modal {
 		new ButtonComponent(openRepo)
 			.setButtonText("GitHub Repo")
 			.onClick(async () => {
-				await openGitHubRepo(this.modal,pluginItem);
+				await openGitHubRepo(this.modal, pluginItem);
 			});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
@@ -182,10 +182,11 @@ export class ReadMeModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					const lastVersion = await getLatestPluginVersion(this.modal, id);
-					const manifest = await getManifest(this.modal,id);
+					const manifest = await getManifest(this.modal, id);
 					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();
+					await reOpenModal(this.modal);
 				});
 		} else {
 			const manifests = (this.app as any).plugins.manifests || {};
@@ -204,6 +205,7 @@ export class ReadMeModal extends Modal {
 						);
 						if (condition) await this.onOpen();
 						new Notice(`${pluginItem.name} enabled`, 2500);
+						await reOpenModal(this.modal);
 					});
 			} else {
 				const pluginSettings = await (
@@ -228,7 +230,7 @@ export class ReadMeModal extends Modal {
 							await showHotkeysFor(this.modal, pluginItem);
 						});
 				}
-
+				if (id !== "quick-plugin-switcher")
 				new ButtonComponent(divButtons)
 					.setButtonText("Disable")
 					.onClick(async () => {
@@ -237,8 +239,10 @@ export class ReadMeModal extends Modal {
 						).plugins.disablePluginAndSave(pluginItem.id);
 						await this.onOpen();
 						new Notice(`${pluginItem.name} disabled`, 2500);
+						await reOpenModal(this.modal);
 					});
 			}
+			if (id !== "quick-plugin-switcher")
 			new ButtonComponent(divButtons)
 				.setButtonText("Uninstall")
 				.onClick(async () => {
@@ -247,6 +251,7 @@ export class ReadMeModal extends Modal {
 					);
 					await this.onOpen();
 					new Notice(`${pluginItem.name} uninstalled`, 2500);
+					await reOpenModal(this.modal);
 				});
 		}
 

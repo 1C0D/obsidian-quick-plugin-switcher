@@ -716,7 +716,6 @@ const handleInputDblClick = async (
 				}, 100);
 			}
 
-			// why this is toggling the plugin??????
 			input.onkeydown = (event) => {
 				if (event.key === "Enter") {
 					setDelay();
@@ -779,9 +778,10 @@ export function contextMenuCPM(
 	evt.preventDefault();
 	const menu = new Menu();
 	const id = matchingItem.id;
+	console.log("isInstalled(id)", isInstalled(id))
 	menu.addItem((item) => {
 		item.setTitle("Install plugin")
-			.setDisabled(isInstalled(id))
+			.setDisabled(isInstalled(id) || id === "quick-plugin-switcher")
 			.setIcon("log-in")
 			.onClick(async () => {
 				const lastVersion = await getLatestPluginVersion(modal, id);
@@ -794,7 +794,7 @@ export function contextMenuCPM(
 	menu.addItem((item) => {
 		const isenabled = isEnabled(modal, id);
 		item.setTitle(isenabled ? "Disable plugin" : "Enable plugin")
-			.setDisabled(!isInstalled(id))
+			.setDisabled(!isInstalled(id) || id === "quick-plugin-switcher")
 			.setIcon(isenabled ? "poweroff" : "power")
 			.onClick(async () => {
 				isEnabled(modal, id)
@@ -808,7 +808,7 @@ export function contextMenuCPM(
 	});
 	menu.addItem((item) => {
 		item.setTitle("Uninstall plugin")
-			.setDisabled(!isInstalled(id))
+			.setDisabled(!isInstalled(id) || id === "quick-plugin-switcher")
 			.setIcon("log-out")
 			.onClick(async () => {
 				await this.app.plugins.uninstallPlugin(id);
@@ -849,7 +849,7 @@ function contextMenuQPS(
 			const { commPlugins } = plugin.settings
 
 			item.setTitle("Search for update")
-				.setDisabled(!(!!plugin.settings.pluginStats[matchingItem.id]))
+				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("rocket")
 				.onClick(async () => {
 					const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
@@ -870,12 +870,13 @@ function contextMenuQPS(
 						await modal.plugin.installedUpdate();
 						await reOpenModal(modal);
 					} else {
-						new Notice(`not a published plugin`, 2500);
+						new Notice(`Not a published plugin`, 2500);
 					}
 				});
 		});
 		menu.addItem((item) => {
 			item.setTitle("Uninstall plugin")
+				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("log-out")
 				.onClick(async () => {
 					await this.app.plugins.uninstallPlugin(matchingItem.id);

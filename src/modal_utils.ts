@@ -8,6 +8,7 @@ import { compareVersions } from "./utils";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
+import { Console } from "./Console";
 
 /**
  * Reset most switched values.
@@ -253,7 +254,7 @@ export async function getLatestPluginVersion(
 	}
 
 	if (!latestVersion) {
-		console.debug("no last version?"); // shouldn't happen
+		Console.debug("not published plugin?");
 		return;
 	}
 	return latestVersion

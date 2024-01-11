@@ -209,7 +209,7 @@ export class CPModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (ctrl)Readme`,
+					text: ` (🖱️x2/ctrl)Readme`,
 				});
 			}
 		);

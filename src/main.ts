@@ -287,7 +287,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.lastFetchExe = currentTime;
 				await this.saveSettings();
 			} else {
-				console.log("community plugins udpate failed, check your connexion");
+				Console.log("community plugins udpate failed, check your connexion");
 			}
 		} else {
 			Console.log(

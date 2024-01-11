@@ -187,7 +187,7 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			"Install & enable plugins based on another Vault content or from a JSON list"
 		)
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
-			Console.log("is this click event removed?")
+			Console.debug("is this click event removed?")
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item
@@ -778,7 +778,6 @@ export function contextMenuCPM(
 	evt.preventDefault();
 	const menu = new Menu();
 	const id = matchingItem.id;
-	console.log("isInstalled(id)", isInstalled(id))
 	menu.addItem((item) => {
 		item.setTitle("Install plugin")
 			.setDisabled(isInstalled(id) || id === "quick-plugin-switcher")

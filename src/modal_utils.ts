@@ -7,7 +7,7 @@ import { getHkeyCondition } from "./modal_components";
 import { compareVersions } from "./utils";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
+import { PluginCommInfo, PluginInstalled } from "./types/global";
 import { Console } from "./Console";
 
 /**

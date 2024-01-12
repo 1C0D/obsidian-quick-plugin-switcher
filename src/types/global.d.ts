@@ -74,6 +74,7 @@ interface QPSSettings {
     showReset: boolean;
     // commnunity plugins
     pluginStats: PackageInfoData; 
+    plugins: string[];
     commPlugins: Record<string, PluginCommInfo>;
     filtersComm: keyof typeof CommFilters;
     selectedGroupComm: string;

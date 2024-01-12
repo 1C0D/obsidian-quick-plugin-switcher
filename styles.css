@@ -119,9 +119,12 @@
   z-index: 1;
 }
 
-.qps-header .dropdown,
-.qps-community-header .dropdown {
+.qps-header .dropdown {
   margin-left: 5px;
+}
+
+.qps-community-header button {
+  margin-left: 7px;
 }
 
 .qps-search-component {

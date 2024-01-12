@@ -32,7 +32,8 @@ export const CommFilters:StringString = {
 export const SortBy:StringString = {
 	Downloads: "by downloads",
 	Alpha: "by alphanum",
-	Updated: "by update"
+	Updated: "by (recent) update",
+	Released: "by (recent) release",
 };
 
 export const Groups: StringString = {
@@ -58,6 +59,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	showReset: false,
 	// commnunity plugins
 	pluginStats: {},
+	plugins:[],
 	commPlugins: {},
 	filtersComm: "All",
 	selectedGroupComm: "SelectGroup",

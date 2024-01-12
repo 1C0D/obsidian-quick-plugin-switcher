@@ -362,19 +362,25 @@ function sortItemsBy(
 	listItems: PluginCommInfo[],
 ) {
 	const { settings } = modal.plugin;
-	if (this.plugin.settings.sortBy === "Downloads") {
+	if (settings.sortBy === "Downloads") {
 		listItems.sort((a, b) => {
 			return settings.invertFiltersComm ? a.downloads - b.downloads : b.downloads - a.downloads;
 		});
-	} else if (this.plugin.settings.sortBy === "Updated") {
+	} else if (settings.sortBy === "Updated") {
 		listItems.sort((a, b) => {
 			return settings.invertFiltersComm ? a.updated - b.updated : b.updated - a.updated;
 		});
 
-	} else if (this.plugin.settings.sortBy === "Alpha") {
+	} else if (settings.sortBy === "Alpha") {
 		listItems.sort((a, b) => {
 			return settings.invertFiltersComm ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
 		})
+	} else if (settings.sortBy === "Released") {
+		listItems.sort((a, b) => {
+			const indexA = settings.plugins.findIndex((id:string) => id === a.id);
+			const indexB = settings.plugins.findIndex((id:string) => id === b.id);
+			return settings.invertFiltersComm ? indexA - indexB : indexB - indexA;
+		});
 	}
 }
 

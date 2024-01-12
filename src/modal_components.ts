@@ -187,7 +187,6 @@ export const commOptionButton = (modal: CPModal, el: HTMLSpanElement) => {
 			"Install & enable plugins based on another Vault content or from a JSON list"
 		)
 		.buttonEl.addEventListener("click", (evt: MouseEvent) => {
-			Console.debug("is this click event removed?")
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item

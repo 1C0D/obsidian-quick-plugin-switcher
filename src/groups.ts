@@ -1,4 +1,4 @@
-import { DropdownComponent, Menu, Notice } from "obsidian";
+import { ButtonComponent, DropdownComponent, Menu, Notice } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled, getLatestPluginVersion } from "./modal_utils";
@@ -14,17 +14,28 @@ export const getFilters = (
     const { plugin } = modal;
     const { settings } = plugin;
     if (settings.filtersComm === CommFilters.ByGroup) return
-    const dropdownOptions: StringString = {}
-    for (const key in SortBy) {
-        dropdownOptions[key] = SortBy[key as keyof typeof SortBy]
-    }
-    new DropdownComponent(contentEl)
-        .addOptions(dropdownOptions)
-        .setValue(settings.sortBy as string)
-        .onChange(async (value) => {
-            settings.sortBy = value;
-            await reOpenModal(modal);
-        });
+
+    new ButtonComponent(contentEl)
+        .setIcon("arrow-up-narrow-wide")
+        // .setCta()
+        .setClass("comm-button")
+        .setTooltip(
+            "change type of sorting"
+        )
+        .buttonEl.addEventListener("click", async (evt: MouseEvent) => {
+            const menu = new Menu();
+            for (const key in SortBy) {
+                menu.addItem((item) =>
+                    item
+                        .setTitle(SortBy[key])
+                        .onClick(async () => {
+                            settings.sortBy = key
+                            await reOpenModal(modal);
+                        }).setChecked(key === settings.sortBy)
+                )
+            }
+            menu.showAtMouseEvent(evt);
+        })
 }
 
 export const byGroupDropdowns = (
@@ -90,13 +101,13 @@ export const addDelayToGroup = (
 
     const setDelay = async (input: HTMLInputElement, settings: any, groupNumber: number, span: HTMLElement, modal: CPModal | QPSModal) => {
         // setTimeout to avoid input from being cleared before the input is set
-            const value = parseInt(input.value) || 0;
-            settings.groups[groupNumber].time = value;
-            span.textContent = `${value}`;
-            if (inGroup.length) {
-                await applyGroupDelay(inGroup, groupNumber, modal);
-            }
-            await reOpenModal(modal);
+        const value = parseInt(input.value) || 0;
+        settings.groups[groupNumber].time = value;
+        span.textContent = `${value}`;
+        if (inGroup.length) {
+            await applyGroupDelay(inGroup, groupNumber, modal);
+        }
+        await reOpenModal(modal);
 
     }
 
@@ -116,7 +127,7 @@ const applyGroupDelay = async (inGroup: string[], groupNumber: number, modal: CP
             condition ? await modal.app.plugins.enablePlugin(id) : await modal.app.plugins.enablePluginAndSave(id);
             installed[id].enabled = true
         }
-    }    
+    }
 }
 
 const groupMenuQPS = (

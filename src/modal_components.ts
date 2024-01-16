@@ -473,9 +473,11 @@ export const itemTextComponent = (
 		customValue = "\u1D30" + customValue;
 	}
 	customValue = customValue + `|${pluginItem.version}`
-	const text = new TextComponent(itemContainer).setValue(customValue).inputEl;
+	let text = new TextComponent(itemContainer).setValue(customValue)
+	const input = text.inputEl;
+	input.readOnly = true;
 
-	return text;
+	return input;
 };
 
 const pluginFeatureSubmenu = async (

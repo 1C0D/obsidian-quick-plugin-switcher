@@ -32,6 +32,11 @@
 }
 
 .qps-item-line input {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   width: 62%;
   padding: 1.25em 0 1.25em 0.5em !important;

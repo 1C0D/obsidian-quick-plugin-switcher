@@ -32,6 +32,7 @@
 }
 
 .qps-item-line input {
+  user-select: none;
   width: 62%;
   padding: 1.25em 0 1.25em 0.5em !important;
   margin: 2px 0

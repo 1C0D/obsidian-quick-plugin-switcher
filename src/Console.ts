@@ -1,7 +1,11 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
+import { Platform } from "obsidian";
 
-let DEBUG = process.env.DEBUG || "true"
+let DEBUG = "false";
+
+if (Platform.isDesktopApp) {
+    require('dotenv').config();
+    DEBUG = process.env.DEBUG ?? "true";
+}
 
 export const Console = {
     debug: (...args: any[]) => {
@@ -15,3 +19,4 @@ export const Console = {
         }
     }
 };
+

@@ -475,8 +475,8 @@ export const itemTextComponent = (
 	customValue = customValue + `|${pluginItem.version}`
 	let text = new TextComponent(itemContainer).setValue(customValue)
 	const input = text.inputEl;
+	input.contentEditable = "false";
 	input.readOnly = true;
-
 	return input;
 };
 

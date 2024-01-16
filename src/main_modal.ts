@@ -235,7 +235,6 @@ export class QPSModal extends Modal {
 			});
 			itemTogglePluginButton(this, installed[id], itemContainer);
 			const input = itemTextComponent(installed[id], itemContainer);
-			input.readOnly = true;
 			itemToggleClass(this, installed[id], itemContainer);
 			// create groups circles
 			addGroupCircles(input, installed[id]);

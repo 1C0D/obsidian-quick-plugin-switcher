@@ -762,6 +762,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
+				evt.preventDefault();
 				contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
 			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);

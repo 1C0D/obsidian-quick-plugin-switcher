@@ -5,7 +5,6 @@ import {
 	ExtraButtonComponent,
 	Menu,
 	Notice,
-	Platform,
 	SearchComponent,
 	Setting,
 	TextComponent,
@@ -497,7 +496,7 @@ const pluginFeatureSubmenu = async (
 	const id = pluginItem.id;
 	submenu.addItem((item) =>
 		item
-			.setTitle("Plugin infos (i)")
+			.setTitle("Short info (i)")
 			.setIcon("text")
 			.onClick(() => {
 				new DescriptionModal(
@@ -530,7 +529,7 @@ const pluginFeatureSubmenu = async (
 			.setIcon("settings")
 			.setDisabled(!pluginSettings)
 			.onClick(async () => {
-				await openPluginSettings(modal, pluginSettings);
+				await openPluginSettings(modal, pluginItem);
 			})
 	);
 
@@ -542,7 +541,7 @@ const pluginFeatureSubmenu = async (
 			.setIcon("plus-circle")
 			.setDisabled(!condition)
 			.onClick(async () => {
-				await showHotkeysFor(modal, installed[id]);
+				await showHotkeysFor(modal, pluginItem);
 			})
 	);
 };
@@ -661,7 +660,7 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 		const matchingItem = findMatchingItem(modal, targetBlock.parentElement as HTMLElement);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
-				contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
+				await contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
 			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
 			}
@@ -759,7 +758,7 @@ const handleInputDblClick = async (
 };
 
 
-export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
+export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal);
 	let targetBlock, targetGroup;
 
@@ -788,7 +787,7 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
-				contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
+				await contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
 			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
 			}
@@ -851,12 +850,13 @@ export function contextMenuCPM(
 				.setIcon("github")
 				.onClick(async () => {
 					await openGitHubRepo(modal, matchingItem);
-				})		})
+				})
+		})
 	}
 	menu.showAtMouseEvent(evt);
 }
 
-function contextMenuQPS(
+async function contextMenuQPS(
 	evt: MouseEvent,
 	modal: QPSModal,
 	matchingItem: PluginInstalled
@@ -874,17 +874,20 @@ function contextMenuQPS(
 				})
 		);
 	}
-	menu.addItem(async (item) => {
-		item.setTitle("Plugin features").setIcon("package-plus");
-		const submenu = (item as any).setSubmenu() as Menu;
-		await pluginFeatureSubmenu(submenu, matchingItem, modal);
-	});
+	if (!this.app.isMobile) {
+		menu.addItem(async (item) => {
+			item.setTitle("Plugin features").setIcon("package-plus");
+			const submenu = (item as any).setSubmenu() as Menu;
+			await pluginFeatureSubmenu(submenu, matchingItem, modal);
+		});
+	} else {
+		await pluginFeatureSubmenu(menu, matchingItem, modal);
+	}
 
 	if (isInstalled(matchingItem.id)) {
 		menu.addSeparator();
 		menu.addItem((item) => {
 			const { commPlugins } = plugin.settings
-
 			item.setTitle("Search for update")
 				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("rocket")
@@ -926,17 +929,38 @@ function contextMenuQPS(
 
 	if (matchingItem.id !== "quick-plugin-switcher") {
 		menu.addSeparator();
-		menu.addItem((item) => {
-			item.setTitle("Add to group").setIcon("user");
-			const submenu = (item as any).setSubmenu() as Menu;
-			addToGroupSubMenu(submenu, matchingItem, modal);
-		});
-		menu.addItem((item) => {
-			item.setTitle("Remove from group").setIcon("user-minus");
-			const submenu = (item as any).setSubmenu() as Menu;
-			submenu.addItem((subitem) => {
-				subitem
-					.setTitle("All groups")
+		if (!this.app.isMobile) {
+			menu.addItem((item) => {
+				item.setTitle("Add to group").setIcon("user");
+				const submenu = (item as any).setSubmenu() as Menu;
+				addToGroupSubMenu(submenu, matchingItem, modal);
+			});
+		}else{
+			addToGroupSubMenu(menu, matchingItem, modal, true);
+		}
+
+		if(!this.app.isMobile){
+			menu.addItem((item) => {
+				item.setTitle("Remove from group").setIcon("user-minus");
+				const submenu = (item as any).setSubmenu() as Menu;
+				submenu.addItem((subitem) => {
+					subitem
+						.setTitle("All groups")
+						.setDisabled(
+							matchingItem.groupInfo.groupIndices.length === 0
+						)
+						.onClick(async () => {
+							matchingItem.groupInfo.groupIndices;
+							await rmvAllGroupsFromPlugin(modal, matchingItem);
+						});
+				});
+				addRemoveItemGroupMenuItems(modal, submenu, matchingItem);
+			});			
+		}else{
+			menu.addSeparator();
+			menu.addItem((item) => {
+				item
+					.setTitle("Remove All groups")
 					.setDisabled(
 						matchingItem.groupInfo.groupIndices.length === 0
 					)
@@ -945,8 +969,8 @@ function contextMenuQPS(
 						await rmvAllGroupsFromPlugin(modal, matchingItem);
 					});
 			});
-			addRemoveItemGroupMenuItems(modal, submenu, matchingItem);
-		});
+			addRemoveItemGroupMenuItems(modal, menu, matchingItem,true);
+		}
 	}
 	menu.showAtMouseEvent(evt);
 }

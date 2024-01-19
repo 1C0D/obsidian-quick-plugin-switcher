@@ -73,9 +73,9 @@ export class CPModal extends Modal {
 	getHandleKeyDown = async (event: KeyboardEvent) => {
 		await handleKeyDown(event, this);
 	}
-	getHandleContextMenu = (evt: MouseEvent) => {
+	getHandleContextMenu = async (evt: MouseEvent) => {
 		if (this.isDblClick) return;
-		handleContextMenu(evt, this);
+		await handleContextMenu(evt, this);
 	}
 	getHandleDblClick = (evt: MouseEvent) => {
 		if (this.isDblClick) return;
@@ -363,7 +363,6 @@ export async function getReadMe(item: PluginCommInfo) {
 	const repoURL = `https://api.github.com/repos/${repo}/contents/README.md`;
 	try {
 		const response = await requestUrl(repoURL);
-		console.log("response", response)
 		return await response.json;
 	} catch (error) {
 		console.warn("Error fetching ReadMe");

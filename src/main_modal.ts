@@ -66,9 +66,9 @@ export class QPSModal extends Modal {
 	getHandleKeyDown = async (event: KeyboardEvent) => {
 		await handleKeyDown(event, this);
 	}
-	getHandleContextMenu = (evt: MouseEvent) => {
+	getHandleContextMenu = async (evt: MouseEvent) => {
 		if (this.isDblClick) return;
-		handleContextMenu(evt, this);
+		await handleContextMenu(evt, this);
 	}
 	getHandleDblClick = (evt: MouseEvent) => {
 		if (this.isDblClick) return;

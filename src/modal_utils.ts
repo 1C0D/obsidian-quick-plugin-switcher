@@ -215,6 +215,8 @@ export const showHotkeysFor = async function (
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
+	
+	console.log("pluginItem", pluginItem)
 	if (!(pluginItem as PluginInstalled).enabled) {
 		new Notice("Plugin disabled, no HotKeys to show", 3500);
 		return;

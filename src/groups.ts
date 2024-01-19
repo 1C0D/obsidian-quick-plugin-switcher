@@ -4,8 +4,9 @@ import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled, getLatestPluginVersion } from "./modal_utils";
 import { Filters, Groups, CommFilters, GroupsComm, SortBy } from "./types/variables";
 import { removeItem } from "./utils";
-import { createClearGroupsMenuItem } from "./modal_components";
+import { createClearGroupsMenuItem, hideOnCLick } from "./modal_components";
 import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
+import { BADHINTS } from "dns";
 
 export const getFilters = (
     modal: CPModal,
@@ -147,6 +148,13 @@ const groupMenuQPS = (
         })
     );
 
+    menu.addSeparator();
+    menu.addItem((item) =>
+        item.setTitle("Show/hide group content").onClick(async () => {
+            await hideOnCLick(modal, groupNumber, inGroup)
+
+        })
+    );
     menu.addSeparator();
     const toEnable = inGroup.filter((id) => installed[id].enabled === false);
     menu.addItem((item) =>
@@ -360,7 +368,8 @@ export const setGroupTitle = (
 export function addRemoveItemGroupMenuItems(
     modal: QPSModal,
     submenu: Menu,
-    pluginItem: PluginInstalled
+    pluginItem: PluginInstalled,
+    alt?: boolean
 ) {
     const { plugin } = modal
     const { settings } = plugin;
@@ -372,8 +381,9 @@ export function addRemoveItemGroupMenuItems(
         const getGroup =
             pluginItem.groupInfo.groupIndices.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
+            let value = alt ? `remove ${groupValue}` : `${groupValue}`
             submenu.addItem((subitem) => {
-                subitem.setTitle(`${groupValue}`).onClick(async () => {
+                subitem.setTitle(value).onClick(async () => {
                     for (const index of pluginItem.groupInfo.groupIndices) {
                         if (index === groupIndex) {
                             removeItem(
@@ -467,12 +477,16 @@ export function addRemoveGroupMenuItems(
 export const addToGroupSubMenu = (
     submenu: Menu,
     pluginItem: PluginInstalled,
-    modal: QPSModal
+    modal: QPSModal,
+    alt?: boolean
 ) => {
     Object.entries(Groups).forEach(([key, value]) => {
         const groupIndices = pluginItem.groupInfo.groupIndices;
         const groupIndex = getIndexFromSelectedGroup(key);
         if (key !== "SelectGroup") {
+            if (alt) {
+                value = `add to ${value}`
+            }
             submenu.addItem((item) =>
                 item
                     .setTitle(value)

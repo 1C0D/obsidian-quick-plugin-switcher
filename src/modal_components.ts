@@ -162,6 +162,14 @@ export const checkbox = (
 	});
 }
 
+export const vertDotsButton = (el: HTMLElement) => {
+	new ButtonComponent(el)
+		.setButtonText("\u2807")
+		.setTooltip(
+			"open context-menu"
+		)
+};
+
 export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
 	new ButtonComponent(el)
@@ -643,6 +651,24 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 	await reOpenModal(modal)
 }
 
+export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
+	const elementFromPoint = getElementFromMousePosition(modal);
+	const targetBlock = elementFromPoint?.closest(
+		".button-container"
+	) as HTMLElement;
+	console.log("targetBlock", targetBlock)
+	if (targetBlock) {
+		const matchingItem = findMatchingItem(modal, targetBlock.parentElement as HTMLElement);
+		if (matchingItem) {
+			if (modal instanceof QPSModal) {
+				contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
+			} else {
+				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
+			}
+		}
+	}
+}
+
 export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal);
 
@@ -739,30 +765,29 @@ export function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPModal) {
 
 	targetGroup = elementFromPoint?.closest(".qps-groups-name") as HTMLElement;
 
-	if (!targetGroup) {
-		if (modal instanceof QPSModal) {
-			targetBlock = elementFromPoint?.closest(
-				".qps-item-line"
-			) as HTMLElement;
-		} else {
-			targetBlock = elementFromPoint?.closest(
-				".qps-comm-block"
-			) as HTMLElement;
-		}
-	}
-
 	const groupName = targetGroup?.textContent;
 	const groupNumber = groupNbFromGrpName(groupName!)
 
 	if (targetGroup) {
 		groupMenu(evt, modal, groupNumber, targetGroup);
+		return
 	}
+
+	if (modal instanceof QPSModal) {
+		targetBlock = elementFromPoint?.closest(
+			".qps-item-line"
+		) as HTMLElement;
+	} else {
+		targetBlock = elementFromPoint?.closest(
+			".qps-comm-block"
+		) as HTMLElement;
+	}
+
 
 	if (targetBlock) {
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
-				evt.preventDefault();
 				contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
 			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
@@ -778,6 +803,8 @@ export function contextMenuCPM(
 ) {
 	evt.preventDefault();
 	const menu = new Menu();
+	const { settings } = modal.plugin;
+	const { installed } = settings;
 	const id = matchingItem.id;
 	menu.addItem((item) => {
 		item.setTitle("Install plugin")
@@ -816,6 +843,16 @@ export function contextMenuCPM(
 				await reOpenModal(modal);
 			});
 	});
+	if (this.app.isMobile) {
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item
+				.setTitle("Plugin github (g)")
+				.setIcon("github")
+				.onClick(async () => {
+					await openGitHubRepo(modal, matchingItem);
+				})		})
+	}
 	menu.showAtMouseEvent(evt);
 }
 
@@ -827,7 +864,7 @@ function contextMenuQPS(
 	const { plugin } = modal;
 	const menu = new Menu();
 
-	if (Platform.isDesktopApp) {
+	if (!this.app.isMobile) {
 		menu.addItem((item) =>
 			item
 				.setTitle("Plugin folder (f)")
@@ -931,7 +968,8 @@ export const findMatchingItem = (
 
 		return installed[matchingItem!];
 	} else {
-		const itemName = targetBlock.firstChild?.textContent;
+		const target = modal.app.isMobile ? targetBlock.children[1] : targetBlock.firstChild
+		const itemName = target?.textContent;
 		const cleanItemName = itemName?.replace(/installed$/, "").trim();
 		const matchingItem = Object.keys(commPlugins).find(
 			(id) => commPlugins[id].name === cleanItemName

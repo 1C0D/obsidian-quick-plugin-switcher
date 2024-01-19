@@ -7,6 +7,7 @@ declare module "obsidian" {
         setting: Setting,
         plugins: Plugins,
         commands: Commands;
+        isMobile: boolean;
     }
 
     interface Plugins {
@@ -71,7 +72,6 @@ interface QPSSettings {
         { name: string; delayed: boolean; time: number; applied: boolean, hidden: boolean }
     >;
     showHotKeys: boolean;
-    showReset: boolean;
     // commnunity plugins
     pluginStats: PackageInfoData; 
     plugins: string[];

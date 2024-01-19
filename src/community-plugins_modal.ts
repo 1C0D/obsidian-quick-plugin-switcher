@@ -6,7 +6,10 @@ import {
 	Modal,
 	Notice,
 	Platform,
+	request,
+	requestUrl,
 	setIcon,
+	setTooltip,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import {
@@ -27,10 +30,12 @@ import {
 	checkbox,
 	doSearchCPM,
 	findMatchingItem,
+	handleClick,
 	handleContextMenu,
 	handleDblClick,
 	openGitHubRepo,
 	searchCommDivButton,
+	vertDotsButton,
 } from "./modal_components";
 import { ReadMeModal } from "./secondary_modals";
 import { QPSModal, circleCSSModif, toggleVisibility } from "./main_modal";
@@ -76,6 +81,9 @@ export class CPModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
+	getHandleClick = (evt: MouseEvent) => {
+		handleClick(evt, this);
+	}
 
 	// Add H to hide groups on handlekeydown
 
@@ -84,6 +92,9 @@ export class CPModal extends Modal {
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
+		if (this.app.isMobile) {
+			this.modalEl.removeEventListener("click", this.getHandleClick);
+		}
 	}
 
 	container() {
@@ -105,6 +116,9 @@ export class CPModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
+		if (this.app.isMobile) {
+			this.modalEl.addEventListener("click", this.getHandleClick);
+		}
 	}
 
 	async onOpen() {
@@ -122,7 +136,7 @@ export class CPModal extends Modal {
 			searchCommDivButton(this, this.search);
 		}
 		this.addGroups(this, this.groups);
-		if (settings.showHotKeys) this.setHotKeysdesc();
+		if (settings.showHotKeys && !this.app.isMobile) this.setHotKeysdesc();
 		await this.addItems(settings.search);
 	}
 
@@ -147,7 +161,7 @@ export class CPModal extends Modal {
 
 		getFilters(this, contentEl)
 		byGroupDropdowns(this, contentEl);
-		checkbox(this, contentEl,"Inv");
+		checkbox(this, contentEl, "Inv");
 	};
 
 	addGroups(modal: CPModal, contentEl: HTMLElement): void {
@@ -192,9 +206,11 @@ export class CPModal extends Modal {
 				}
 			);
 		}
-		contentEl.createSpan({
-			text: `> (h)👁️ (🖱️x2)name`,
-		});
+		if(!this.app.isMobile) {
+			contentEl.createSpan({
+				text: `> (h)👁️ (🖱️x2)name`,
+			});			
+		}
 	}
 
 	setHotKeysdesc(): void {
@@ -248,6 +264,17 @@ export class CPModal extends Modal {
 					if (item.hidden) return
 				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
+
+				if (this.app.isMobile) {
+					const div = itemContainer.createEl(
+						"div",
+						{
+							cls: "button-container",
+						},
+						(el) => {
+							vertDotsButton(el);
+						})
+				}
 
 				const name = this.hightLightSpan(value, item.name);
 				const author = `by ${this.hightLightSpan(value, item.author)}`;
@@ -322,8 +349,8 @@ export class CPModal extends Modal {
 
 export async function fetchData(url: string) {
 	try {
-		const response = await fetch(url);
-		const data = await response.json();
+		const response = await requestUrl(url);
+		const data = await response.json;
 		if (data) return data;
 	} catch (error) {
 		// console.warn(`Error fetching data from ${url}:`);
@@ -335,8 +362,9 @@ export async function getReadMe(item: PluginCommInfo) {
 	const repo = item.repo;
 	const repoURL = `https://api.github.com/repos/${repo}/contents/README.md`;
 	try {
-		const response = await fetch(repoURL);
-		return await response.json();
+		const response = await requestUrl(repoURL);
+		console.log("response", response)
+		return await response.json;
 	} catch (error) {
 		console.warn("Error fetching ReadMe");
 	}
@@ -349,8 +377,8 @@ export async function getManifest(modal: CPModal | QPSModal, id: string | undefi
 	const repo = commPlugins[id].repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/master/manifest.json`;
 	try {
-		const response = await fetch(repoURL);
-		return await response.json();
+		const response = await requestUrl(repoURL);
+		return await response.json;
 	} catch (error) {
 		console.warn("Error fetching manifest");
 	}
@@ -377,8 +405,8 @@ function sortItemsBy(
 		})
 	} else if (settings.sortBy === "Released") {
 		listItems.sort((a, b) => {
-			const indexA = settings.plugins.findIndex((id:string) => id === a.id);
-			const indexB = settings.plugins.findIndex((id:string) => id === b.id);
+			const indexA = settings.plugins.findIndex((id: string) => id === a.id);
+			const indexB = settings.plugins.findIndex((id: string) => id === b.id);
 			return settings.invertFiltersComm ? indexA - indexB : indexB - indexA;
 		});
 	}

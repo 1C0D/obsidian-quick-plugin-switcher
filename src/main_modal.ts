@@ -22,6 +22,8 @@ import {
 	doSearchQPS,
 	hideOnCLick,
 	checkbox,
+	vertDotsButton,
+	handleClick,
 } from "./modal_components";
 import {
 	delayedReEnable,
@@ -72,12 +74,19 @@ export class QPSModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
+	getHandleClick = (evt: MouseEvent) => {
+		if (this.isDblClick) return;
+		handleClick(evt, this);
+	}
 
 	removeListeners() {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
+		if (this.app.isMobile) {
+			this.modalEl.removeEventListener("dblclick", this.getHandleClick);
+		}
 	}
 
 	container() {
@@ -89,13 +98,15 @@ export class QPSModal extends Modal {
 		this.search = contentEl.createEl("div", { cls: "qps-search" });
 		this.groups = contentEl.createEl("div", { cls: "qps-groups" });
 		this.hotkeysDesc = contentEl.createEl("p", { cls: "qps-hk-desc" });
-		// if (this.plugin.settings.showReset) addButton(contentEl, this.plugin)
 		this.items = contentEl.createEl("div", { cls: "qps-items" });
 
 		this.modalEl.addEventListener("mousemove", this.getMousePosition);
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
+		if (this.app.isMobile) {
+			this.modalEl.addEventListener("click", this.getHandleClick);
+		}
 	}
 
 	async onOpen() {
@@ -112,7 +123,7 @@ export class QPSModal extends Modal {
 		checkbox(this, this.search, "+Author");
 		searchDivButtons(this, this.search);
 		this.addGroups(this.groups);
-		if (settings.showHotKeys) this.setHotKeysdesc();
+		if (settings.showHotKeys && !this.app.isMobile) this.setHotKeysdesc();
 		await this.addItems(settings.search);
 	}
 
@@ -180,9 +191,11 @@ export class QPSModal extends Modal {
 				}
 			);
 		}
-		contentEl.createSpan({
-			text: `> (h)👁️ (🖱️x2)name`,
-		});
+
+		if (!this.app.isMobile)
+			contentEl.createSpan({
+				text: `> (h)👁️ (🖱️x2)name`,
+			});
 	}
 
 	setHotKeysdesc(): void {
@@ -233,11 +246,22 @@ export class QPSModal extends Modal {
 			let itemContainer = this.items.createEl("div", {
 				cls: "qps-item-line",
 			});
+
 			itemTogglePluginButton(this, installed[id], itemContainer);
 			const input = itemTextComponent(installed[id], itemContainer);
 			itemToggleClass(this, installed[id], itemContainer);
 			// create groups circles
 			addGroupCircles(input, installed[id]);
+			if (this.app.isMobile) {
+				const div = itemContainer.createEl(
+					"div",
+					{
+						cls: "button-container",
+					},
+					(el) => {
+						vertDotsButton(el);
+					})
+			}
 		}
 	}
 

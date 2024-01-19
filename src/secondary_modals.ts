@@ -12,7 +12,7 @@ import {
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
 import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
-import { getSelectedContent, isEnabled } from "./utils";
+import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
@@ -258,7 +258,11 @@ export class ReadMeModal extends Modal {
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
 
 		const data = await getReadMe(pluginItem);
-		const content = Buffer.from(data.content, "base64").toString("utf-8");
+		// const content = Buffer.from(data.content, "base64").toString("utf-8"); // Buffer not working on mobile
+		const decoder = new TextDecoder("utf-8");
+		const content = decoder.decode(base64ToUint8Array(data.content));
+
+
 
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
@@ -289,7 +293,7 @@ export class ReadMeModal extends Modal {
 					})
 				);
 				menu.addItem((item) =>
-					item.setTitle("translate").onClick(async () => {
+					item.setTitle("translate Ctrl+T").onClick(async () => {
 						await translation(selectedContent);
 					})
 				);

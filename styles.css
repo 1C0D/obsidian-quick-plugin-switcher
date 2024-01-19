@@ -17,6 +17,9 @@
   padding: var(--size-4-3);
 }
 
+.qps-item-line {
+  position: relative;
+}
 
 .qps-item-line .checkbox-container {
   margin-right: 2px;
@@ -32,12 +35,6 @@
 }
 
 .qps-item-line input {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
   width: 62%;
   padding: 1.25em 0 1.25em 0.5em !important;
   margin: 2px 0
@@ -228,11 +225,27 @@
   gap: var(--size-2-1);
 }
 
-.qps-community-item-name {
-  font-size: var(--font-ui-medium);
-  line-height: var(--line-height-tight);
-  font-weight: var(--font-medium);
+.qps-item-line .button-container ,
+.qps-comm-block .button-container {
+  position: absolute;
+  display: block;
+  top: 0;
+  right: 10px;
 }
+
+.qps-item-line .button-container{
+  top:-15px;
+  right: 0;
+
+}
+
+.qps-item-line .button-container button,
+.qps-comm-block .button-container button {
+  cursor: pointer;
+  padding-right: 0.4rem;
+  background-color: transparent;
+  }
+
 
 .qps-community-item-author,
 .qps-community-item-downloads,

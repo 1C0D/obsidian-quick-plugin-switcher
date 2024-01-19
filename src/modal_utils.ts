@@ -185,7 +185,7 @@ export function isInstalled(id: string) {
 	return getInstalled().includes(id);
 }
 
-export async function reOpenModal(modal: QPSModal | CPModal,searchInit=false) {
+export async function reOpenModal(modal: QPSModal | CPModal, searchInit = false) {
 	await modal.plugin.saveSettings();
 	modal.searchInit = searchInit;
 	await modal.onOpen();
@@ -215,7 +215,7 @@ export const showHotkeysFor = async function (
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
-	
+
 	console.log("pluginItem", pluginItem)
 	if (!(pluginItem as PluginInstalled).enabled) {
 		new Notice("Plugin disabled, no HotKeys to show", 3500);

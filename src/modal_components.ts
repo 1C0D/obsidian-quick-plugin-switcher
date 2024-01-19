@@ -787,7 +787,9 @@ export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPMod
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
-				await contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
+				if (!modal.app.isMobile) {
+					await contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
+				}
 			} else {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
 			}
@@ -935,11 +937,11 @@ async function contextMenuQPS(
 				const submenu = (item as any).setSubmenu() as Menu;
 				addToGroupSubMenu(submenu, matchingItem, modal);
 			});
-		}else{
+		} else {
 			addToGroupSubMenu(menu, matchingItem, modal, true);
 		}
 
-		if(!this.app.isMobile){
+		if (!this.app.isMobile) {
 			menu.addItem((item) => {
 				item.setTitle("Remove from group").setIcon("user-minus");
 				const submenu = (item as any).setSubmenu() as Menu;
@@ -955,8 +957,8 @@ async function contextMenuQPS(
 						});
 				});
 				addRemoveItemGroupMenuItems(modal, submenu, matchingItem);
-			});			
-		}else{
+			});
+		} else {
 			menu.addSeparator();
 			menu.addItem((item) => {
 				item
@@ -969,7 +971,7 @@ async function contextMenuQPS(
 						await rmvAllGroupsFromPlugin(modal, matchingItem);
 					});
 			});
-			addRemoveItemGroupMenuItems(modal, menu, matchingItem,true);
+			addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 		}
 	}
 	menu.showAtMouseEvent(evt);
@@ -1007,42 +1009,52 @@ export const createClearGroupsMenuItem = (
 	menu: Menu,
 	groupNumber: number
 ) => {
-	menu.addItem((item) => {
-		const { plugin } = modal;
-		const { settings } = plugin
-		const { installed, commPlugins } = settings;
+	if (!modal.app.isMobile) {
+		menu.addItem((item) => {
+			item.setTitle("Clear group(s)").setIcon("user-minus");
 
-		item.setTitle("Clear group(s)").setIcon("user-minus");
+			const submenu = (item as any).setSubmenu() as Menu;
+			addRemoveGroupMenuItems(modal, submenu, groupNumber);
+			submenu.addSeparator();
+			clearAllGroups(submenu, modal);
 
-		const submenu = (item as any).setSubmenu() as Menu;
-		addRemoveGroupMenuItems(modal, submenu, groupNumber);
-		submenu.addSeparator();
-		submenu.addItem((subitem) => {
-			subitem.setTitle("All groups").onClick(async () => {
-				const confirmReset = await confirm(
-					"Detach all groups from all plugins?",
-					300
-				);
-				if (confirmReset) {
-					if (modal instanceof QPSModal) {
-						for (const id in installed) {
-							installed[id].groupInfo.groupIndices = [];
-						}
-						await reOpenModal(modal);
-						new Notice(`All groups empty`, 2500);
-					} else {
-						for (const id in commPlugins) {
-							commPlugins[id].groupCommInfo.groupIndices = [];
-						}
-						await reOpenModal(modal);
-						new Notice(`All groups empty`, 2500);
-					}
-				} else {
-					new Notice("Operation cancelled", 2500);
-				}
-			});
 		});
-	});
+	} else {
+		menu.addItem((item) => {
+			item.setTitle("Clear group(s)").setIcon("user-minus");
+		})
+		addRemoveGroupMenuItems(modal, menu, groupNumber);
+		clearAllGroups(menu, modal);
+	}
 };
 
-
+export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
+	const { plugin } = modal;
+	const { settings } = plugin
+	const { installed, commPlugins } = settings;
+	submenu.addItem((subitem) => {
+		subitem.setTitle("All groups").onClick(async () => {
+			const confirmReset = await confirm(
+				"Detach all groups from all plugins?",
+				300
+			);
+			if (confirmReset) {
+				if (modal instanceof QPSModal) {
+					for (const id in installed) {
+						installed[id].groupInfo.groupIndices = [];
+					}
+					await reOpenModal(modal);
+					new Notice(`All groups empty`, 2500);
+				} else {
+					for (const id in commPlugins) {
+						commPlugins[id].groupCommInfo.groupIndices = [];
+					}
+					await reOpenModal(modal);
+					new Notice(`All groups empty`, 2500);
+				}
+			} else {
+				new Notice("Operation cancelled", 2500);
+			}
+		});
+	});
+}

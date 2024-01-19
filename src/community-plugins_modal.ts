@@ -206,10 +206,14 @@ export class CPModal extends Modal {
 				}
 			);
 		}
-		if(!this.app.isMobile) {
+		if (!this.app.isMobile) {
 			contentEl.createSpan({
 				text: `> (h)👁️ (🖱️x2)name`,
-			});			
+			});
+		} else {
+			contentEl.createSpan({
+				text: `(🖱️x2)name,icon:delay (🖱️...)context-menu`,
+			})
 		}
 	}
 

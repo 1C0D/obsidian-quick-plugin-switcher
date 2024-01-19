@@ -1,4 +1,4 @@
-export function isEnabled(modal:any, id: string): boolean {
+export function isEnabled(modal: any, id: string): boolean {
 	return modal.app.plugins.enabledPlugins.has(id);
 }
 
@@ -35,37 +35,37 @@ export function calculateTimeElapsed(datePasted: Date): string {
 
 	const years = Math.floor(delta / (86400 * 365));
 	if (years >= 2) {
-        return `${years} years ago`;
+		return `${years} years ago`;
 	} else if (years === 1) {
 		return "1 year ago";
 	}
 
 	const months = Math.floor(delta / (86400 * 30));
 	if (months >= 2) {
-        return `${months} months ago`;
+		return `${months} months ago`;
 	} else if (months === 1) {
-        return "1 month ago";
+		return "1 month ago";
 	}
-    
+
 	const days = Math.floor(delta / 86400);
 	if (days >= 2) {
-        return `${days} days ago`;
+		return `${days} days ago`;
 	} else if (days === 1) {
-        return "1 day ago";
+		return "1 day ago";
 	}
-    
+
 	const hours = Math.floor(delta / 3600) % 24;
 	if (hours >= 2) {
-        return `${hours} hours ago`;
+		return `${hours} hours ago`;
 	} else if (hours === 1) {
-        return "1 hour ago";
+		return "1 hour ago";
 	}
-    
+
 	const minutes = Math.floor(delta / 60) % 60;
 	if (minutes >= 2) {
-        return `${minutes} minutes ago`;
+		return `${minutes} minutes ago`;
 	} else if (minutes === 1) {
-        return "1 minute ago";
+		return "1 minute ago";
 	}
 
 	return "seconds ago";

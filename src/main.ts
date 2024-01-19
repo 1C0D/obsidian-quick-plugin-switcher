@@ -302,11 +302,12 @@ export default class QuickPluginSwitcher extends Plugin {
 			delete previousSettings.allPluginsList;
 			delete previousSettings.pluginStats;
 			delete previousSettings.commPlugins;
-			
+
 			Console.log("allPluginsList... has been deleted");
 		}
-		if ("showReset" in previousSettings) {	
-			delete previousSettings.showReset;}
+		if ("showReset" in previousSettings) {
+			delete previousSettings.showReset;
+		}
 
 		this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
 		this.settings.savedVersion = this.manifest.version;

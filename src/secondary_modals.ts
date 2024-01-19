@@ -231,28 +231,28 @@ export class ReadMeModal extends Modal {
 						});
 				}
 				if (id !== "quick-plugin-switcher")
-				new ButtonComponent(divButtons)
-					.setButtonText("Disable")
-					.onClick(async () => {
-						await (
-							this.modal.app as any
-						).plugins.disablePluginAndSave(pluginItem.id);
-						await this.onOpen();
-						new Notice(`${pluginItem.name} disabled`, 2500);
-						await reOpenModal(this.modal);
-					});
+					new ButtonComponent(divButtons)
+						.setButtonText("Disable")
+						.onClick(async () => {
+							await (
+								this.modal.app as any
+							).plugins.disablePluginAndSave(pluginItem.id);
+							await this.onOpen();
+							new Notice(`${pluginItem.name} disabled`, 2500);
+							await reOpenModal(this.modal);
+						});
 			}
 			if (id !== "quick-plugin-switcher")
-			new ButtonComponent(divButtons)
-				.setButtonText("Uninstall")
-				.onClick(async () => {
-					await (this.modal.app as any).plugins.uninstallPlugin(
-						pluginItem.id
-					);
-					await this.onOpen();
-					new Notice(`${pluginItem.name} uninstalled`, 2500);
-					await reOpenModal(this.modal);
-				});
+				new ButtonComponent(divButtons)
+					.setButtonText("Uninstall")
+					.onClick(async () => {
+						await (this.modal.app as any).plugins.uninstallPlugin(
+							pluginItem.id
+						);
+						await this.onOpen();
+						new Notice(`${pluginItem.name} uninstalled`, 2500);
+						await reOpenModal(this.modal);
+					});
 		}
 
 		const div = contentEl.createDiv({ cls: "qps-read-me" });

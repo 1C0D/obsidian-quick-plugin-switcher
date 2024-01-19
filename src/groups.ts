@@ -143,7 +143,7 @@ const groupMenuQPS = (
     const inGroup = getPluginsInGroup(modal, groupNumber);
     const menu = new Menu();
     menu.addItem((item) =>
-        item.setTitle("Delay group (or dblclick emoticon)").onClick(() => {
+        item.setTitle("Delay group (or dblclick icon)").onClick(() => {
             addDelayToGroup(modal, groupNumber, span, inGroup);
         })
     );

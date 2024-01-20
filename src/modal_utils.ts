@@ -195,7 +195,9 @@ export async function openPluginSettings(
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
-	if (!(pluginItem as PluginInstalled).enabled) {
+	const enabled = modal instanceof CPModal ? modal.plugin.settings.installed[pluginItem.id].enabled : (pluginItem as PluginInstalled).enabled
+
+	if (!enabled) {
 		new Notice("Plugin disabled, no Settings to show", 3500);
 		return;
 	}
@@ -215,8 +217,9 @@ export const showHotkeysFor = async function (
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
+	const enabled = modal instanceof CPModal ? modal.plugin.settings.installed[pluginItem.id].enabled : (pluginItem as PluginInstalled).enabled
 
-	if (!(pluginItem as PluginInstalled).enabled) {
+	if (!enabled) {
 		new Notice("Plugin disabled, no HotKeys to show", 3500);
 		return;
 	}

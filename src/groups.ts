@@ -393,8 +393,7 @@ export function addRemoveItemGroupMenuItems(
             groupKey
         );
         const getGroup =
-            (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo.groupIndices?.indexOf(groupIndex) !== -1: (pluginItem as PluginCommInfo).groupCommInfo.groupIndices?.indexOf(groupIndex) !== -1;
-            console.log("getGroup", getGroup)
+            (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo?.groupIndices.indexOf(groupIndex) !== -1: (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
             let value = alt ? `remove ${groupValue}` : `${groupValue}`
             submenu.addItem((subitem) => {

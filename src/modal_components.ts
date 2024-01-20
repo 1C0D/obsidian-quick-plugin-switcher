@@ -655,7 +655,6 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const targetBlock = elementFromPoint?.closest(
 		".button-container"
 	) as HTMLElement;
-	console.log("targetBlock", targetBlock)
 	if (targetBlock) {
 		const matchingItem = findMatchingItem(modal, targetBlock.parentElement as HTMLElement);
 		if (matchingItem) {

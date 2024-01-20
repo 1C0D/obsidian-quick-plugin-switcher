@@ -1,6 +1,6 @@
 import { ButtonComponent, DropdownComponent, Menu, Notice } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
-import { QPSModal } from "./main_modal";
+import { QPSModal, toggleVisibility } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled, getLatestPluginVersion } from "./modal_utils";
 import { Filters, Groups, CommFilters, GroupsComm, SortBy } from "./types/variables";
 import { removeItem } from "./utils";
@@ -207,7 +207,7 @@ const groupMenuQPS = (
 };
 
 
-const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
+const groupMenuCPM = async (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
     const menu = new Menu();
     menu.addItem((item) => {
         item.setTitle("Install & enable in group");
@@ -239,13 +239,27 @@ const groupMenuCPM = (evt: MouseEvent, modal: CPModal, groupNumber: number) => {
             await uninstallAllPluginsInGroup(modal, groupNumber);
         });
     });
+    if(modal.app.isMobile){
+        menu.addSeparator();
+        const inGroup = getPluginsInGroup(
+            modal,
+            groupNumber
+        );
+        menu.addItem((item) =>
+            item.setTitle("Show/hide group content").onClick(async () => {
+                await hideOnCLick(modal, groupNumber, inGroup)
+
+            })
+        );
+    }
+
     menu.addSeparator();
     createClearGroupsMenuItem(modal, menu, groupNumber);
 
     menu.showAtMouseEvent(evt);
 };
 
-export const groupMenu = (
+export const groupMenu = async(
     evt: MouseEvent,
     modal: QPSModal | CPModal,
     groupNumber: number,
@@ -254,7 +268,7 @@ export const groupMenu = (
     if (modal instanceof QPSModal && span) {
         groupMenuQPS(evt, modal, groupNumber, span);
     } else {
-        groupMenuCPM(evt, modal as CPModal, groupNumber);
+        await groupMenuCPM(evt, modal as CPModal, groupNumber);
     }
 };
 
@@ -366,9 +380,9 @@ export const setGroupTitle = (
 };
 
 export function addRemoveItemGroupMenuItems(
-    modal: QPSModal,
+    modal: QPSModal | CPModal,
     submenu: Menu,
-    pluginItem: PluginInstalled,
+    pluginItem: PluginInstalled | PluginCommInfo,
     alt?: boolean
 ) {
     const { plugin } = modal
@@ -379,15 +393,17 @@ export function addRemoveItemGroupMenuItems(
             groupKey
         );
         const getGroup =
-            pluginItem.groupInfo.groupIndices.indexOf(groupIndex) !== -1;
+            (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo.groupIndices?.indexOf(groupIndex) !== -1: (pluginItem as PluginCommInfo).groupCommInfo.groupIndices?.indexOf(groupIndex) !== -1;
+            console.log("getGroup", getGroup)
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
             let value = alt ? `remove ${groupValue}` : `${groupValue}`
             submenu.addItem((subitem) => {
                 subitem.setTitle(value).onClick(async () => {
-                    for (const index of pluginItem.groupInfo.groupIndices) {
+                    const plugins = (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo?.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices
+                    for (const index of plugins) {
                         if (index === groupIndex) {
                             removeItem(
-                                pluginItem.groupInfo.groupIndices,
+                                plugins,
                                 index
                             );
                             if (groupIsEmpty(groupIndex, modal)) {
@@ -476,12 +492,12 @@ export function addRemoveGroupMenuItems(
 
 export const addToGroupSubMenu = (
     submenu: Menu,
-    pluginItem: PluginInstalled,
-    modal: QPSModal,
+    pluginItem: PluginInstalled | PluginCommInfo,
+    modal: QPSModal | CPModal,
     alt?: boolean
 ) => {
     Object.entries(Groups).forEach(([key, value]) => {
-        const groupIndices = pluginItem.groupInfo.groupIndices;
+        const groupIndices = (modal instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo.groupIndices;
         const groupIndex = getIndexFromSelectedGroup(key);
         if (key !== "SelectGroup") {
             if (alt) {

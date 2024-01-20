@@ -768,7 +768,7 @@ export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPMod
 	const groupNumber = groupNbFromGrpName(groupName!)
 
 	if (targetGroup) {
-		groupMenu(evt, modal, groupNumber, targetGroup);
+		await groupMenu(evt, modal, groupNumber, targetGroup);
 		return
 	}
 
@@ -854,6 +854,21 @@ export function contextMenuCPM(
 					await openGitHubRepo(modal, matchingItem);
 				})
 		})
+		menu.addSeparator();
+		addToGroupSubMenu(menu, matchingItem, modal, true);
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item
+				.setTitle("Remove All groups")
+				.setDisabled(
+					matchingItem.groupCommInfo.groupIndices.length === 0
+				)
+				.onClick(async () => {
+					matchingItem.groupCommInfo.groupIndices;
+					await rmvAllGroupsFromPlugin(modal, matchingItem);
+				});
+		});
+		addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 	}
 	menu.showAtMouseEvent(evt);
 }

@@ -482,6 +482,7 @@ const handleHotkeysCPM = async (
 	pressDelay(modal);
 	const { plugin } = modal;
 	const { settings } = plugin;
+	const { groupsComm, commPlugins } = settings
 	const numberOfGroups = settings.numberOfGroupsComm;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
@@ -496,7 +497,8 @@ const handleHotkeysCPM = async (
 		const index = groupIndices.indexOf(key);
 		if (index === -1) {
 			groupIndices.push(key);
-			await plugin.saveSettings();
+			if (groupsComm[key].hidden)
+				commPlugins[pluginItem.id].hidden = true
 			await reOpenModal(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {

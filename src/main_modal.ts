@@ -407,6 +407,7 @@ const handleHotkeysQPS = async (
 ) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
+	const { groups, installed } = settings
 	const numberOfGroups = settings.numberOfGroups;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
@@ -442,6 +443,8 @@ const handleHotkeysQPS = async (
 		const index = groupIndices.indexOf(key);
 		if (index === -1) {
 			groupIndices?.push(key);
+			if (groups[key].hidden)
+				installed[pluginItem.id].groupInfo.hidden = true
 			await reOpenModal(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {

@@ -863,7 +863,7 @@ export function contextMenuCPM(
 					matchingItem.groupCommInfo.groupIndices.length === 0
 				)
 				.onClick(async () => {
-					matchingItem.groupCommInfo.groupIndices;
+					// matchingItem.groupCommInfo.groupIndices;
 					await rmvAllGroupsFromPlugin(modal, matchingItem);
 				});
 		});
@@ -966,7 +966,7 @@ async function contextMenuQPS(
 							matchingItem.groupInfo.groupIndices.length === 0
 						)
 						.onClick(async () => {
-							matchingItem.groupInfo.groupIndices;
+							// matchingItem.groupInfo.groupIndices;
 							await rmvAllGroupsFromPlugin(modal, matchingItem);
 						});
 				});
@@ -981,7 +981,7 @@ async function contextMenuQPS(
 						matchingItem.groupInfo.groupIndices.length === 0
 					)
 					.onClick(async () => {
-						matchingItem.groupInfo.groupIndices;
+						// matchingItem.groupInfo.groupIndices;
 						await rmvAllGroupsFromPlugin(modal, matchingItem);
 					});
 			});
@@ -1045,7 +1045,7 @@ export const createClearGroupsMenuItem = (
 export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
 	const { plugin } = modal;
 	const { settings } = plugin
-	const { installed, commPlugins } = settings;
+	const { installed, commPlugins, groups, groupsComm } = settings;
 	submenu.addItem((subitem) => {
 		subitem.setTitle("All groups").onClick(async () => {
 			const confirmReset = await confirm(
@@ -1055,12 +1055,16 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
 			if (confirmReset) {
 				if (modal instanceof QPSModal) {
 					for (const id in installed) {
+						installed[id].groupInfo.hidden = false;
 						installed[id].groupInfo.groupIndices = [];
 					}
+					for (const group in groups) groups[group].hidden = false
 					await reOpenModal(modal);
 					new Notice(`All groups empty`, 2500);
 				} else {
+					for (const group in groupsComm) groupsComm[group].hidden = false
 					for (const id in commPlugins) {
+						commPlugins[id].groupCommInfo.hidden = false;
 						commPlugins[id].groupCommInfo.groupIndices = [];
 					}
 					await reOpenModal(modal);

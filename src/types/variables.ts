@@ -11,25 +11,27 @@ declare global {
 	interface Window {
 		electron: any;
 	}
-}	
+}
 
-export const Filters:StringString = {
+export const Filters: StringString = {
 	All: "all",
 	Enabled: "enabled",
 	Disabled: "disabled",
 	EnabledFirst: "enabledFirst",
 	MostSwitched: "mostSwitched",
 	ByGroup: "byGroup",
+	Hidden: "hidden",
 };
 
-export const CommFilters:StringString = {
+export const CommFilters: StringString = {
 	All: "all",
 	NotInstalled: "not installed",
 	Installed: "installed",
 	ByGroup: "byGroup",
+	Hidden: "hidden",
 };
 
-export const SortBy:StringString = {
+export const SortBy: StringString = {
 	Downloads: "by downloads",
 	Alpha: "by alphanum",
 	Updated: "by (recent) update",
@@ -58,7 +60,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	showHotKeys: true,
 	// commnunity plugins
 	pluginStats: {},
-	plugins:[],
+	plugins: [],
 	commPlugins: {},
 	filtersComm: "All",
 	selectedGroupComm: "SelectGroup",

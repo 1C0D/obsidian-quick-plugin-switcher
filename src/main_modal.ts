@@ -35,6 +35,7 @@ import {
 	showHotkeysFor,
 	getElementFromMousePosition,
 	modeSort,
+	getHidden,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
 import { Filters, Groups } from "./types/variables";
@@ -138,6 +139,7 @@ export class QPSModal extends Modal {
 				enabledFirst: `Enabled First(${plugin.lengthAll})`,
 				mostSwitched: `Most Switched(${plugin.lengthAll})`,
 				byGroup: `By Group`,
+				hidden: `Hidden(${getHidden(this).length})`,
 			})
 			.setValue(settings.filters as string)
 			.onChange(async (value) => {
@@ -228,21 +230,21 @@ export class QPSModal extends Modal {
 	async addItems(value: string) {
 		const { plugin } = this;
 		const { settings } = plugin;
-		const { installed } = settings;
+		const { installed, filters } = settings;
 		// const previousValue = settings.search;
 		let listItems = doSearchQPS(this, value, installed)
-		listItems = modeSort(plugin, listItems);
+		listItems = modeSort(this, plugin, listItems);
 		// Sort for chosen mode
 		// toggle plugin
 		for (const id of listItems) {
 			// don't show hiddens except if Filters.ByGroup
-			if (settings.filters !== Filters.ByGroup && installed[id].groupInfo.hidden === true) {
+			if (filters !== Filters.ByGroup && installed[id].groupInfo.hidden === true && filters !== Filters.Hidden) {
 				continue
 			}
 			// don't filter enabled/disabled if Filters.Enabled/Disabled
 			if (
-				(settings.filters === Filters.Enabled && !installed[id].enabled) ||
-				(settings.filters === Filters.Disabled && installed[id].enabled)
+				(filters === Filters.Enabled && !installed[id].enabled) ||
+				(filters === Filters.Disabled && installed[id].enabled)
 			) {
 				continue;
 			}

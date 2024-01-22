@@ -101,9 +101,9 @@ export function doSearchCPM(
 	commPlugins: Record<string, PluginCommInfo>
 ) {
 	const lowerCaseValue = value.toLowerCase();
-	const pluginsList = Object.values(commPlugins)
-	return pluginsList.filter((item: PluginCommInfo) =>
-		[item.name, item.description, item.author]
+	const pluginsList = Object.keys(commPlugins)
+	return pluginsList.filter((item) =>
+		[commPlugins[item].name, commPlugins[item].description, commPlugins[item].author]
 			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
 	);
 }

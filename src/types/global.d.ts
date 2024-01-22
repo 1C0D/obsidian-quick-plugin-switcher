@@ -98,7 +98,6 @@ interface CommPlugin {
 
 // community plugins
 interface PluginCommInfo extends CommPlugin {
-    hidden: boolean;
     groupCommInfo: PluginCommGroupInfo;
     downloads: number;
     updated: number;

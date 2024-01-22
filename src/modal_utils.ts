@@ -109,9 +109,9 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export const modeSort = (plugin: Plugin, listItems: string[]) => {
+export const modeSort = (modal : QPSModal, plugin: Plugin, listItems: string[]) => {
 	const { settings } = plugin;
-	const { installed } = settings;
+	const { installed, filters } = settings;
 	// after reset MostSwitched
 	if (plugin.reset) {
 		listItems.forEach((id) => {
@@ -120,7 +120,7 @@ export const modeSort = (plugin: Plugin, listItems: string[]) => {
 		plugin.reset = false;
 	}
 	// EnabledFirst
-	if (settings.filters === Filters.EnabledFirst) {
+	if (filters === Filters.EnabledFirst) {
 		const enabledItems = listItems.filter((id) => installed[id].enabled);
 		const disabledItems = listItems.filter((id) => !installed[id].enabled);
 		sortByName(plugin, enabledItems);
@@ -128,7 +128,7 @@ export const modeSort = (plugin: Plugin, listItems: string[]) => {
 		listItems = [...enabledItems, ...disabledItems];
 	}
 	// ByGroup
-	else if (settings.filters === Filters.ByGroup) {
+	else if (filters === Filters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup
 		);
@@ -143,10 +143,12 @@ export const modeSort = (plugin: Plugin, listItems: string[]) => {
 		}
 	}
 	// MostSwitched
-	else if (settings.filters === Filters.MostSwitched) {
+	else if (filters === Filters.MostSwitched) {
 		// && !plugin.reset
 		sortByName(plugin, listItems);
 		sortSwitched(plugin, listItems);
+} else if (filters === Filters.Hidden) {
+		return getHidden(modal) as string[];
 	}
 	// All
 	else {
@@ -179,6 +181,16 @@ export const pressDelay = (modal: CPModal | QPSModal) => {
 
 export function getInstalled() {
 	return Object.keys(this.app.plugins.manifests);
+}
+
+export function getHidden(modal: QPSModal | CPModal) {
+	const { settings } = modal.plugin
+	const { installed, commPlugins } = settings
+	if (modal instanceof QPSModal) {
+		return Object.keys(installed).filter((item) => installed[item].groupInfo.hidden);
+	}else{
+		return Object.keys(commPlugins).filter((item) => commPlugins[item].groupCommInfo.hidden);
+	}
 }
 
 export function isInstalled(id: string) {

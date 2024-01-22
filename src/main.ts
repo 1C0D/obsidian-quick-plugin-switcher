@@ -256,7 +256,6 @@ export default class QuickPluginSwitcher extends Plugin {
 					commPlugins[plugin.id] = { ...commPlugins[plugin.id], ...plugin, ...updateStats };
 				} else {
 					const complement = {
-						hidden: false,
 						groupCommInfo: {
 							hidden: false,
 							groupIndices: []

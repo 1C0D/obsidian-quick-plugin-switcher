@@ -6,10 +6,8 @@ import {
 	Modal,
 	Notice,
 	Platform,
-	request,
 	requestUrl,
 	setIcon,
-	setTooltip,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import {
@@ -24,6 +22,7 @@ import {
 	isInstalled,
 	reOpenModal,
 	getElementFromMousePosition,
+	getHidden,
 } from "./modal_utils";
 import {
 	addSearch,
@@ -151,6 +150,7 @@ export class CPModal extends Modal {
 				notInstalled: Platform.isMobile ? "Not Installed" : `Not Installed(${Object.keys(settings.commPlugins).length - getInstalled().length
 					})`,
 				byGroup: `By Group`,
+				hidden: `Hidden(${getHidden(this).length})`,
 			})
 			.setValue(settings.filtersComm as string)
 			.onChange(async (value: keyof typeof CommFilters) => {
@@ -254,25 +254,32 @@ export class CPModal extends Modal {
 		}
 	}
 
-	async drawItemsAsync(listItems: PluginCommInfo[], pluginStats: PackageInfoData, value: string) {
+	async drawItemsAsync(listItems: string[], pluginStats: PackageInfoData, value: string) {
 		const batchSize = 50;
 		let index = 0;
+
+		const { plugin } = this;
+		const { settings } = plugin;
+		const { commPlugins, filtersComm } = settings;
 
 		while (index < listItems.length) {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
 				// temporary fix
-				if (item.hasOwnProperty('hidden')  && item.hidden) {
-					item.groupCommInfo.hidden = true}
-					if (item.hasOwnProperty('hidden')) { 
-						//@ts-ignore
-						delete item.hidden
-					}
-					if (item.groupCommInfo.hidden && !item.groupCommInfo.groupIndices.length) {
-						item.groupCommInfo.hidden = false
+				// @ts-ignore
+				if (item.hasOwnProperty('hidden') && item.hidden) {
+					commPlugins[item].groupCommInfo.hidden = true
+				}
+				if (item.hasOwnProperty('hidden')) {
+					//@ts-ignore
+					delete item.hidden
+				}
+				if (commPlugins[item].groupCommInfo?.hidden && !commPlugins[item].groupCommInfo.groupIndices.length) {
+					commPlugins[item].groupCommInfo.hidden = false
 				}//if removed from group
-				if (this.plugin.settings.filtersComm !== CommFilters.ByGroup) {
-					if (item.groupCommInfo.hidden) return
+				if (filtersComm !== CommFilters.ByGroup) {
+					if (commPlugins[item].groupCommInfo?.hidden && filtersComm !== CommFilters.Hidden) {
+						return}
 				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
@@ -287,19 +294,19 @@ export class CPModal extends Modal {
 						})
 				}
 
-				const name = this.hightLightSpan(value, item.name);
-				const author = `by ${this.hightLightSpan(value, item.author)}`;
-				const desc = this.hightLightSpan(value, item.description);
+				const name = this.hightLightSpan(value, commPlugins[item].name);
+				const author = `by ${this.hightLightSpan(value, commPlugins[item].author)}`;
+				const desc = this.hightLightSpan(value, commPlugins[item].description);
 
 				//name
 				itemContainer.createDiv(
 					{ cls: "qps-community-item-name" },
 					(el: HTMLElement) => {
 						el.innerHTML = name;
-						if (isInstalled(item.id)) {
+						if (isInstalled(item)) {
 							el.createSpan({ cls: "installed-span", text: "installed" });
 						}
-						if (isEnabled(this, item.id)) {
+						if (isEnabled(this, item)) {
 							const span = el.createSpan({ cls: "enabled-span" });
 							setIcon(span, "power");
 						}
@@ -309,7 +316,7 @@ export class CPModal extends Modal {
 				//author
 				itemContainer.createDiv({ cls: "qps-community-item-author" });
 
-				const pluginInfo = pluginStats[item.id];
+				const pluginInfo = pluginStats[item];
 				if (pluginInfo) {
 					// downloads
 					itemContainer.createDiv(
@@ -397,51 +404,55 @@ export async function getManifest(modal: CPModal | QPSModal, id: string | undefi
 
 function sortItemsBy(
 	modal: CPModal,
-	listItems: PluginCommInfo[],
+	listItems: string[],
 ) {
 	const { settings } = modal.plugin;
+	const { commPlugins } = settings;
 	if (settings.sortBy === "Downloads") {
 		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? a.downloads - b.downloads : b.downloads - a.downloads;
+			return settings.invertFiltersComm ? commPlugins[a].downloads - commPlugins[b].downloads : commPlugins[b].downloads - commPlugins[a].downloads;
 		});
 	} else if (settings.sortBy === "Updated") {
 		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? a.updated - b.updated : b.updated - a.updated;
+			return settings.invertFiltersComm ? commPlugins[a].updated - commPlugins[b].updated : commPlugins[b].updated - commPlugins[a].updated;
 		});
 
 	} else if (settings.sortBy === "Alpha") {
 		listItems.sort((a, b) => {
-			return settings.invertFiltersComm ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+			return settings.invertFiltersComm ? commPlugins[b].name.localeCompare(commPlugins[a].name) : commPlugins[a].name.localeCompare(commPlugins[b].name);
 		})
 	} else if (settings.sortBy === "Released") {
 		listItems.sort((a, b) => {
-			const indexA = settings.plugins.findIndex((id: string) => id === a.id);
-			const indexB = settings.plugins.findIndex((id: string) => id === b.id);
+			const indexA = settings.plugins.findIndex((id: string) => id === commPlugins[a].id);
+			const indexB = settings.plugins.findIndex((id: string) => id === commPlugins[b].id);
 			return settings.invertFiltersComm ? indexA - indexB : indexB - indexA;
 		});
 	}
 }
 
-function cpmModeSort(modal: CPModal, listItems: PluginCommInfo[]) {
+function cpmModeSort(modal: CPModal, listItems: string[]) {
 	const { settings } = modal.plugin;
-	const { filtersComm } = settings;
+	const { filtersComm, commPlugins } = settings;
 	if (filtersComm === CommFilters.Installed) {
 		const installedPlugins = getInstalled();
-		return listItems.filter((item) => installedPlugins.includes(item.id));
+		return listItems.filter((item) => installedPlugins.includes(item));
 	} else if (filtersComm === CommFilters.NotInstalled) {
 		const installedPlugins = getInstalled();
-		return listItems.filter((item) => !installedPlugins.includes(item.id));
+		return listItems.filter((item) => !installedPlugins.includes(item));
 	} else if (filtersComm === CommFilters.ByGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup
 		);
 		if (groupIndex !== 0) {
 			const groupedItems = listItems.filter((i) => {
-				return i.groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
+				return commPlugins[i].groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
 			});
 			return groupedItems;
 		} else return listItems;
-	} else {
+	} else if (filtersComm === CommFilters.Hidden) {
+		return getHidden(modal);
+	}
+	else {
 		return listItems;
 	}
 }
@@ -558,9 +569,11 @@ const handleHotkeysCPM = async (
 const addGroupCircles = (
 	modal: CPModal,
 	el: HTMLElement,
-	item: PluginCommInfo
+	item: string
 ) => {
-	const indices = item.groupCommInfo.groupIndices;
+	const { settings } = modal.plugin;
+	const { commPlugins } = settings;
+	const indices = commPlugins[item].groupCommInfo.groupIndices;
 	if (indices.length) {
 		if (indices.length < 3) {
 			const content = getCirclesItem(indices);

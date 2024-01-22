@@ -262,13 +262,14 @@ export class CPModal extends Modal {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
 				// temporary fix
-				if (item.hidden) item.groupCommInfo.hidden = true
-				if (item.hasOwnProperty('hidden')) { 
-					//@ts-ignore
-					delete item.hidden
-				}
-				if (item.groupCommInfo.hidden && !item.groupCommInfo.groupIndices.length) {
-					item.groupCommInfo.hidden = false
+				if (item.hasOwnProperty('hidden')  && item.hidden) {
+					item.groupCommInfo.hidden = true}
+					if (item.hasOwnProperty('hidden')) { 
+						//@ts-ignore
+						delete item.hidden
+					}
+					if (item.groupCommInfo.hidden && !item.groupCommInfo.groupIndices.length) {
+						item.groupCommInfo.hidden = false
 				}//if removed from group
 				if (this.plugin.settings.filtersComm !== CommFilters.ByGroup) {
 					if (item.groupCommInfo.hidden) return

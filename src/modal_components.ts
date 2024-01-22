@@ -631,7 +631,7 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 			}
 		})
 	} else {
-		if (groups[groupNumber]) {
+		if (groupsComm[groupNumber]) {
 			if (!groupsComm[groupNumber].hidden && !inGroup.length) { new Notice("empty group", 3000); return }
 			groupsComm[groupNumber].hidden = !groupsComm[groupNumber]?.hidden;
 		}
@@ -643,7 +643,8 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 				for (const i of commPlugins[id].groupCommInfo.groupIndices) {
 					if (groupsComm[i].hidden) prevent = true
 				}
-				if (!prevent) commPlugins[id].groupCommInfo.hidden = false
+				if (!prevent) {
+					commPlugins[id].groupCommInfo.hidden = false}
 			}
 		})
 	}

@@ -261,11 +261,17 @@ export class CPModal extends Modal {
 		while (index < listItems.length) {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
-				if (item.hidden && !item.groupCommInfo.groupIndices.length) {
-					item.hidden = false
+				// temporary fix
+				if (item.hidden) item.groupCommInfo.hidden = true
+				if (item.hasOwnProperty('hidden')) { 
+					//@ts-ignore
+					delete item.hidden
+				}
+				if (item.groupCommInfo.hidden && !item.groupCommInfo.groupIndices.length) {
+					item.groupCommInfo.hidden = false
 				}//if removed from group
 				if (this.plugin.settings.filtersComm !== CommFilters.ByGroup) {
-					if (item.hidden) return
+					if (item.groupCommInfo.hidden) return
 				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
@@ -498,7 +504,7 @@ const handleHotkeysCPM = async (
 		if (index === -1) {
 			groupIndices.push(key);
 			if (groupsComm[key].hidden)
-				commPlugins[pluginItem.id].hidden = true
+				commPlugins[pluginItem.id].groupCommInfo.hidden = true
 			await reOpenModal(modal);
 		}
 	} else if (keyPressed in KeyToSettingsMap) {

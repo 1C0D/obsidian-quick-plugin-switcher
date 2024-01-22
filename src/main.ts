@@ -298,6 +298,7 @@ export default class QuickPluginSwitcher extends Plugin {
 
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };
+		// temporary fix
 		if ("allPluginsList" in previousSettings) {
 			delete previousSettings.allPluginsList;
 			delete previousSettings.pluginStats;

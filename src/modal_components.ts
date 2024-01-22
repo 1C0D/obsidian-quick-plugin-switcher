@@ -637,13 +637,13 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 		}
 		inGroup.forEach((id) => {
 			if (groupsComm[groupNumber].hidden)
-				commPlugins[id].hidden = true
+				commPlugins[id].groupCommInfo.hidden = true
 			else {
 				let prevent = false;
 				for (const i of commPlugins[id].groupCommInfo.groupIndices) {
 					if (groupsComm[i].hidden) prevent = true
 				}
-				if (!prevent) commPlugins[id].hidden = false
+				if (!prevent) commPlugins[id].groupCommInfo.hidden = false
 			}
 		})
 	}

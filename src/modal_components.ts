@@ -108,7 +108,7 @@ export function doSearchCPM(
 	);
 }
 
-export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanElement) => {
+export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
 	new ButtonComponent(el)
 		.setIcon("rocket")
@@ -118,8 +118,9 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 			"Search for updates"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
-			modal.app.setting.open();
-			const tab = modal.app.setting.openTabById("community-plugins")
+			const setting = modal.app.setting
+			setting.open();
+			const tab = setting.openTabById("community-plugins")
 			const El = tab.containerEl
 			const buttons: NodeListOf<HTMLButtonElement> = El.querySelectorAll('button.mod-cta');// not super useful but I add the type
 			const buttonArr: HTMLButtonElement[] = Array.from(buttons);
@@ -127,6 +128,7 @@ export const Check4UpdatesButton = (modal: QPSModal | CPModal, el: HTMLSpanEleme
 				return (button as HTMLButtonElement).textContent === 'Check for updates'
 			}) as HTMLButtonElement
 			wantedButton?.click()
+			modal.close();
 		});
 };
 
@@ -644,7 +646,8 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 					if (groupsComm[i].hidden) prevent = true
 				}
 				if (!prevent) {
-					commPlugins[id].groupCommInfo.hidden = false}
+					commPlugins[id].groupCommInfo.hidden = false
+				}
 			}
 		})
 	}

@@ -80,7 +80,11 @@
 
 .qps-desktop-only input {
   border-bottom: 1.3px double;
-  /* background-color: rgba(5, 4, 4, 0.4); */
+}
+
+.qps-update input {
+  border-bottom: 1.3px double;
+  border-color: rgb(203, 175, 117);
 }
 
 .git-hub-icon {
@@ -270,6 +274,10 @@
 
 .qps-toggle-plugins .update-button {
   background-color: hsl(27, 22%, 12%);
+}
+
+.qps-toggle-plugins .update-button.red{
+  color: red;
 }
 
 .qps-toggle-plugins .update-button:hover {

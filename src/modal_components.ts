@@ -110,25 +110,43 @@ export function doSearchCPM(
 
 export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
-	new ButtonComponent(el)
+	const button = new ButtonComponent(el)
 		.setIcon("rocket")
 		.setCta()
-		.setClass("update-button")
+
+	const toUpdate = Object.values(modal.plugin.settings.installed).filter(item => item["toUpdate"])
+	if (toUpdate.length) button.setClass("red")
+
+	button.setClass("update-button")
 		.setTooltip(
 			"Search for updates"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
-			const setting = modal.app.setting
-			setting.open();
-			const tab = setting.openTabById("community-plugins")
-			const El = tab.containerEl
-			const buttons: NodeListOf<HTMLButtonElement> = El.querySelectorAll('button.mod-cta');// not super useful but I add the type
-			const buttonArr: HTMLButtonElement[] = Array.from(buttons);
-			const wantedButton = buttonArr.find(button => {
-				return (button as HTMLButtonElement).textContent === 'Check for updates'
-			}) as HTMLButtonElement
-			wantedButton?.click()
-			modal.close();
+			if (toUpdate.length) {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item
+						.setTitle("Update plugin(s)")
+						.setIcon("book-copy")
+						.onClick(async () => {
+							toUpdate.map(item => {
+								item["toUpdate"] = false
+								updatePlugin(modal, item, plugin.settings.commPlugins)
+							})
+						})
+				);
+				menu.addItem((item) =>
+					item
+						.setTitle("Search for updates again")
+						.setIcon("rocket")
+						.onClick(async () => {
+							searchUpdates(modal);
+						})
+				);
+				menu.showAtMouseEvent(evt);
+			} else {
+				searchUpdates(modal);
+			}
 		});
 };
 
@@ -161,6 +179,31 @@ export const checkbox = (
 					}
 			})
 	});
+}
+
+async function searchUpdates(modal: QPSModal) {
+	const { installed } = modal.plugin.settings;
+	let open = false
+	let count = 0
+	for (const item of Object.values(installed)) {
+		const lastVersion = await getLatestPluginVersion(modal, item.id);
+		if (!lastVersion || lastVersion <= item.version) {
+			item["toUpdate"] = false
+			if (lastVersion && lastVersion <= item.version) open = true
+		} else {
+			if (lastVersion > item.version) {
+				count += 1
+				open = true
+				item["toUpdate"] = true
+			}
+		}
+	}
+	if (open) {
+		new Notice(`${count} plugins to update`, 3000)
+		await reOpenModal(modal)
+	} else {
+		new Notice("All plugins are up to date")
+	}
 }
 
 export const vertDotsButton = (el: HTMLElement) => {
@@ -458,6 +501,10 @@ export const itemToggleClass = (
 	if (pluginItem.isDesktopOnly === true) {
 		itemContainer.addClass("qps-desktop-only");
 	}
+	if (pluginItem.hasOwnProperty("toUpdate") && pluginItem.toUpdate === true) {
+		itemContainer.toggleClass("qps-update", true);
+	}
+
 	if (
 		settings.filters === Filters.MostSwitched &&
 		pluginItem.switched !== 0
@@ -908,30 +955,11 @@ async function contextMenuQPS(
 		menu.addSeparator();
 		menu.addItem((item) => {
 			const { commPlugins } = plugin.settings
-			item.setTitle("Search for update")
+			item.setTitle("Update plugin")
 				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("rocket")
 				.onClick(async () => {
-					const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
-					if (lastVersion) {
-						if (lastVersion <= matchingItem.version) {
-							new Notice(`Already last version ${lastVersion}`, 2500)
-							return
-						}
-						const matchingId = Object.keys(commPlugins).find(
-							(id) => id === matchingItem.id
-						);
-						const manifest = await getManifest(modal, matchingId);
-						try { await modal.app.plugins.installPlugin(commPlugins[matchingId!].repo, lastVersion, manifest); } catch {
-							console.error("install failed");
-						}
-						new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
-						matchingItem.version = lastVersion
-						await modal.plugin.installedUpdate();
-						await reOpenModal(modal);
-					} else {
-						new Notice(`Not a published plugin`, 2500);
-					}
+					updatePlugin(modal, matchingItem, commPlugins);
 				});
 		});
 		menu.addItem((item) => {
@@ -993,6 +1021,29 @@ async function contextMenuQPS(
 		}
 	}
 	menu.showAtMouseEvent(evt);
+}
+
+export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
+	const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
+	if (lastVersion) {
+		if (lastVersion <= matchingItem.version) {
+			new Notice(`Already last version ${lastVersion}`, 2500)
+			return
+		}
+		const matchingId = Object.keys(commPlugins).find(
+			(id) => id === matchingItem.id
+		);
+		const manifest = await getManifest(modal, matchingId);
+		try { await modal.app.plugins.installPlugin(commPlugins[matchingId!].repo, lastVersion, manifest); } catch {
+			console.error("install failed");
+		}
+		new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
+		matchingItem.version = lastVersion
+		await modal.plugin.installedUpdate();
+		await reOpenModal(modal);
+	} else {
+		new Notice(`Not a published plugin`, 2500);
+	}
 }
 
 export const findMatchingItem = (

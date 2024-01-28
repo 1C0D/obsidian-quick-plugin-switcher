@@ -1,6 +1,7 @@
 ## Quick Plugin Switcher
 
 New: 
+- plugin updates improved
 - community plugins have been added and a lot of things fixed or improved
 - if some bugs remaining, plz report on github
 - I will update this readme again soon to show new things

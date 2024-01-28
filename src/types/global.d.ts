@@ -41,6 +41,7 @@ interface PluginInstalled extends PluginManifest {
     groupInfo: PluginGroupInfo;
     delayed: boolean;
     time: number
+    toUpdate?: boolean
 }
 
 

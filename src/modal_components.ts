@@ -122,6 +122,8 @@ export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
 			"Search for updates"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
+			new Notice(`momentally disabled to fix a bug`, 4500);
+			return
 			if (toUpdate.length) {
 				const menu = new Menu();
 				menu.addItem((item) =>
@@ -1024,26 +1026,28 @@ async function contextMenuQPS(
 }
 
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
-	const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
-	if (lastVersion) {
-		if (lastVersion <= matchingItem.version) {
-			new Notice(`Already last version ${lastVersion}`, 2500)
-			return
-		}
-		const matchingId = Object.keys(commPlugins).find(
-			(id) => id === matchingItem.id
-		);
-		const manifest = await getManifest(modal, matchingId);
-		try { await modal.app.plugins.installPlugin(commPlugins[matchingId!].repo, lastVersion, manifest); } catch {
-			console.error("install failed");
-		}
-		new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
-		matchingItem.version = lastVersion
-		await modal.plugin.installedUpdate();
-		await reOpenModal(modal);
-	} else {
-		new Notice(`Not a published plugin`, 2500);
-	}
+	new Notice(`momentally disabled to fix a bug`, 4500);
+	return
+	// const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
+	// if (lastVersion) {
+	// 	if (lastVersion <= matchingItem.version) {
+	// 		new Notice(`Already last version ${lastVersion}`, 2500)
+	// 		return
+	// 	}
+	// 	const matchingId = Object.keys(commPlugins).find(
+	// 		(id) => id === matchingItem.id
+	// 	);
+	// 	const manifest = await getManifest(modal, matchingId);
+	// 	try { await modal.app.plugins.installPlugin(commPlugins[matchingId!].repo, lastVersion, manifest); } catch {
+	// 		console.error("install failed");
+	// 	}
+	// 	new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
+	// 	matchingItem.version = lastVersion
+	// 	await modal.plugin.installedUpdate();
+	// 	await reOpenModal(modal);
+	// } else {
+	// 	new Notice(`Not a published plugin`, 2500);
+	// }
 }
 
 export const findMatchingItem = (

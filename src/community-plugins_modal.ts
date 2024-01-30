@@ -378,18 +378,26 @@ export async function fetchData(url: string) {
 
 export async function getReadMe(item: PluginCommInfo) {
 	const repo = item.repo;
-	const repoURL = `https://api.github.com/repos/${repo}/contents/README.md`;
-	try {
-		const response = await requestUrl(repoURL);
-		return await response.json;
-	} catch (error) {
-		console.warn("Error fetching ReadMe");
+	const readmeFormats = ['README.md', 'README.org'];
+	for (const format of readmeFormats) {
+		const repoURL = `https://api.github.com/repos/${repo}/contents/${format}`;
+		try {
+			const response = await requestUrl(repoURL);
+			if (response.status === 200) {
+				return await response.json;
+			}
+			if (format === 'README.md') {
+				break; // Stop searching if README.md is found
+			}
+		} catch (error) {
+			console.warn(`Error fetching ${format}`);
+		}
 	}
 	return null;
 }
 
 export async function getManifest(modal: CPModal | QPSModal, id: string | undefined) {
-	if (!id) return null
+	if (!id || !(id in modal.plugin.settings.commPlugins)) return null
 	const { commPlugins } = modal.plugin.settings
 	const repo = commPlugins[id]?.repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
@@ -398,6 +406,7 @@ export async function getManifest(modal: CPModal | QPSModal, id: string | undefi
 		const response = await requestUrl(repoURL);
 		return await response.json;
 	} catch (error) {
+		console.log("id, commPlugins[id]",id, commPlugins[id])
 		console.warn("Error fetching manifest");
 	}
 	return null;

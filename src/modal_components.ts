@@ -185,6 +185,7 @@ async function searchUpdates(modal: QPSModal) {
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
+		if(item.id === "quick-plugin-switcher") continue
 		const manifest = await getManifest(modal, item.id);
 		const lastVersion = manifest?.version
 		if (!lastVersion || lastVersion <= item.version) {

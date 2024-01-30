@@ -12,7 +12,6 @@ import {
 import { DescriptionModal } from "./secondary_modals";
 import {
 	conditionalEnable,
-	getLatestPluginVersion,
 	isInstalled,
 	openDirectoryInFileManager,
 	openPluginSettings,
@@ -122,8 +121,6 @@ export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
 			"Search for updates"
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
-			new Notice(`momentally disabled to fix a bug`, 4500);
-			return
 			if (toUpdate.length) {
 				const menu = new Menu();
 				menu.addItem((item) =>
@@ -188,7 +185,8 @@ async function searchUpdates(modal: QPSModal) {
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
-		const lastVersion = await getLatestPluginVersion(modal, item.id);
+		const manifest = await getManifest(modal, item.id);
+		const lastVersion = manifest?.version
 		if (!lastVersion || lastVersion <= item.version) {
 			item["toUpdate"] = false
 			if (lastVersion && lastVersion <= item.version) open = true
@@ -864,8 +862,8 @@ export function contextMenuCPM(
 			.setDisabled(isInstalled(id) || id === "quick-plugin-switcher")
 			.setIcon("log-in")
 			.onClick(async () => {
-				const lastVersion = await getLatestPluginVersion(modal, id);
 				const manifest = await getManifest(modal, id);
+				const lastVersion = manifest?.version;
 				await this.app.plugins.installPlugin(matchingItem.repo, lastVersion, manifest);
 				await reOpenModal(modal);
 			});
@@ -1026,28 +1024,26 @@ async function contextMenuQPS(
 }
 
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
-	new Notice(`momentally disabled to fix a bug`, 4500);
-	return
-	// const lastVersion = await getLatestPluginVersion(modal, matchingItem.id);
-	// if (lastVersion) {
-	// 	if (lastVersion <= matchingItem.version) {
-	// 		new Notice(`Already last version ${lastVersion}`, 2500)
-	// 		return
-	// 	}
-	// 	const matchingId = Object.keys(commPlugins).find(
-	// 		(id) => id === matchingItem.id
-	// 	);
-	// 	const manifest = await getManifest(modal, matchingId);
-	// 	try { await modal.app.plugins.installPlugin(commPlugins[matchingId!].repo, lastVersion, manifest); } catch {
-	// 		console.error("install failed");
-	// 	}
-	// 	new Notice(`version ${matchingItem.version} updated to ${lastVersion}`, 2500);
-	// 	matchingItem.version = lastVersion
-	// 	await modal.plugin.installedUpdate();
-	// 	await reOpenModal(modal);
-	// } else {
-	// 	new Notice(`Not a published plugin`, 2500);
-	// }
+	const { id, version } = matchingItem;
+	const manifest = await getManifest(modal, id);
+	const lastVersion = manifest?.version
+	if (lastVersion) {
+		if (lastVersion <= version) {
+			new Notice(`Already last version ${lastVersion}`, 2500)
+			return
+		}
+		try { await modal.app.plugins.installPlugin(commPlugins[id!].repo, lastVersion, manifest); 
+		matchingItem.toUpdate = false
+		} catch {
+			console.error("install failed");
+		}
+		new Notice(`version ${version} updated to ${lastVersion}`, 2500);
+		matchingItem.version = lastVersion
+		await modal.plugin.installedUpdate();
+		await reOpenModal(modal);
+	} else {
+		new Notice(`Not a published plugin`, 2500);
+	}
 }
 
 export const findMatchingItem = (

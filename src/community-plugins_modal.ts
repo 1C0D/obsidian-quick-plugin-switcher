@@ -391,8 +391,9 @@ export async function getReadMe(item: PluginCommInfo) {
 export async function getManifest(modal: CPModal | QPSModal, id: string | undefined) {
 	if (!id) return null
 	const { commPlugins } = modal.plugin.settings
-	const repo = commPlugins[id].repo;
-	const repoURL = `https://raw.githubusercontent.com/${repo}/master/manifest.json`;
+	const repo = commPlugins[id]?.repo;
+	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
+	
 	try {
 		const response = await requestUrl(repoURL);
 		return await response.json;

@@ -1,7 +1,7 @@
 import { ButtonComponent, DropdownComponent, Menu, Notice } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
-import { createInput, reOpenModal, conditionalEnable, isInstalled, getLatestPluginVersion } from "./modal_utils";
+import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./modal_utils";
 import { Filters, Groups, CommFilters, GroupsComm, SortBy } from "./types/variables";
 import { removeItem } from "./utils";
 import { createClearGroupsMenuItem, hideOnCLick } from "./modal_components";
@@ -299,8 +299,8 @@ export async function installAllPluginsInGroup(
             new Notice(`${commPlugins[id].name} already installed`, 2500);
             continue;
         }
-        const lastVersion = await getLatestPluginVersion(modal, id);
         const manifest = await getManifest(modal, id);
+        const lastVersion = manifest?.version
         await this.app.plugins.installPlugin(commPlugins[id].repo, lastVersion, manifest);
         if (enable) {
             await modal.app.plugins.enablePluginAndSave(id);

@@ -2,9 +2,8 @@ import Plugin from "./main";
 import { QPSModal } from "./main_modal";
 import { Notice } from "obsidian";
 import { confirm } from "./secondary_modals";
-import { CPModal } from "./community-plugins_modal";
+import { CPModal, getManifest } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
-import { compareVersions } from "./utils";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
@@ -248,33 +247,6 @@ export const showHotkeysFor = async function (
 	tab.updateHotkeyVisibility();
 	tab.searchComponent.inputEl.blur();
 };
-
-export async function getLatestPluginVersion(
-	modal: CPModal | QPSModal,
-	id: string
-) {
-	const pluginInfo = modal.plugin.settings.pluginStats[id];
-	let latestVersion: string | null = null;
-
-	for (const version in pluginInfo) {
-		if (/^(v?\d+\.\d+\.\d+)$/.test(version)) {
-			const numericVersion = version
-				.replace(/^v/, '')
-				.split('.')
-				.join(".")
-
-			if (!latestVersion || compareVersions(numericVersion, latestVersion) > 0) {
-				latestVersion = numericVersion;
-			}
-		}
-	}
-
-	if (!latestVersion) {
-		Console.debug("not published plugin?");
-		return;
-	}
-	return latestVersion
-}
 
 export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
 	const regex = /!\[([^\]]*)\]\(([^)]*)\)/g;

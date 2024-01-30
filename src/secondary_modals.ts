@@ -11,11 +11,12 @@ import {
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
-import { getCommandCondition, getLatestPluginVersion, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
+import { getCommandCondition, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
 import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
+import { Console } from "./Console";
 
 // for plugin description
 export class DescriptionModal extends Modal {
@@ -181,8 +182,8 @@ export class ReadMeModal extends Modal {
 				.setButtonText("Install")
 				.setCta()
 				.onClick(async () => {
-					const lastVersion = await getLatestPluginVersion(this.modal, id);
 					const manifest = await getManifest(this.modal, id);
+					const lastVersion = manifest?.version
 					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();

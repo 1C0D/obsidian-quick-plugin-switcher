@@ -53,8 +53,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			}
 			await this.saveSettings();
 
-			//delay at start
 			for (const id of stillInstalled) {
+				//delay at start
 				if (installed[id].delayed && installed[id].enabled) {
 					const time = installed[id].time * 1000 || 0;
 					setTimeout(
@@ -63,6 +63,8 @@ export default class QuickPluginSwitcher extends Plugin {
 						time
 					);
 				}
+				//reset toUpdate
+				installed[id].toUpdate = false
 			}
 		});
 

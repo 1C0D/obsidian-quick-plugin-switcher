@@ -185,9 +185,10 @@ async function searchUpdates(modal: QPSModal) {
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
-		if(item.id === "quick-plugin-switcher") continue
+		if (item.id === "quick-plugin-switcher") continue
 		const manifest = await getManifest(modal, item.id);
-		const lastVersion = manifest?.version
+		if (!manifest) continue
+		const lastVersion = manifest.version
 		if (!lastVersion || lastVersion <= item.version) {
 			item["toUpdate"] = false
 			if (lastVersion && lastVersion <= item.version) open = true
@@ -864,7 +865,11 @@ export function contextMenuCPM(
 			.setIcon("log-in")
 			.onClick(async () => {
 				const manifest = await getManifest(modal, id);
-				const lastVersion = manifest?.version;
+				if (!manifest) {
+					new Notice(`Manifest ${id} not found`, 2500);
+					return
+				}
+				const lastVersion = manifest.version;
 				await this.app.plugins.installPlugin(matchingItem.repo, lastVersion, manifest);
 				await reOpenModal(modal);
 			});
@@ -1027,24 +1032,25 @@ async function contextMenuQPS(
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
 	const { id, version } = matchingItem;
 	const manifest = await getManifest(modal, id);
-	const lastVersion = manifest?.version
-	if (lastVersion) {
-		if (lastVersion <= version) {
-			new Notice(`Already last version ${lastVersion}`, 2500)
-			return
-		}
-		try { await modal.app.plugins.installPlugin(commPlugins[id!].repo, lastVersion, manifest); 
-		matchingItem.toUpdate = false
-		} catch {
-			console.error("install failed");
-		}
-		new Notice(`version ${version} updated to ${lastVersion}`, 2500);
-		matchingItem.version = lastVersion
-		await modal.plugin.installedUpdate();
-		await reOpenModal(modal);
-	} else {
+	if (!manifest) {
 		new Notice(`Not a published plugin`, 2500);
+		return
 	}
+	const lastVersion = manifest.version
+	if (lastVersion <= version) {
+		new Notice(`Already last version ${lastVersion}`, 2500)
+		return
+	}
+	try {
+		await modal.app.plugins.installPlugin(commPlugins[id!].repo, lastVersion, manifest);
+		matchingItem.toUpdate = false
+	} catch {
+		console.error("install failed");
+	}
+	new Notice(`version ${version} updated to ${lastVersion}`, 2500);
+	matchingItem.version = lastVersion
+	await modal.plugin.installedUpdate();
+	await reOpenModal(modal);
 }
 
 export const findMatchingItem = (

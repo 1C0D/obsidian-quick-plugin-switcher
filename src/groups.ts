@@ -300,7 +300,8 @@ export async function installAllPluginsInGroup(
             continue;
         }
         const manifest = await getManifest(modal, id);
-        const lastVersion = manifest?.version
+        if(!manifest) continue
+        const lastVersion = manifest.version
         await this.app.plugins.installPlugin(commPlugins[id].repo, lastVersion, manifest);
         if (enable) {
             await modal.app.plugins.enablePluginAndSave(id);

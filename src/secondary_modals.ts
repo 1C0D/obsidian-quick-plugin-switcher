@@ -183,7 +183,11 @@ export class ReadMeModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					const manifest = await getManifest(this.modal, id);
-					const lastVersion = manifest?.version
+					if (!manifest) {
+						new Notice(`Manifest ${id} not found`, 2500);
+						return
+					}
+					const lastVersion = manifest.version
 					await this.app.plugins.installPlugin(pluginItem.repo, lastVersion ?? "", manifest);
 					new Notice(`${pluginItem.name} installed`, 2500);
 					await this.onOpen();

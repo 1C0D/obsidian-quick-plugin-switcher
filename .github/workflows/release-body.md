@@ -1,0 +1,1 @@
+fix: update installed prop in readme

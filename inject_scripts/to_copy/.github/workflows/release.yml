@@ -8,9 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # Otherwise, you will fail to push refs to the destination repository
 
@@ -46,15 +48,15 @@ jobs:
       # Create the release on GitHub
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.ref }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
+          allowUpdates: true
+          generateReleaseNotes: true
+          makeLatest: true
+          bodyFile: ".github/workflows/release-body.md"
 
       # Upload the zip file
       - name: Upload zip file

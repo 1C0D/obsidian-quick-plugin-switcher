@@ -204,11 +204,8 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
-						condition = await getCommandCondition(
-							this.modal,
-							pluginItem
-						);
-						if (condition) await this.onOpen();
+						await this.modal.plugin.pluginsCommInfo();
+						this.modal.plugin.settings.installed[pluginItem.id].enabled =true
 						new Notice(`${pluginItem.name} enabled`, 2500);
 						await reOpenModal(this.modal);
 					});

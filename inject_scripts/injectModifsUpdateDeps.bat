@@ -1,11 +1,11 @@
 @echo off
 
 REM to root dir
-set ROOT_DIR=%~dp0..
+set "ROOT_DIR=."
 
-IF NOT EXIST %ROOT_DIR%\package.json (
-    echo package.json cannot be found in the root directory.
-    exit /b
+IF NOT EXIST "..\%ROOT_DIR%\package.json" (
+  echo package.json cannot be found in the root directory.
+  exit /b
 )
 
 echo Installing missing modules

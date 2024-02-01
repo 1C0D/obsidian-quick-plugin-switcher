@@ -15,6 +15,7 @@ function updateVersion() {
         patch(1.0.1) -> type 1 or p
         minor(1.1.0) -> type 2 or min
         major(2.0.0) -> type 3 or maj
+        or version number (e.g. 2.0.0)
     \n`, async (updateType) => {
         rl.close();
 

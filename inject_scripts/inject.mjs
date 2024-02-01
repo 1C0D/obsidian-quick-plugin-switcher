@@ -98,6 +98,18 @@ function updatePackageJsonScripts() {
     }
 }
 
-// Call the functions to perform the actions
+function addInjectScriptsExclusionToGitignore() {
+    const gitignorePath = path.join(rootDir, '.gitignore');
+    const exclusionRule = 'inject_scripts/';
+
+    // is exclusion rule already in .gitignore?
+    const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+    if (!gitignoreContent.includes(exclusionRule)) {
+        fs.appendFileSync(gitignorePath, `\n${exclusionRule}\n`);
+        console.log(`"${exclusionRule}" added to .gitignore.`);
+    }
+}
+
+addInjectScriptsExclusionToGitignore();
 copyScriptsToRoot();
 updatePackageJsonScripts();

@@ -397,6 +397,7 @@ export async function getReadMe(item: PluginCommInfo) {
 }
 
 export async function getManifest(modal: CPModal | QPSModal, id: string | undefined) {
+	// todo check if last release is ok same manifest version
 	if (!id || !(id in modal.plugin.settings.commPlugins)) return null
 	const { commPlugins } = modal.plugin.settings
 	const repo = commPlugins[id]?.repo;

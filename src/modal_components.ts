@@ -570,7 +570,7 @@ const pluginFeatureSubmenu = async (
 				})
 	);
 
-	const pluginSettings = (modal.app as any).setting.openTabById(
+	const pluginSettings = modal.app.setting.openTabById(
 		id
 	);
 	submenu.addSeparator();

@@ -204,15 +204,12 @@ export class ReadMeModal extends Modal {
 							this.modal.app as any
 						).plugins.enablePluginAndSave(pluginItem.id);
 						await this.onOpen();
-						await this.modal.plugin.pluginsCommInfo();
-						this.modal.plugin.settings.installed[pluginItem.id].enabled =true
+						this.modal.plugin.installedUpdate()
 						new Notice(`${pluginItem.name} enabled`, 2500);
 						await reOpenModal(this.modal);
 					});
 			} else {
-				const pluginSettings = await (
-					this.modal.app as any
-				).setting.openTabById(pluginItem.id);
+				const pluginSettings = this.modal.app.setting.openTabById(pluginItem.id);
 				if (pluginSettings) {
 					new ButtonComponent(divButtons)
 						.setButtonText("Options")

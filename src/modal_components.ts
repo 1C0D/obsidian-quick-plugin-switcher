@@ -26,6 +26,7 @@ import {
 	CPModal,
 	getManifest,
 	getPluginsList,
+	getReleaseVersion,
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
@@ -181,12 +182,13 @@ export const checkbox = (
 }
 
 async function searchUpdates(modal: QPSModal) {
-	const { installed } = modal.plugin.settings;
+	const { installed, commPlugins } = modal.plugin.settings;
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
-		if (item.id === "quick-plugin-switcher") continue
+		if (item.id === "quick-plugin-switcher" || !(item.id in commPlugins)) continue
 		const manifest = await getManifest(modal, item.id);
+		// const hasRelease = await getReleaseVersion(modal, item.id, manifest)
 		if (!manifest) continue
 		const lastVersion = manifest.version
 		if (!lastVersion || lastVersion <= item.version) {
@@ -961,7 +963,7 @@ async function contextMenuQPS(
 		menu.addSeparator();
 		menu.addItem((item) => {
 			const { commPlugins } = plugin.settings
-			item.setTitle("Update plugin")
+			item.setTitle("Update plugin!")
 				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("rocket")
 				.onClick(async () => {
@@ -1030,26 +1032,35 @@ async function contextMenuQPS(
 }
 
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
+	// const toUpdate = await this.app.plugins.checkForUpdates()// not good updating all
 	const { id, version } = matchingItem;
 	const manifest = await getManifest(modal, id);
-	if (!manifest) {
-		new Notice(`Not a published plugin`, 2500);
-		return
-	}
+	const hasRelease = await getReleaseVersion(modal, id, manifest)
 	const lastVersion = manifest.version
-	if (lastVersion <= version) {
+
+	if (!(id in commPlugins)) {
+		new Notice(`Not a published plugin`, 2500);
+	}
+	else if (!manifest) {
+		new Notice(`No manifest in ${commPlugins[id].repo}`, 3500)
+	}
+	else if (!hasRelease) {
+		new Notice(`can't update, version ${manifest.version} in repo has not been released!`)
+	}
+	else if (lastVersion <= version) {
 		new Notice(`Already last version ${lastVersion}`, 2500)
-		return
 	}
-	try {
-		await modal.app.plugins.installPlugin(commPlugins[id!].repo, lastVersion, manifest);
-		matchingItem.toUpdate = false
-	} catch {
-		console.error("install failed");
+	else {
+		try {
+			await modal.app.plugins.installPlugin(commPlugins[id!].repo, lastVersion, manifest);
+			new Notice(`version ${version} updated to ${lastVersion}`, 2500);
+			matchingItem.version = lastVersion
+			await modal.plugin.installedUpdate();
+		} catch {
+			console.error("install failed");
+		}
 	}
-	new Notice(`version ${version} updated to ${lastVersion}`, 2500);
-	matchingItem.version = lastVersion
-	await modal.plugin.installedUpdate();
+	matchingItem.toUpdate = false
 	await reOpenModal(modal);
 }
 

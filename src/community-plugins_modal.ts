@@ -6,6 +6,7 @@ import {
 	Modal,
 	Notice,
 	Platform,
+	PluginManifest,
 	requestUrl,
 	setIcon,
 } from "obsidian";
@@ -42,6 +43,7 @@ import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
 import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./types/global";
+import { Console } from "./Console";
 
 declare global {
 	interface Window {
@@ -279,7 +281,8 @@ export class CPModal extends Modal {
 				}//if removed from group
 				if (filtersComm !== CommFilters.ByGroup) {
 					if (commPlugins[item].groupCommInfo?.hidden && filtersComm !== CommFilters.Hidden) {
-						return}
+						return
+					}
 				}
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
@@ -396,21 +399,37 @@ export async function getReadMe(item: PluginCommInfo) {
 	return null;
 }
 
-export async function getManifest(modal: CPModal | QPSModal, id: string | undefined) {
+export async function getManifest(modal: CPModal | QPSModal, id: string) {
 	// todo check if last release is ok same manifest version
-	if (!id || !(id in modal.plugin.settings.commPlugins)) return null
 	const { commPlugins } = modal.plugin.settings
 	const repo = commPlugins[id]?.repo;
 	const repoURL = `https://raw.githubusercontent.com/${repo}/HEAD/manifest.json`;
-	
+
 	try {
 		const response = await requestUrl(repoURL);
 		return await response.json;
 	} catch (error) {
-		console.log("id, commPlugins[id]",id, commPlugins[id])
+		Console.log("id, commPlugins[id]", id, commPlugins[id])
 		console.warn("Error fetching manifest");
 	}
 	return null;
+}
+
+export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, manifest: PluginManifest) {
+	const { commPlugins } = modal.plugin.settings
+	const repo = commPlugins[id].repo;
+	// manifest.version = "100.0.0" //debug
+
+	const releaseUrl = `https://github.com/${repo}/releases/tag/${manifest.version}`;
+
+	try{
+		const response = await requestUrl(releaseUrl);
+		if (response) return true
+		return false
+
+	}catch{
+		return false
+	}
 }
 
 function sortItemsBy(

@@ -1,1 +1,1 @@
-fix: update installed prop in readme
+new fix enable plugin in comm plugin

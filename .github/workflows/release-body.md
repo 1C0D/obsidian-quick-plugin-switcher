@@ -1,1 +1,1 @@
-new fix enable plugin in comm plugin
+plugin updates checking if the release exists

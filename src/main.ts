@@ -7,6 +7,7 @@ import { fetchData } from "./community-plugins_modal";
 import { CommPlugin, PackageInfoData, QPSSettings } from "./types/global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters } from './types/variables';
 import { Console } from './Console';
+import { focusSearchInput } from './modal_utils';
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -78,6 +79,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.filtersComm = CommFilters.All
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
+				focusSearchInput();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
 			}
 		);
@@ -90,6 +92,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.filtersComm = CommFilters.All
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
+				focusSearchInput();
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
 			},
 		});

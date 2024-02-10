@@ -277,3 +277,9 @@ export function getElementFromMousePosition(
 	}
 	return null;
 }
+
+export function focusSearchInput() {
+	setTimeout(() => {
+		(document.querySelector(".qps-search-component input") as HTMLInputElement)?.focus();
+	}, 100);	
+}

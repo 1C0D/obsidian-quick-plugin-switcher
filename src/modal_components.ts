@@ -20,6 +20,7 @@ import {
 	showHotkeysFor,
 	getElementFromMousePosition,
 	createInput,
+	focusSearchInput,
 } from "./modal_utils";
 import { hasKeyStartingWith, isEnabled } from "./utils";
 import {
@@ -231,6 +232,7 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 			await plugin.exeAfterDelay(plugin.pluginsCommInfo.bind(plugin));
 			new CPModal(modal.app, plugin).open();
 			modal.close();
+			focusSearchInput();
 		});
 };
 

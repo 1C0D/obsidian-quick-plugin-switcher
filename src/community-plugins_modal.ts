@@ -24,6 +24,7 @@ import {
 	reOpenModal,
 	getElementFromMousePosition,
 	getHidden,
+	focusSearchInput,
 } from "./modal_utils";
 import {
 	addSearch,
@@ -365,6 +366,7 @@ export class CPModal extends Modal {
 		this.removeListeners()
 		await this.plugin.installedUpdate();
 		new QPSModal(this.app, this.plugin).open();
+		focusSearchInput();
 	}
 }
 

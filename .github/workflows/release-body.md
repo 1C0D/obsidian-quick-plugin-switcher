@@ -1,1 +1,1 @@
-plugin updates checking if the release exists
+search focus on modals start

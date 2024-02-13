@@ -130,10 +130,10 @@ export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
 						.setTitle("Update plugin(s)")
 						.setIcon("book-copy")
 						.onClick(async () => {
-							toUpdate.map(item => {
-								item["toUpdate"] = false
-								updatePlugin(modal, item, plugin.settings.commPlugins)
-							})
+							await Promise.allSettled(toUpdate.map(async item => {
+								item["toUpdate"] = false;
+								await updatePlugin(modal, item, plugin.settings.commPlugins);
+							}));
 						})
 				);
 				menu.addItem((item) =>
@@ -187,7 +187,7 @@ async function searchUpdates(modal: QPSModal) {
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
-		if (item.id === "quick-plugin-switcher" || !(item.id in commPlugins)) continue
+		// if (item.id === "quick-plugin-switcher" || !(item.id in commPlugins)) continue
 		const manifest = await getManifest(modal, item.id);
 		// const hasRelease = await getReleaseVersion(modal, item.id, manifest)
 		if (!manifest) continue
@@ -969,7 +969,7 @@ async function contextMenuQPS(
 				.setDisabled(matchingItem.id === "quick-plugin-switcher")
 				.setIcon("rocket")
 				.onClick(async () => {
-					updatePlugin(modal, matchingItem, commPlugins);
+					await updatePlugin(modal, matchingItem, commPlugins);
 				});
 		});
 		menu.addItem((item) => {

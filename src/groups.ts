@@ -392,18 +392,19 @@ export function addRemoveItemGroupMenuItems(
             modal,
             groupKey
         );
+        const isQPS = modal instanceof QPSModal;
         const getGroup =
-            (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo?.groupIndices.indexOf(groupIndex) !== -1 : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
+            isQPS ? (pluginItem as PluginInstalled).groupInfo?.groupIndices.indexOf(groupIndex) !== -1 : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices.indexOf(groupIndex) !== -1;
         if (groupKey !== "SelectGroup" && lengthGroup && getGroup) {
             let value = alt ? `remove ${groupValue}` : `${groupValue}`
             submenu.addItem((subitem) => {
                 subitem.setTitle(value).onClick(async () => {
-                    const plugins = (pluginItem instanceof QPSModal) ? (pluginItem as PluginInstalled).groupInfo?.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices
-                    for (const index of plugins) {
-                        if (index === groupIndex) {
+                    const indexes = isQPS ? (pluginItem as PluginInstalled).groupInfo?.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices
+                    for (const index in indexes) {
+                        if (parseInt(index+1) === groupIndex) {
                             removeItem(
-                                plugins,
-                                index
+                                indexes,
+                                groupIndex
                             );
                             if (groupIsEmpty(groupIndex, modal)) {
                                 settings.selectedGroup = "SelectGroup";

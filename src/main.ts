@@ -284,7 +284,7 @@ export default class QuickPluginSwitcher extends Plugin {
 		func: () => Promise<boolean>
 	) => {
 		const currentTime: number = Date.now();
-		// delay 3min
+		// delay 2min
 		if (currentTime - this.settings.lastFetchExe >= 120000) {
 			const ret = await func();
 			if (ret === true) {

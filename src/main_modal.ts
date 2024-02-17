@@ -315,7 +315,7 @@ const itemTogglePluginButton = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
 ) => {
-	let disable = pluginItem.id === "quick-plugin-switcher";
+	let disable = ((pluginItem.id === "quick-plugin-switcher") || (pluginItem.isDesktopOnly && Platform.isMobile))?? false;
 	new ToggleComponent(itemContainer)
 		.setValue(pluginItem.enabled)
 		.setDisabled(disable) //quick-plugin-switcher disabled

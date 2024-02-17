@@ -300,7 +300,7 @@ export async function installAllPluginsInGroup(
             continue;
         }
         const manifest = await getManifest(modal, id);
-        if(!manifest) continue
+        if (!manifest) continue
         const lastVersion = manifest.version
         await this.app.plugins.installPlugin(commPlugins[id].repo, lastVersion, manifest);
         if (enable) {
@@ -400,17 +400,9 @@ export function addRemoveItemGroupMenuItems(
             submenu.addItem((subitem) => {
                 subitem.setTitle(value).onClick(async () => {
                     const indexes = isQPS ? (pluginItem as PluginInstalled).groupInfo?.groupIndices : (pluginItem as PluginCommInfo).groupCommInfo?.groupIndices
-                    for (const index in indexes) {
-                        if (parseInt(index+1) === groupIndex) {
-                            removeItem(
-                                indexes,
-                                groupIndex
-                            );
-                            if (groupIsEmpty(groupIndex, modal)) {
-                                settings.selectedGroup = "SelectGroup";
-                            }
-                            break;
-                        }
+                    removeItem(indexes, groupIndex);
+                    if (groupIsEmpty(groupIndex, modal)) {
+                        settings.selectedGroup = "SelectGroup";
                     }
                     await reOpenModal(modal);
                 });

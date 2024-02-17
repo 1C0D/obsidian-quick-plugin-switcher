@@ -1,2 +1,1 @@
-fix: remove group from menu
-toggle plugin disabled on mobile if desktop only plugin
+fix: new fix on remove group from menu

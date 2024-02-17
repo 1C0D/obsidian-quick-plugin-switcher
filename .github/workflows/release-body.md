@@ -1,1 +1,2 @@
-quick plugin switcher is now updated as other plugin using the "rocket" button. I didn't realise soon enough it was important to do it from quick pluging switcher, because using the rocket button previous version are not seeing QPS updates. but well still learning...
+fix: remove group from menu
+toggle plugin disabled on mobile if desktop only plugin

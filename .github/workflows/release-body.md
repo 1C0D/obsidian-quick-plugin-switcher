@@ -1,1 +1,1 @@
-fix: new fix on remove group from menu
+switch off desktop only plugins on mobiles

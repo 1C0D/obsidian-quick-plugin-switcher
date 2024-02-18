@@ -315,9 +315,11 @@ const itemTogglePluginButton = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
 ) => {
-	let disable = ((pluginItem.id === "quick-plugin-switcher") || (pluginItem.isDesktopOnly && Platform.isMobile))?? false;
+	const desktopOnlyOff = pluginItem.isDesktopOnly && Platform.isMobile
+	let disable = ((pluginItem.id === "quick-plugin-switcher") || desktopOnlyOff)?? false;
+	const enabled = desktopOnlyOff ? false : pluginItem.enabled;
 	new ToggleComponent(itemContainer)
-		.setValue(pluginItem.enabled)
+		.setValue(enabled)
 		.setDisabled(disable) //quick-plugin-switcher disabled
 		.onChange(async () => {
 			await togglePlugin(modal, pluginItem); // searchInit = ? in reOpenModal...

@@ -1,5 +1,5 @@
 import 'obsidian'
-import { CommFilters, Filters, SortBy } from './variables';
+import { CommFilters, Filters, SortBy, TargetPlatform } from './variables';
 import { PluginManifest } from 'obsidian';
 
 declare module "obsidian" {
@@ -40,11 +40,10 @@ interface PluginInstalled extends PluginManifest {
     switched: number;
     groupInfo: PluginGroupInfo;
     delayed: boolean;
-    time: number
-    toUpdate?: boolean
+    time: number;
+    toUpdate?: boolean;
+    target?: TargetPlatform;
 }
-
-
 
 interface PluginGroupInfo {
     hidden: boolean;
@@ -74,7 +73,7 @@ interface QPSSettings {
     >;
     showHotKeys: boolean;
     // commnunity plugins
-    pluginStats: PackageInfoData; 
+    pluginStats: PackageInfoData;
     plugins: string[];
     commPlugins: Record<string, PluginCommInfo>;
     filtersComm: keyof typeof CommFilters;

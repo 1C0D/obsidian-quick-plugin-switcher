@@ -31,6 +31,12 @@ export const CommFilters: StringString = {
 	Hidden: "hidden",
 };
 
+export enum TargetPlatform {
+	Desktop,
+	Mobile,
+	Both,
+}
+
 export const SortBy: StringString = {
 	Downloads: "by downloads",
 	Alpha: "by alphanum",

@@ -1,15 +1,16 @@
-import { Plugin } from 'obsidian';
+import { Platform, Plugin } from 'obsidian';
 import { around } from "monkey-around";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import QPSSettingTab from "./settings";
 import { fetchData } from "./community-plugins_modal";
 import { CommPlugin, PackageInfoData, QPSSettings } from "./types/global";
-import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters } from './types/variables';
+import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
 import { Console } from './Console';
 import { focusSearchInput } from './modal_utils';
 
 export default class QuickPluginSwitcher extends Plugin {
+	settingsMobile: QPSSettings;
 	settings: QPSSettings;
 	lengthAll = 0;
 	lengthDisabled = 0;
@@ -47,7 +48,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			for (const id of stillInstalled) {
 				if (
 					isEnabled(this, id) !== installed[id].enabled &&
-					!installed[id].delayed //because if delayed isEnabled false
+					!installed[id].delayed && !(installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop)//because if delayed isEnabled false
 				) {
 					installed[id].enabled = !installed[id].enabled;
 				}
@@ -55,14 +56,28 @@ export default class QuickPluginSwitcher extends Plugin {
 			await this.saveSettings();
 
 			for (const id of stillInstalled) {
+				const isPlatformDep = installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop
+				const platformOff =
+					installed[id].target === TargetPlatform.Mobile && Platform.isDesktop
+					|| installed[id].target === TargetPlatform.Desktop && Platform.isMobile
 				//delay at start
-				if (installed[id].delayed && installed[id].enabled) {
-					const time = installed[id].time * 1000 || 0;
-					setTimeout(
-						async () =>
-							await this.app.plugins.enablePlugin(id),
-						time
-					);
+				if ((installed[id].delayed || isPlatformDep)
+					&& installed[id].enabled) {
+					if (platformOff) {
+						console.log("platformOff")
+						await this.app.plugins.disablePlugin(id)
+					} else {
+						if (installed[id].delayed) {
+							const time = installed[id].time * 1000 || 0;
+							setTimeout(
+								async () =>
+									await this.app.plugins.enablePlugin(id),
+								time
+							);
+						} else {
+							await this.app.plugins.enablePlugin(id)
+						}
+					}
 				}
 				//reset toUpdate
 				installed[id].toUpdate = false
@@ -109,7 +124,10 @@ export default class QuickPluginSwitcher extends Plugin {
 								id === pluginId &&
 								!isEnabled(this, pluginId)
 						);
-						if (id && installed[id].delayed && installed[id].time > 0) {
+						if(!id) return
+						if (
+							installed[id].delayed && installed[id].time > 0 || (installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop)
+						) {
 							installed[id].enabled = false;
 							cb();
 						}
@@ -169,16 +187,16 @@ export default class QuickPluginSwitcher extends Plugin {
 				(id) => id === key
 			);
 
-			if (inListId) {
+			if (inListId && isEnabled(this, key) !==
+				installed[key].enabled) {
 				if (
-					isEnabled(this, key) !==
-					installed[key].enabled &&
-					!installed[key].delayed
+					!installed[key].delayed && !(installed[key].target === TargetPlatform.Mobile
+						|| installed[key].target === TargetPlatform.Desktop)
 				) {
 					installed[key].enabled = !installed[key].enabled;
 				} else if (
-					installed[key].delayed &&
-					isEnabled(this, key) !== installed[key].enabled
+					installed[key].delayed 
+					|| (installed[key].target === TargetPlatform.Mobile || installed[key].target === TargetPlatform.Desktop)
 				) {
 					if (isEnabled(this, key)) {
 						installed[key].enabled = true;
@@ -188,7 +206,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						await this.app.plugins.enablePlugin(
 							key
 						);
-						installed[key].switched++;
+						// installed[key].switched++;
 					}
 				}
 				installed[key] = {
@@ -303,16 +321,16 @@ export default class QuickPluginSwitcher extends Plugin {
 	async loadSettings() {
 		const previousSettings = { ...(await this.loadData()) };
 		// temporary fix
-		if ("allPluginsList" in previousSettings) {
-			delete previousSettings.allPluginsList;
-			delete previousSettings.pluginStats;
-			delete previousSettings.commPlugins;
+		// if ("allPluginsList" in previousSettings) {
+		// 	delete previousSettings.allPluginsList;
+		// 	delete previousSettings.pluginStats;
+		// 	delete previousSettings.commPlugins;
 
-			Console.log("allPluginsList... has been deleted");
-		}
-		if ("showReset" in previousSettings) {
-			delete previousSettings.showReset;
-		}
+		// 	Console.log("allPluginsList... has been deleted");
+		// }
+		// if ("showReset" in previousSettings) {
+		// 	delete previousSettings.showReset;
+		// }
 
 		this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
 		this.settings.savedVersion = this.manifest.version;

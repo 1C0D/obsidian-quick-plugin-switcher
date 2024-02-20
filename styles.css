@@ -25,6 +25,27 @@
   margin-right: 2px;
 }
 
+.qps-desktop-only input {
+  border-bottom: 1.3px double;
+}
+
+.qps-most-switched input {
+  color: rgba(186, 129, 75, 0.999);
+
+}
+
+.qps-update input {
+  border: 3px double rgb(203, 175, 117);
+}
+
+.qps-is-mobile input {
+  border-bottom: 3px dashed rgba(75, 186, 77, 0.999);
+}
+
+.qps-is-desktop input {
+  border-bottom: 3px dashed rgba(154, 75, 186, 0.999);
+}
+
 /* circles */
 .qps-item-line-group {
   /* position: relative; */
@@ -38,10 +59,6 @@
   width: 62%;
   padding: 1.25em 0 1.25em 0.5em !important;
   margin: 2px 0
-}
-
-.qps-most-switched input {
-  color: rgba(186, 129, 75, 0.999);
 }
 
 .toggle-bullet-color .checkbox-container::after {
@@ -76,15 +93,6 @@
   justify-content: space-evenly;
   align-items: flex-start;
   padding-top: 10px;
-}
-
-.qps-desktop-only input {
-  border-bottom: 1.3px double;
-}
-
-.qps-update input {
-  border-bottom: 1.3px double;
-  border-color: rgb(203, 175, 117);
 }
 
 .git-hub-icon {
@@ -229,7 +237,7 @@
   gap: var(--size-2-1);
 }
 
-.qps-item-line .button-container ,
+.qps-item-line .button-container,
 .qps-comm-block .button-container {
   position: absolute;
   display: block;
@@ -237,8 +245,8 @@
   right: 10px;
 }
 
-.qps-item-line .button-container{
-  top:-15px;
+.qps-item-line .button-container {
+  top: -15px;
   right: 0;
 
 }
@@ -248,7 +256,7 @@
   cursor: pointer;
   padding-right: 0.4rem;
   background-color: transparent;
-  }
+}
 
 
 .qps-community-item-author,
@@ -276,7 +284,7 @@
   background-color: hsl(27, 22%, 12%);
 }
 
-.qps-toggle-plugins .update-button.red{
+.qps-toggle-plugins .update-button.red {
   color: red;
 }
 

@@ -5,6 +5,7 @@ import {
 	ExtraButtonComponent,
 	Menu,
 	Notice,
+	Platform,
 	SearchComponent,
 	Setting,
 	TextComponent,
@@ -21,6 +22,7 @@ import {
 	getElementFromMousePosition,
 	createInput,
 	focusSearchInput,
+	delayedReEnable,
 } from "./modal_utils";
 import { hasKeyStartingWith, isEnabled } from "./utils";
 import {
@@ -31,7 +33,7 @@ import {
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
-import { CommFilters, Filters, Groups } from "./types/variables";
+import { CommFilters, Filters, Groups, TargetPlatform } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
 import { Console } from "./Console";
@@ -500,6 +502,17 @@ export const itemToggleClass = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
 ) => {
+	if (pluginItem.target === 0) {
+		itemContainer.toggleClass("qps-is-desktop", true);
+	}
+	if (pluginItem.target === 1) {
+		itemContainer.toggleClass("qps-is-mobile", true);
+	}
+	// if (pluginItem.target === 2) {
+	// 	// itemContainer.toggleClass("qps-is-desktop", false);
+	// 	// itemContainer.toggleClass("qps-is-mobile", false);
+	// }
+
 	const { settings } = modal.plugin;
 	if (pluginItem.id === "quick-plugin-switcher") {
 		itemContainer.toggleClass("qps-quick-plugin-switcher", true);
@@ -807,9 +820,11 @@ const handleInputDblClick = async (
 		}
 	} else {
 		pluginItem.delayed = false;
-		await modal.app.plugins.enablePluginAndSave(pluginItem.id);
-		modal.isDblClick = false;
+		if (!(pluginItem.target === 0 || pluginItem.target === 1)) {
+			await modal.app.plugins.enablePluginAndSave(pluginItem.id);
+		}
 		await reOpenModal(modal);
+		modal.isDblClick = false;
 	}
 };
 
@@ -960,6 +975,46 @@ async function contextMenuQPS(
 	} else {
 		await pluginFeatureSubmenu(menu, matchingItem, modal);
 	}
+
+	menu.addSeparator();
+	const text = matchingItem.target !== undefined
+		? `run on ${TargetPlatform[matchingItem.target]}`
+		: "run on Both";
+	menu.addItem((item) => {
+		item.setTitle(text)
+		const submenu = Platform.isMobile ? menu : (item as any).setSubmenu() as Menu;
+		// Get only the string keys
+		Object.keys(TargetPlatform)
+			.filter((key) => isNaN(Number(key)))
+			.forEach((key) => {
+				submenu.addItem((sub) => {
+					sub
+						.setTitle(key)
+						.onClick(async () => {
+							const target = TargetPlatform[key as keyof typeof TargetPlatform];
+							if (matchingItem.isDesktopOnly &&
+								target === TargetPlatform.Mobile) {
+								new Notice("Plugin is only for desktop", 2500);
+								return
+							}
+							// set target
+							matchingItem.target = target;
+							if (matchingItem.enabled) {
+								if ((target === TargetPlatform.Mobile && Platform.isDesktop ||
+									target === TargetPlatform.Desktop && Platform.isMobile)) {
+									await this.app.plugins.disablePluginAndSave(matchingItem.id);
+								} else if ((target === TargetPlatform.Mobile && Platform.isMobile ||
+									target === TargetPlatform.Desktop && Platform.isDesktop) && !matchingItem.delayed) {
+									await delayedReEnable(modal, matchingItem.id);
+								} else if (target === TargetPlatform.Both && !matchingItem.delayed) {
+									await this.app.plugins.enablePluginAndSave(matchingItem.id)
+								}
+							}
+							await reOpenModal(modal);
+						});
+				});
+			});
+	});
 
 	if (isInstalled(matchingItem.id)) {
 		menu.addSeparator();

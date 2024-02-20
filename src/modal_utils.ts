@@ -1,6 +1,6 @@
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { Notice } from "obsidian";
+import { Notice, Platform } from "obsidian";
 import { confirm } from "./secondary_modals";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";

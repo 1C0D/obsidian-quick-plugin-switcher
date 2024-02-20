@@ -38,8 +38,7 @@ import {
 	getHidden,
 } from "./modal_utils";
 import { DescriptionModal } from "./secondary_modals";
-import { Filters, Groups } from "./types/variables";
-// import { addButton } from "./settings";
+import { Filters, Groups, TargetPlatform } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, rmvAllGroupsFromPlugin, groupIsEmpty, groupNbFromEmoticon, getPluginsInGroup, groupNbFromGrpName } from "./groups";
 import { CPModal } from "./community-plugins_modal";
 import { KeyToSettingsMapType, PluginInstalled } from "./types/global";
@@ -315,9 +314,13 @@ const itemTogglePluginButton = (
 	pluginItem: PluginInstalled,
 	itemContainer: HTMLDivElement
 ) => {
-	const desktopOnlyOff = pluginItem.isDesktopOnly && Platform.isMobile
-	let disable = ((pluginItem.id === "quick-plugin-switcher") || desktopOnlyOff)?? false;
-	const enabled = desktopOnlyOff ? false : pluginItem.enabled;
+	const platformOff =
+		pluginItem.target === TargetPlatform.Mobile && Platform.isDesktop
+		|| pluginItem.target === TargetPlatform.Desktop && Platform.isMobile
+	const desktopOnlyOff = (pluginItem.isDesktopOnly && Platform.isMobile) ||
+		platformOff
+	let disable = ((pluginItem.id === "quick-plugin-switcher") || desktopOnlyOff || platformOff) ?? false;
+	const enabled = desktopOnlyOff ? false : pluginItem.enabled // isEnabled(modal, pluginItem.id);
 	new ToggleComponent(itemContainer)
 		.setValue(enabled)
 		.setDisabled(disable) //quick-plugin-switcher disabled

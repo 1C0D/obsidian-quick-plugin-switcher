@@ -1,6 +1,8 @@
 ## Quick Plugin Switcher
 
 New: 
+- option to make a plugin platform dependant
+![platformDep](img/platformDep.jpg)
 - plugin updates improved
 - community plugins have been added and a lot of things fixed or improved
 - if some bugs remaining, plz report on github

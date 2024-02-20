@@ -1,1 +1,1 @@
-Feature: Using a common oncloud vault, possibility to run a plugin only on mobile or desktop, in context menu of the plugin "run on ..."
+Feature: Using a common oncloud vault, possibility to run a plugin only on mobile or desktop, in context menu of the plugin: run on mobile/desktop/both

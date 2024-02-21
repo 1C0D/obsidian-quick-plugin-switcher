@@ -508,22 +508,16 @@ export const itemToggleClass = (
 	if (pluginItem.target === 1) {
 		itemContainer.toggleClass("qps-is-mobile", true);
 	}
-	// if (pluginItem.target === 2) {
-	// 	// itemContainer.toggleClass("qps-is-desktop", false);
-	// 	// itemContainer.toggleClass("qps-is-mobile", false);
-	// }
-
 	const { settings } = modal.plugin;
 	if (pluginItem.id === "quick-plugin-switcher") {
 		itemContainer.toggleClass("qps-quick-plugin-switcher", true);
 	}
 	if (pluginItem.isDesktopOnly === true) {
 		itemContainer.addClass("qps-desktop-only");
-	}
+	}	
 	if (pluginItem.hasOwnProperty("toUpdate") && pluginItem.toUpdate === true) {
 		itemContainer.toggleClass("qps-update", true);
 	}
-
 	if (
 		settings.filters === Filters.MostSwitched &&
 		pluginItem.switched !== 0
@@ -820,11 +814,11 @@ const handleInputDblClick = async (
 		}
 	} else {
 		pluginItem.delayed = false;
+		modal.isDblClick = false;
 		if (!(pluginItem.target === 0 || pluginItem.target === 1)) {
 			await modal.app.plugins.enablePluginAndSave(pluginItem.id);
 		}
 		await reOpenModal(modal);
-		modal.isDblClick = false;
 	}
 };
 

@@ -1,8 +1,8 @@
 import Plugin from "./main";
 import { QPSModal } from "./main_modal";
-import { Notice, Platform } from "obsidian";
+import { Notice } from "obsidian";
 import { confirm } from "./secondary_modals";
-import { CPModal, getManifest } from "./community-plugins_modal";
+import { CPModal } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";

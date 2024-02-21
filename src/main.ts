@@ -124,10 +124,9 @@ export default class QuickPluginSwitcher extends Plugin {
 								id === pluginId &&
 								!isEnabled(this, pluginId)
 						);
-						if (!id) return
 						if (
-							installed[id].delayed && installed[id].time > 0
-							|| (installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop)
+							id && (installed[id].delayed && installed[id].time > 0
+							|| (installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop))
 						) {
 							installed[id].enabled = false;
 							cb();
@@ -187,28 +186,25 @@ export default class QuickPluginSwitcher extends Plugin {
 			const inListId = stillInstalled.find(
 				(id) => id === key
 			);
-
 			if (inListId) {
-				if (
-					isEnabled(this, key) !==
-					installed[key].enabled &&
-					!(installed[key].delayed || (installed[key].target === TargetPlatform.Mobile
-						|| installed[key].target === TargetPlatform.Desktop))
-				) {
-					installed[key].enabled = !installed[key].enabled;
-				} else if (
-					(installed[key].delayed || (installed[key].target === TargetPlatform.Mobile || installed[key].target === TargetPlatform.Desktop)) &&
-					isEnabled(this, key) !== installed[key].enabled
-				) {
-					if (isEnabled(this, key)) {
-						installed[key].enabled = true;
-						await this.app.plugins.disablePluginAndSave(
-							key
-						);
-						await this.app.plugins.enablePlugin(
-							key
-						);
-						// installed[key].switched++;
+				if (isEnabled(this, key) !== installed[key].enabled) {
+					if (
+						!(installed[key].delayed || (installed[key].target === TargetPlatform.Mobile
+							|| installed[key].target === TargetPlatform.Desktop))
+					) {
+						installed[key].enabled = !installed[key].enabled;
+					} else if (
+						(installed[key].delayed || (installed[key].target === TargetPlatform.Mobile || installed[key].target === TargetPlatform.Desktop))
+					) {
+						if (isEnabled(this, key)) {
+							installed[key].enabled = true;
+							await this.app.plugins.disablePluginAndSave(
+								key
+							);
+							await this.app.plugins.enablePlugin(
+								key
+							);
+						}
 					}
 				}
 				installed[key] = {

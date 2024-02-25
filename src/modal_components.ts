@@ -37,6 +37,8 @@ import { CommFilters, Filters, Groups, TargetPlatform } from "./types/variables"
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
 import { Console } from "./Console";
+import * as path from "path";
+import { existsSync } from "fs";
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -189,9 +191,21 @@ async function searchUpdates(modal: QPSModal) {
 	let open = false
 	let count = 0
 	for (const item of Object.values(installed)) {
-		// if (item.id === "quick-plugin-switcher" || !(item.id in commPlugins)) continue
+		// is dev ?
+		if (!item.dir) continue
+		const filePath = modal.app.vault.adapter.getFullPath(
+			item.dir
+		);
+		if (!filePath) continue
+		const isDevPath = path.join(
+			filePath,
+			"package.json"
+		);
+		if (existsSync(isDevPath)) {
+			continue;
+		}
+
 		const manifest = await getManifest(modal, item.id);
-		// const hasRelease = await getReleaseVersion(modal, item.id, manifest)
 		if (!manifest) continue
 		const lastVersion = manifest.version
 		if (!lastVersion || lastVersion <= item.version) {
@@ -514,7 +528,7 @@ export const itemToggleClass = (
 	}
 	if (pluginItem.isDesktopOnly === true) {
 		itemContainer.addClass("qps-desktop-only");
-	}	
+	}
 	if (pluginItem.hasOwnProperty("toUpdate") && pluginItem.toUpdate === true) {
 		itemContainer.toggleClass("qps-update", true);
 	}
@@ -1013,9 +1027,28 @@ async function contextMenuQPS(
 	if (isInstalled(matchingItem.id)) {
 		menu.addSeparator();
 		menu.addItem((item) => {
+			let disabled = false
+			disabled = matchingItem.id === "quick-plugin-switcher"
+
+			if (!matchingItem.dir) {
+				disabled = true
+			}
+			const filePath = modal.app.vault.adapter.getFullPath(
+				matchingItem.dir!
+			);
+			if (!filePath) disabled = true
+			const isDevPath = path.join(
+				filePath,
+				"package.json"
+			);
+
+			if (existsSync(isDevPath)) {
+				disabled = true;
+			}
+			  
 			const { commPlugins } = plugin.settings
 			item.setTitle("Update plugin!")
-				.setDisabled(matchingItem.id === "quick-plugin-switcher")
+				.setDisabled(disabled)
 				.setIcon("rocket")
 				.onClick(async () => {
 					await updatePlugin(modal, matchingItem, commPlugins);
@@ -1083,8 +1116,23 @@ async function contextMenuQPS(
 }
 
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {
-	// const toUpdate = await this.app.plugins.checkForUpdates()// not good updating all
 	const { id, version } = matchingItem;
+	if (!matchingItem.dir) {
+		new Notice(`Not a published plugin`, 2500);
+		return}
+	const filePath = modal.app.vault.adapter.getFullPath(
+		matchingItem.dir
+	);
+	if (!filePath) return
+	const isDevPath = path.join(
+		filePath,
+		"package.json"
+	);
+
+	if (existsSync(isDevPath)) {
+		return;
+	}
+
 	const manifest = await getManifest(modal, id);
 	const hasRelease = await getReleaseVersion(modal, id, manifest)
 	const lastVersion = manifest.version

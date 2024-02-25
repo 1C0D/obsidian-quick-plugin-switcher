@@ -1,1 +1,1 @@
-fix: bug on desinstall plugins
+improvement: don't update plugins being developped (for plugin developpers)

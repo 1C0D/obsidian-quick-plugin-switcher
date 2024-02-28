@@ -94,7 +94,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.filtersComm = CommFilters.All
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
-				focusSearchInput();
+				focusSearchInput(10);
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
 			}
 		);
@@ -107,7 +107,7 @@ export default class QuickPluginSwitcher extends Plugin {
 				this.settings.filtersComm = CommFilters.All
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
-				focusSearchInput();
+				focusSearchInput(10);
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
 			},
 		});
@@ -281,6 +281,7 @@ export default class QuickPluginSwitcher extends Plugin {
 							hidden: false,
 							groupIndices: []
 						},
+						hasNote: false,
 						...updateStats
 					}
 					commPlugins[plugin.id] = { ...plugin, ...complement };

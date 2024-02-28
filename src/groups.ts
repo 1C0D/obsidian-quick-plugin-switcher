@@ -1,42 +1,11 @@
-import { ButtonComponent, DropdownComponent, Menu, Notice } from "obsidian";
+import {  DropdownComponent, Menu, Notice } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./modal_utils";
-import { Filters, Groups, CommFilters, GroupsComm, SortBy } from "./types/variables";
+import { Filters, Groups, CommFilters, GroupsComm } from "./types/variables";
 import { removeItem } from "./utils";
 import { createClearGroupsMenuItem, hideOnCLick } from "./modal_components";
 import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
-
-export const getFilters = (
-    modal: CPModal,
-    contentEl: HTMLElement
-) => {
-    const { plugin } = modal;
-    const { settings } = plugin;
-    if (settings.filtersComm === CommFilters.ByGroup) return
-
-    new ButtonComponent(contentEl)
-        .setIcon("arrow-up-narrow-wide")
-        // .setCta()
-        .setClass("comm-button")
-        .setTooltip(
-            "change type of sorting"
-        )
-        .buttonEl.addEventListener("click", async (evt: MouseEvent) => {
-            const menu = new Menu();
-            for (const key in SortBy) {
-                menu.addItem((item) =>
-                    item
-                        .setTitle(SortBy[key])
-                        .onClick(async () => {
-                            settings.sortBy = key
-                            await reOpenModal(modal);
-                        }).setChecked(key === settings.sortBy)
-                )
-            }
-            menu.showAtMouseEvent(evt);
-        })
-}
 
 export const byGroupDropdowns = (
     modal: QPSModal | CPModal,

@@ -82,6 +82,7 @@ interface QPSSettings {
     groupsComm: Record<number, { name: string, hidden: boolean }>;
     byAuthor: boolean;
     invertFiltersComm: boolean;
+    commPluginsNotesFolder: string;
 }
 
 type KeyToSettingsMapType = {
@@ -101,6 +102,7 @@ interface PluginCommInfo extends CommPlugin {
     groupCommInfo: PluginCommGroupInfo;
     downloads: number;
     updated: number;
+    hasNote: boolean;
 }
 
 //releases

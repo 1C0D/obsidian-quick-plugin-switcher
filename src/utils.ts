@@ -10,23 +10,23 @@ export function removeItem<T>(arr: Array<T>, value: T): Array<T> {
 	return arr;
 }
 
-export function formatNumber(num: number, precision = 2) {
-	const map = [
-		{ suffix: "T", threshold: 1e12 },
-		{ suffix: "B", threshold: 1e9 },
-		{ suffix: "M", threshold: 1e6 },
-		{ suffix: "K", threshold: 1e3 },
-		{ suffix: "", threshold: 1 },
-	];
+export function formatNumber(num: number, precision = 3) {
+    const map = [
+        { suffix: "T", threshold: 1e12 },
+        { suffix: "B", threshold: 1e9 },
+        { suffix: "M", threshold: 1e6 },
+        { suffix: "K", threshold: 1e3 },
+        { suffix: "", threshold: 1 }
+    ];
 
-	const found = map.find((x) => Math.abs(num) >= x.threshold);
-	if (found) {
-		const formatted =
-			(num / found.threshold).toFixed(precision) + found.suffix;
-		return formatted;
-	}
+    const found = map.find((x) => Math.abs(num) >= x.threshold);
+    if (found) {
+        const value = num / found.threshold;
+        const formatted = (found.suffix === "" ? value : value.toFixed(precision)) + found.suffix;
+        return formatted;
+    }
 
-	return num;
+    return num.toString();
 }
 
 

@@ -18,6 +18,7 @@ import {
 	handleContextMenu,
 	addSearch,
 	handleDblClick,
+	handleDblTouch,
 	findMatchingItem,
 	doSearchQPS,
 	hideOnCLick,
@@ -74,6 +75,10 @@ export class QPSModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
+	getHandleDblTouch = (evt: TouchEvent) => {
+		if (this.isDblClick) return;
+		handleDblTouch(evt, this);
+	}
 	getHandleClick = (evt: MouseEvent) => {
 		if (this.isDblClick) return;
 		handleClick(evt, this);
@@ -84,9 +89,8 @@ export class QPSModal extends Modal {
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		if (this.app.isMobile) {
-			this.modalEl.removeEventListener("dblclick", this.getHandleClick);
-		}
+		this.modalEl.removeEventListener("dblclick", this.getHandleClick);
+		this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
 	}
 
 	container() {
@@ -104,9 +108,8 @@ export class QPSModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		if (this.app.isMobile) {
-			this.modalEl.addEventListener("click", this.getHandleClick);
-		}
+		this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 
 	async onOpen() {
@@ -267,6 +270,7 @@ export class QPSModal extends Modal {
 					(el) => {
 						vertDotsButton(el);
 					})
+
 			}
 		}
 	}
@@ -378,12 +382,14 @@ async function handleKeyDown(event: KeyboardEvent, modal: QPSModal) {
 	) as HTMLElement;
 
 	if (pluginItemBlock) {
-		modal.searchTyping = false;
+		(document.querySelector(".qps-search-component input") as HTMLInputElement)?.blur();// for a reason not working in a function
+		modal.searchTyping = false;// useless after blur but it's a security
 		const matchingItem = findMatchingItem(modal, pluginItemBlock);
 		if (matchingItem) {
 			await handleHotkeysQPS(modal, event, matchingItem as PluginInstalled);
 		}
 	} else if ((targetGroupIcon || targetGroup) && event.key === "h") {
+		(document.querySelector(".qps-search-component input") as HTMLInputElement)?.blur();
 		modal.searchTyping = false;
 		await toggleVisibility(modal, targetGroupIcon, targetGroup);
 	} else {
@@ -418,9 +424,9 @@ const handleHotkeysQPS = async (
 	const numberOfGroups = settings.numberOfGroups;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => await openGitHubRepo(modal, pluginItem),
-		s: async () => await openPluginSettings(modal, pluginItem),
-		h: async () => await showHotkeysFor(modal, pluginItem),
+		g: async () => await openGitHubRepo(evt, modal, pluginItem),
+		s: async () => await openPluginSettings(evt, modal, pluginItem),
+		h: async () => await showHotkeysFor(evt, modal, pluginItem),
 	};
 	if (Platform.isDesktopApp)
 		KeyToSettingsMap["f"] = async () =>

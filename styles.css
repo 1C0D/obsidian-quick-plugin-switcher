@@ -175,6 +175,13 @@
   margin-bottom: 5px;
 }
 
+@media (max-width: 744px) {
+  .qps-toggle-plugins {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .qps-toggle-plugins button {
   margin-left: 5px;
   margin-bottom: 5px;
@@ -238,6 +245,7 @@
 }
 
 .qps-item-line .button-container,
+.qps-comm-block .button-container1,
 .qps-comm-block .button-container {
   position: absolute;
   display: block;
@@ -248,16 +256,33 @@
 .qps-item-line .button-container {
   top: -15px;
   right: 0;
+}
 
+.qps-comm-block .button-container1 {
+  top: 55px;
+  /* right: 10px; */
+  margin-right: 5px;
+}
+
+.qps-comm-block .button-container1-desktop {
+  top: 10px;
 }
 
 .qps-item-line .button-container button,
+.qps-comm-block .button-container1 button,
 .qps-comm-block .button-container button {
   cursor: pointer;
   padding-right: 0.4rem;
   background-color: transparent;
 }
 
+.qps-comm-block .button-container1 button {
+  padding: 10%;
+}
+
+.notes-button-background {
+  background-color: rgba(196, 255, 225, 0.509);
+}
 
 .qps-community-item-author,
 .qps-community-item-downloads,
@@ -339,6 +364,21 @@
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 5px
+}
+
+.read-me-shortcuts {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  color: rgb(108, 182, 157)
+}
+
+.read-me-shortcuts span {
+  margin-left: 15px;
+}
+
+/* .read-me-shortcuts button,  */
+.read-me-shortcuts-button {
+  background-color: rgb(50, 50, 34);
 }
 
 

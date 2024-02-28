@@ -30,10 +30,11 @@ import {
 	getManifest,
 	getPluginsList,
 	getReleaseVersion,
+	handleNote,
 	installFromList,
 	installPluginFromOtherVault,
 } from "./community-plugins_modal";
-import { CommFilters, Filters, Groups, TargetPlatform } from "./types/variables";
+import { CommFilters, Filters, Groups, SortBy, TargetPlatform } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./types/global";
 import { Console } from "./Console";
@@ -111,6 +112,37 @@ export function doSearchCPM(
 		[commPlugins[item].name, commPlugins[item].description, commPlugins[item].author]
 			.some((prop) => prop.toLowerCase().includes(lowerCaseValue))
 	);
+}
+
+export const getFilters = (
+	modal: CPModal,
+	contentEl: HTMLElement
+) => {
+	const { plugin } = modal;
+	const { settings } = plugin;
+	if (settings.filtersComm === CommFilters.ByGroup) return
+
+	new ButtonComponent(contentEl)
+		.setIcon("arrow-up-narrow-wide")
+		// .setCta()
+		.setClass("comm-button")
+		.setTooltip(
+			"change type of sorting"
+		)
+		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
+			const menu = new Menu();
+			for (const key in SortBy) {
+				menu.addItem((item) =>
+					item
+						.setTitle(SortBy[key])
+						.onClick(async () => {
+							settings.sortBy = key
+							await reOpenModal(modal);
+						}).setChecked(key === settings.sortBy)
+				)
+			}
+			menu.showAtMouseEvent(evt);
+		})
 }
 
 export const Check4UpdatesButton = (modal: QPSModal, el: HTMLSpanElement) => {
@@ -197,12 +229,15 @@ async function searchUpdates(modal: QPSModal) {
 			item.dir
 		);
 		if (!filePath) continue
-		const isDevPath = path.join(
-			filePath,
-			"package.json"
-		);
-		if (existsSync(isDevPath)) {
-			continue;
+
+		if (Platform.isDesktop) {
+			const isDevPath = path.join(
+				filePath,
+				"package.json"
+			);
+			if (existsSync(isDevPath)) {
+				continue;
+			}
 		}
 
 		const manifest = await getManifest(modal, item.id);
@@ -235,6 +270,12 @@ export const vertDotsButton = (el: HTMLElement) => {
 		)
 };
 
+export const notesButton = (el: HTMLElement, modal: CPModal, pluginItem: PluginCommInfo) => {
+	new ButtonComponent(el)
+		.setTooltip("open plugin notes")
+		.setButtonText("📝")
+};
+
 export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 	const { plugin } = modal;
 	new ButtonComponent(el)
@@ -246,9 +287,9 @@ export const commButton = (modal: QPSModal, el: HTMLSpanElement) => {
 		)
 		.buttonEl.addEventListener("click", async (evt: MouseEvent) => {
 			await plugin.exeAfterDelay(plugin.pluginsCommInfo.bind(plugin));
-			new CPModal(modal.app, plugin).open();
 			modal.close();
-			focusSearchInput();
+			new CPModal(modal.app, plugin).open();
+			focusSearchInput(10);
 		});
 };
 
@@ -563,6 +604,7 @@ export const itemTextComponent = (
 };
 
 const pluginFeatureSubmenu = async (
+	evt: MouseEvent,
 	submenu: Menu,
 	pluginItem: PluginInstalled,
 	modal: QPSModal
@@ -583,16 +625,13 @@ const pluginFeatureSubmenu = async (
 			})
 	);
 
-	submenu.addItem(
-		(
-			item // TODO
-		) =>
-			item
-				.setTitle("Plugin github (g)")
-				.setIcon("github")
-				.onClick(async () => {
-					await openGitHubRepo(modal, installed[id]);
-				})
+	submenu.addItem((item) =>
+		item
+			.setTitle("Plugin github (g)")
+			.setIcon("github")
+			.onClick(async () => {
+				await openGitHubRepo(evt, modal, installed[id]);
+			})
 	);
 
 	const pluginSettings = modal.app.setting.openTabById(
@@ -605,7 +644,7 @@ const pluginFeatureSubmenu = async (
 			.setIcon("settings")
 			.setDisabled(!pluginSettings)
 			.onClick(async () => {
-				await openPluginSettings(modal, pluginItem);
+				await openPluginSettings(evt, modal, pluginItem);
 			})
 	);
 
@@ -617,7 +656,7 @@ const pluginFeatureSubmenu = async (
 			.setIcon("plus-circle")
 			.setDisabled(!condition)
 			.onClick(async () => {
-				await showHotkeysFor(modal, pluginItem);
+				await showHotkeysFor(evt, modal, pluginItem);
 			})
 	);
 };
@@ -632,7 +671,7 @@ export const getHkeyCondition = async function (
 	return hasKeyStartingWith(pluginCommands, item.id);
 };
 
-export const openGitHubRepo = async (modal: QPSModal | CPModal, plugin: PluginInstalled | PluginCommInfo) => {
+export const openGitHubRepo = async (e: MouseEvent | KeyboardEvent, modal: QPSModal | CPModal, plugin: PluginInstalled | PluginCommInfo) => {
 	let repo: string;
 	if ("repo" in plugin) {
 		repo = plugin.repo
@@ -729,12 +768,13 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 }
 
 export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
-	const elementFromPoint = getElementFromMousePosition(modal);
-	const targetBlock = elementFromPoint?.closest(
-		".button-container"
-	) as HTMLElement;
-	if (targetBlock) {
-		const matchingItem = findMatchingItem(modal, targetBlock.parentElement as HTMLElement);
+	const elementFromPoint = getElementFromMousePosition(modal)?.parentElement;
+
+	if (elementFromPoint?.classList.contains("button-container")) {
+		const matchingItem = findMatchingItem(
+			modal,
+			elementFromPoint.parentElement as HTMLElement
+		);
 		if (matchingItem) {
 			if (modal instanceof QPSModal) {
 				await contextMenuQPS(evt, modal, matchingItem as PluginInstalled);
@@ -742,10 +782,29 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 				contextMenuCPM(evt, modal, matchingItem as PluginCommInfo);
 			}
 		}
+	} else if (elementFromPoint?.classList.contains("button-container1")) {
+		const matchingItem = findMatchingItem(
+			modal,
+			elementFromPoint.parentElement as HTMLElement
+		);
+		if (matchingItem && modal instanceof CPModal) {
+			handleNote(evt, modal, matchingItem as PluginCommInfo);
+		}
 	}
 }
 
-export function handleDblClick(evt: MouseEvent, modal: QPSModal | CPModal) {
+export function handleDblTouch(evt: TouchEvent, modal: QPSModal | CPModal) {
+	var touchStartTimestamp = 0;// dns la fonction ?
+	var doubleClickDelay = 400;
+	const now = new Date().getTime();
+	const timeSinceLastTouch = now - touchStartTimestamp;
+	if (timeSinceLastTouch < doubleClickDelay) {
+		handleDblClick(evt, modal);
+	}
+	touchStartTimestamp = now;
+}
+
+export function handleDblClick(evt: MouseEvent|TouchEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal);
 
 	const targetBlock = elementFromPoint?.closest(
@@ -931,12 +990,29 @@ export function contextMenuCPM(
 		menu.addSeparator();
 		menu.addItem((item) => {
 			item
-				.setTitle("Plugin github (g)")
+				.setTitle("Plugin github")
 				.setIcon("github")
-				.onClick(async () => {
-					await openGitHubRepo(modal, matchingItem);
+				.onClick(async (evt) => {
+					await openGitHubRepo(evt, modal, matchingItem);
 				})
 		})
+		// menu.addItem((item) =>
+		// 	item
+		// 		.setTitle("add a note")
+		// 		.setIcon("pencil-line")
+		// 		.onClick(async (evt) => {
+		// 			await handleNote(evt, modal, matchingItem);
+		// 		})
+		// );
+		menu.addItem((item) =>
+			item
+				.setTitle("open Readme (dbl touch)")
+				.setIcon("sticky-note")
+				.onClick(() => {
+					new ReadMeModal(modal.app, modal, matchingItem).open();
+				})
+		);
+
 		menu.addSeparator();
 		addToGroupSubMenu(menu, matchingItem, modal, true);
 		menu.addSeparator();
@@ -978,10 +1054,10 @@ async function contextMenuQPS(
 		menu.addItem(async (item) => {
 			item.setTitle("Plugin features").setIcon("package-plus");
 			const submenu = (item as any).setSubmenu() as Menu;
-			await pluginFeatureSubmenu(submenu, matchingItem, modal);
+			await pluginFeatureSubmenu(evt, submenu, matchingItem, modal);
 		});
 	} else {
-		await pluginFeatureSubmenu(menu, matchingItem, modal);
+		await pluginFeatureSubmenu(evt, menu, matchingItem, modal);
 	}
 
 	menu.addSeparator();
@@ -1037,15 +1113,16 @@ async function contextMenuQPS(
 				matchingItem.dir!
 			);
 			if (!filePath) disabled = true
-			const isDevPath = path.join(
-				filePath,
-				"package.json"
-			);
-
-			if (existsSync(isDevPath)) {
-				disabled = true;
+			if (Platform.isDesktop) {
+				const isDevPath = path.join(
+					filePath,
+					"package.json"
+				);
+				if (existsSync(isDevPath)) {
+					disabled = true;
+				}
 			}
-			  
+
 			const { commPlugins } = plugin.settings
 			item.setTitle("Update plugin!")
 				.setDisabled(disabled)
@@ -1119,18 +1196,22 @@ export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalle
 	const { id, version } = matchingItem;
 	if (!matchingItem.dir) {
 		new Notice(`Not a published plugin`, 2500);
-		return}
+		return
+	}
 	const filePath = modal.app.vault.adapter.getFullPath(
 		matchingItem.dir
 	);
 	if (!filePath) return
-	const isDevPath = path.join(
-		filePath,
-		"package.json"
-	);
 
-	if (existsSync(isDevPath)) {
-		return;
+	if (Platform.isDesktop) {
+		const isDevPath = path.join(
+			filePath,
+			"package.json"
+		);
+
+		if (existsSync(isDevPath)) {
+			return;
+		}
 	}
 
 	const manifest = await getManifest(modal, id);
@@ -1179,9 +1260,15 @@ export const findMatchingItem = (
 		);
 
 		return installed[matchingItem!];
-	} else {
-		const target = modal.app.isMobile ? targetBlock.children[1] : targetBlock.firstChild
-		const itemName = target?.textContent;
+	} else { // CPModal
+		let itemNameElement;
+		for (let i = 0; i < targetBlock.children.length; i++) {
+			if (targetBlock.children[i].classList.contains('qps-community-item-name')) {
+				itemNameElement = targetBlock.children[i];
+				break;
+			}
+		}
+		const itemName = itemNameElement?.textContent;
 		const cleanItemName = itemName?.replace(/installed$/, "").trim();
 		const matchingItem = Object.keys(commPlugins).find(
 			(id) => commPlugins[id].name === cleanItemName

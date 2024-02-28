@@ -7,6 +7,7 @@ import {
 	Notice,
 	Platform,
 	PluginManifest,
+	TFile,
 	requestUrl,
 	setIcon,
 } from "obsidian";
@@ -31,18 +32,21 @@ import {
 	checkbox,
 	doSearchCPM,
 	findMatchingItem,
+	getFilters,
 	handleClick,
 	handleContextMenu,
 	handleDblClick,
+	handleDblTouch,
+	notesButton,
 	openGitHubRepo,
 	searchCommDivButton,
 	vertDotsButton,
 } from "./modal_components";
-import { ReadMeModal } from "./secondary_modals";
+import { ReadMeModal, SeeNoteModal } from "./secondary_modals";
 import { QPSModal, circleCSSModif, toggleVisibility } from "./main_modal";
 import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
-import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin, getFilters } from "./groups";
+import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
 import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./types/global";
 import { Console } from "./Console";
 
@@ -83,6 +87,11 @@ export class CPModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
+	getHandleDblTouch = (evt: TouchEvent) => {
+		if (this.isDblClick) return;
+		handleDblTouch(evt, this);
+
+	}
 	getHandleClick = (evt: MouseEvent) => {
 		handleClick(evt, this);
 	}
@@ -94,9 +103,9 @@ export class CPModal extends Modal {
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		if (this.app.isMobile) {
-			this.modalEl.removeEventListener("click", this.getHandleClick);
-		}
+		this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
+		this.modalEl.removeEventListener("click", this.getHandleClick);
+
 	}
 
 	container() {
@@ -118,9 +127,8 @@ export class CPModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		if (this.app.isMobile) {
-			this.modalEl.addEventListener("click", this.getHandleClick);
-		}
+		this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 
 	async onOpen() {
@@ -232,8 +240,9 @@ export class CPModal extends Modal {
 					setIcon(gitHubIcon, "github");
 				});
 				el.createSpan({
-					text: ` (🖱️x2/ctrl)Readme`,
+					text: ` (🖱️x2/ctrl)Readme `,
 				});
+				el.createSpan({ text: "(n)📝" })
 			}
 		);
 	}
@@ -268,15 +277,6 @@ export class CPModal extends Modal {
 		while (index < listItems.length) {
 			const batch = listItems.slice(index, index + batchSize);
 			const promises = batch.map(async (item) => {
-				// temporary fix
-				// @ts-ignore
-				if (item.hasOwnProperty('hidden') && item.hidden) {
-					commPlugins[item].groupCommInfo.hidden = true
-				}
-				if (item.hasOwnProperty('hidden')) {
-					//@ts-ignore
-					delete item.hidden
-				}
 				if (commPlugins[item].groupCommInfo?.hidden && !commPlugins[item].groupCommInfo.groupIndices.length) {
 					commPlugins[item].groupCommInfo.hidden = false
 				}//if removed from group
@@ -285,10 +285,11 @@ export class CPModal extends Modal {
 						return
 					}
 				}
+				// blocks
 				const itemContainer = this.items.createEl("div", { cls: "qps-comm-block" });
 
 				if (this.app.isMobile) {
-					const div = itemContainer.createEl(
+					itemContainer.createEl(
 						"div",
 						{
 							cls: "button-container",
@@ -298,11 +299,28 @@ export class CPModal extends Modal {
 						})
 				}
 
+				const notesButtonContainer = itemContainer.createEl(
+					"div",
+					{
+						cls: "button-container1",
+					},
+					(el) => {
+						notesButton(el, this, commPlugins[item]);
+					})
+				// higher because only 1 button
+				if (Platform.isDesktop) {
+					notesButtonContainer.addClass("button-container1-desktop")
+				}
+				// color background
+				if (commPlugins[item].hasNote) {
+					notesButtonContainer.addClass("notes-button-background");
+				}
+				// highlight search results
 				const name = this.hightLightSpan(value, commPlugins[item].name);
 				const author = `by ${this.hightLightSpan(value, commPlugins[item].author)}`;
 				const desc = this.hightLightSpan(value, commPlugins[item].description);
 
-				//name
+				// community plugin name
 				itemContainer.createDiv(
 					{ cls: "qps-community-item-name" },
 					(el: HTMLElement) => {
@@ -321,32 +339,31 @@ export class CPModal extends Modal {
 				itemContainer.createDiv({ cls: "qps-community-item-author" });
 
 				const pluginInfo = pluginStats[item];
-				if (pluginInfo) {
-					// downloads
-					itemContainer.createDiv(
-						{ cls: "qps-community-item-downloads" },
-						(el: HTMLElement) => {
-							el.innerHTML = author;
-							el.createSpan({ cls: "downloads-span" }, (el) => {
-								const preSpan = el.createSpan();
-								const span = el.createSpan({
-									text: formatNumber(pluginInfo.downloads, 1).toString(),
-									cls: "downloads-text-span",
-								});
-								addGroupCircles(this, span, item);
-								setIcon(preSpan, "download-cloud");
+				itemContainer.createDiv(
+					{ cls: "qps-community-item-downloads" },
+					(el: HTMLElement) => {
+						el.innerHTML = author;
+						el.createSpan({ cls: "downloads-span" }, (el) => {
+							const preSpan = el.createSpan();
+							const text = pluginInfo ? formatNumber(pluginInfo.downloads, 1).toString() : "0";
+							const span = el.createSpan({
+								text: text,
+								cls: "downloads-text-span",
 							});
-						}
-					);
+							addGroupCircles(this, span, item);
+							setIcon(preSpan, "download-cloud");
+						});
+					}
+				);
 
-					const lastUpdated = new Date(pluginInfo.updated);
-					const timeSinceUpdate = calculateTimeElapsed(lastUpdated);
-					// Updated
-					itemContainer.createDiv({
-						cls: "qps-community-item-updated",
-						text: `Updated ${timeSinceUpdate}`,
-					});
-				}
+				const lastUpdated = pluginInfo ? new Date(pluginInfo.updated) : null;
+				const timeSinceUpdate = lastUpdated ? calculateTimeElapsed(lastUpdated) : "";
+				// Updated
+				itemContainer.createDiv({
+					cls: "qps-community-item-updated",
+					text: lastUpdated ? `Updated ${timeSinceUpdate}` : "Updated: not available yet",
+				});
+
 				// desc
 				itemContainer.createDiv({ cls: "qps-community-item-desc" }, (el: HTMLElement) => {
 					el.innerHTML = desc;
@@ -366,7 +383,7 @@ export class CPModal extends Modal {
 		this.removeListeners()
 		await this.plugin.installedUpdate();
 		new QPSModal(this.app, this.plugin).open();
-		focusSearchInput();
+		focusSearchInput(100);
 	}
 }
 
@@ -424,12 +441,12 @@ export async function getReleaseVersion(modal: CPModal | QPSModal, id: string, m
 
 	const releaseUrl = `https://github.com/${repo}/releases/tag/${manifest.version}`;
 
-	try{
+	try {
 		const response = await requestUrl(releaseUrl);
 		if (response) return true
 		return false
 
-	}catch{
+	} catch {
 		return false
 	}
 }
@@ -503,9 +520,11 @@ const handleKeyDown = async (event: KeyboardEvent, modal: CPModal) => {
 	) as HTMLElement;
 
 	if (targetBlock) {
+		(document.querySelector(".qps-search-component input") as HTMLInputElement)?.blur();// for a reason not working in a function. must be fast I guess
 		modal.searchTyping = false;
 		const matchingItem = findMatchingItem(modal, targetBlock);
 		if (matchingItem) {
+			event.preventDefault();
 			await handleHotkeysCPM(
 				modal,
 				event,
@@ -526,7 +545,7 @@ const handleHotkeysCPM = async (
 	evt: KeyboardEvent,
 	pluginItem: PluginCommInfo
 ) => {
-	if (modal.pressed) {// I don't remember why
+	if (modal.pressed) {// with press delay...
 		return;
 	}
 	pressDelay(modal);
@@ -536,7 +555,8 @@ const handleHotkeysCPM = async (
 	const numberOfGroups = settings.numberOfGroupsComm;
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
-		g: async () => await openGitHubRepo(modal, pluginItem),
+		g: async () => await openGitHubRepo(evt, modal, pluginItem),
+		n: async () => await handleNote(evt, modal, pluginItem)
 	};
 
 	const keyPressed = evt.key;
@@ -641,7 +661,7 @@ const addGroupCircles = (
 };
 
 export async function installFromList(modal: CPModal, enable = false) {
-	let properties = ["openFile"]; //, "dontAddToRecent"
+	let properties = ["openFile"];
 	let filePaths: string[] = window.electron.remote.dialog.showOpenDialogSync({
 		title: "Pick json list file of plugins to install",
 		properties,
@@ -756,5 +776,105 @@ export async function installPluginFromOtherVault(
 			return installedPlugins.includes(id);
 		});
 		await installAllPluginsInGroup(modal, plugins, enable);
+	}
+}
+
+export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, pluginItem: PluginCommInfo) {
+	const name = "Community plugins notes";
+	const dir = modal.plugin.settings.commPluginsNotesFolder;
+	let note: TFile;
+	if (dir && !modal.app.vault.getAbstractFileByPath(dir)) {
+		await modal.app.vault.createFolder(dir);
+	}
+	const path = dir ? dir + "/" + name + ".md" : name + ".md";
+	note = modal.app.vault.getAbstractFileByPath(path) as TFile;
+
+	if (!note) {
+		await modal.app.vault.create(path, "");
+		note = modal.app.vault.getAbstractFileByPath(path) as TFile;
+	}
+	let content = note ? await modal.app.vault.read(note) : "";
+	const savedContent = content;
+	const sectionHeader = "# " + pluginItem.name;
+	const sectionIndex = content.indexOf(sectionHeader);
+	let sectionContent = "";
+
+	if (sectionIndex !== -1) {
+		Console.log("exists")
+		const contentAfterSection = content.substring(sectionIndex);
+		const nextSectionIndex = contentAfterSection.indexOf("\n# ", sectionHeader.length);
+		sectionContent = nextSectionIndex !== -1
+			? contentAfterSection.substring(0, nextSectionIndex)
+			: contentAfterSection;
+		sectionContent = sectionContent.replace(sectionHeader + '\n\n', '');
+	} else {
+		Console.log("append")
+		if (content && !content.endsWith("\n")) {
+			content = content + "\n";
+		}
+		const added = content ? content + "\n" + sectionHeader + "\n\n" : sectionHeader + "\n\n";
+		Console.log("added", added)
+		await modal.app.vault.modify(note, added);
+		content = await modal.app.vault.read(note);
+		sectionContent = "";
+	}
+
+	new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
+		await cb(result, modal, pluginItem, sectionContent, note, content, savedContent)
+	}).open();
+
+
+}
+
+async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string) {
+	Console.log("sectionContent", sectionContent)
+	Console.log("result", result)
+	if (result === null) {
+		Console.log("invalid content");
+		const updatedContent = content.replace(sectionContent, "");
+		await modal.app.vault.modify(note, updatedContent);
+		content = await modal.app.vault.read(note);
+
+		// new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
+		// 	await cb(result, modal, pluginItem, sectionContent, note, content, savedContent)
+		// }).open();
+		return
+	}
+
+	if (result.trim() === "") {
+		Console.log(" resut has no content")
+		let updatedContent = "";
+		// if(Platform.isDesktop){
+		const regexPattern = new RegExp("# " + pluginItem.name + "\n\n?" + sectionContent + "\n?", "g");
+		updatedContent = content.replace(regexPattern, "");
+		// }else{
+		// 	updatedContent = content.replace("# " + pluginItem.name + "\n\n", "").replace("# " + pluginItem.name + "\n", "").replace(sectionContent + "\n", "").replace(sectionContent, "");
+		// }
+		Console.log("updatedContent", updatedContent)
+
+		await modal.app.vault.modify(note, updatedContent);
+		pluginItem.hasNote = false;
+		await modal.plugin.saveSettings();
+		modal.onOpen()
+		return
+	}
+	Console.log("result has content")
+	if (sectionContent.trim() === result.trim()) {
+		Console.log("same content")
+		return
+	} else {
+		Console.log("not same content")
+		if (!sectionContent) {
+			Console.log("append")
+			const added = content ? "\n# " + pluginItem.name + "\n\n" + result : "\n" + result
+			modal.app.vault.append(note, (result));
+		} else {
+			Console.log("replace")
+			const updatedContent = content.replace(sectionContent, ("# " + pluginItem.name + "\n\n") + result);
+			await modal.app.vault.modify(note, updatedContent);
+		}
+		pluginItem.hasNote = true;
+		await modal.plugin.saveSettings();
+		modal.onOpen()
 	}
 }

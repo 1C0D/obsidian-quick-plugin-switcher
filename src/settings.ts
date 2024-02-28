@@ -125,5 +125,20 @@ export default class QPSSettingTab extends PluginSettingTab {
 						this.plugin.saveSettings();
 					});
 			});
+
+		new Setting(containerEl)
+			.setName("Community plugins notes folder")
+			.setDesc(
+				"Folder where Community plugins notes.md will be stored, after having been created (creating first note). Don't modify the content of the file if you don't know what you're doing"
+			)
+			.addText((text) => {
+				text
+					.setValue(this.plugin.settings.commPluginsNotesFolder)
+
+				text.inputEl.onblur = async () => {
+					this.plugin.settings.commPluginsNotesFolder = text.getValue();
+					await this.plugin.saveSettings();
+				}
+			})
 	}
 }

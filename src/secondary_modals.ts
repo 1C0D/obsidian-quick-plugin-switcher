@@ -6,11 +6,12 @@ import {
 	Menu,
 	Modal,
 	Notice,
+	Platform,
 	Scope,
 	Setting,
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
-import { CPModal, getManifest, getReadMe } from "./community-plugins_modal";
+import { CPModal, getManifest, getReadMe, handleNote } from "./community-plugins_modal";
 import { getCommandCondition, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
 import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
@@ -172,8 +173,8 @@ export class ReadMeModal extends Modal {
 		const openRepo = contentEl.createDiv();
 		new ButtonComponent(openRepo)
 			.setButtonText("GitHub Repo")
-			.onClick(async () => {
-				await openGitHubRepo(this.modal, pluginItem);
+			.onClick(async (e) => {
+				await openGitHubRepo(e, this.modal, pluginItem);
 			});
 
 		const divButtons = contentEl.createDiv({ cls: "read-me-buttons" });
@@ -213,8 +214,8 @@ export class ReadMeModal extends Modal {
 				if (pluginSettings) {
 					new ButtonComponent(divButtons)
 						.setButtonText("Options")
-						.onClick(async () => {
-							await openPluginSettings(
+						.onClick(async (e) => {
+							await openPluginSettings(e,
 								this.modal,
 								pluginItem
 							);
@@ -225,8 +226,8 @@ export class ReadMeModal extends Modal {
 				if (condition) {
 					new ButtonComponent(divButtons)
 						.setButtonText("Hotkeys")
-						.onClick(async () => {
-							await showHotkeysFor(this.modal, pluginItem);
+						.onClick(async (e) => {
+							await showHotkeysFor(e, this.modal, pluginItem);
 						});
 				}
 				if (id !== "quick-plugin-switcher")
@@ -254,6 +255,23 @@ export class ReadMeModal extends Modal {
 					});
 		}
 
+		const shortcuts = contentEl.createDiv(
+			{
+				cls: "read-me-shortcuts",
+			},)
+
+		const noteButton = new ButtonComponent(shortcuts)
+			.setButtonText("📝")
+			.onClick(async (e) => {
+				await handleNote(e, this.modal, pluginItem)
+			})
+
+		if (Platform.isDesktop) {
+			shortcuts.createSpan({
+				text: " (t) translate selection  (n) add note"
+			})
+		}
+
 		const div = contentEl.createDiv({ cls: "qps-read-me" });
 
 		const data = await getReadMe(pluginItem);
@@ -265,8 +283,6 @@ export class ReadMeModal extends Modal {
 		const decoder = new TextDecoder("utf-8");
 		const content = decoder.decode(base64ToUint8Array(data.content));
 
-
-
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);
@@ -276,7 +292,7 @@ export class ReadMeModal extends Modal {
 			this.mousePosition = { x: event.clientX, y: event.clientY };
 		});
 
-		this.scope.register(["Ctrl"], "t", async () => {
+		this.scope.register([], "t", async () => {
 			const selectedContent = getSelectedContent();
 			if (!selectedContent) {
 				new Notice("no selection", 4000);
@@ -285,21 +301,26 @@ export class ReadMeModal extends Modal {
 			await translation(selectedContent);
 		});
 
+		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem))
+
 		this.modalEl.addEventListener("contextmenu", (event) => {
 			event.preventDefault();
 			const selectedContent = getSelectedContent();
 			if (selectedContent) {
 				const menu = new Menu();
 				menu.addItem((item) =>
-					item.setTitle("Copy Ctrl+C").onClick(async () => {
+					item.setTitle("Copy (Ctrl+C)").onClick(async () => {
 						await navigator.clipboard.writeText(selectedContent);
 					})
 				);
 				menu.addItem((item) =>
-					item.setTitle("translate Ctrl+T").onClick(async () => {
+					item.setTitle("translate (t)").onClick(async () => {
 						await translation(selectedContent);
 					})
 				);
+				// menu.addItem((item) =>
+				// 	item.setTitle("Add note Ctrl+n").onClick(async (e) => await handleNote(e, this.modal, pluginItem))
+				// );
 				menu.showAtPosition(this.mousePosition);
 			}
 		});
@@ -309,5 +330,44 @@ export class ReadMeModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.comp.unload();
+	}
+}
+
+export class SeeNoteModal extends Modal {
+	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>) {
+		super(app);
+	}
+
+	onOpen() {
+		const { contentEl: El } = this;
+		El.createEl('h6', { text: "DON'T INCLUDE H1 titles. To delete a note delete all content.", cls: "read-me-shortcuts " })
+		El.createEl('h3', { text: this.pluginItem.name + " by " + this.pluginItem.author })
+		new Setting(El)
+			.addTextArea((text) => {
+				text.setValue(this.sectionContent ?? "")
+				text.inputEl.rows = 40
+				text.inputEl.cols = 82
+				text.inputEl.onblur = async () => {
+					this.sectionContent = text.getValue();
+					const lines = this.sectionContent.split("\n");
+					let stop = false
+					for (const line of lines) {
+						if (line.startsWith("# ")) {
+							new Notice("H1 are not allowed, content was paste in clipboard", 4000);
+							const clipboard = navigator.clipboard.writeText(this.sectionContent)
+							await this.cb(null)
+							stop = true
+							break
+						}
+					}
+					this.onClose()
+					if (stop) return
+					if (this.sectionContent && !this.sectionContent.endsWith("\n")) {
+						this.sectionContent = this.sectionContent + "\n"
+					}
+					this.sectionContent
+					await this.cb(this.sectionContent)
+				}
+			})
 	}
 }

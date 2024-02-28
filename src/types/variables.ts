@@ -73,6 +73,7 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	numberOfGroupsComm: 4,
 	groupsComm: {},
 	byAuthor: false,
-	invertFiltersComm: false
+	invertFiltersComm: false,
+	commPluginsNotesFolder: "",
 };
 

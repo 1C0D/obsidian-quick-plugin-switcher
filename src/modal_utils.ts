@@ -108,7 +108,7 @@ export const selectValue = (input: HTMLInputElement | null) => {
 	input?.setSelectionRange(0, input?.value.length);
 };
 
-export const modeSort = (modal : QPSModal, plugin: Plugin, listItems: string[]) => {
+export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) => {
 	const { settings } = plugin;
 	const { installed, filters } = settings;
 	// after reset MostSwitched
@@ -146,7 +146,7 @@ export const modeSort = (modal : QPSModal, plugin: Plugin, listItems: string[]) 
 		// && !plugin.reset
 		sortByName(plugin, listItems);
 		sortSwitched(plugin, listItems);
-} else if (filters === Filters.Hidden) {
+	} else if (filters === Filters.Hidden) {
 		return getHidden(modal) as string[];
 	}
 	// All
@@ -187,7 +187,7 @@ export function getHidden(modal: QPSModal | CPModal) {
 	const { installed, commPlugins } = settings
 	if (modal instanceof QPSModal) {
 		return Object.keys(installed).filter((item) => installed[item].groupInfo.hidden);
-	}else{
+	} else {
 		return Object.keys(commPlugins).filter((item) => commPlugins[item].groupCommInfo.hidden);
 	}
 }
@@ -203,9 +203,11 @@ export async function reOpenModal(modal: QPSModal | CPModal, searchInit = false)
 }
 
 export async function openPluginSettings(
+	evt: MouseEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
+	evt.preventDefault();
 	const enabled = modal.plugin.settings.installed[pluginItem.id]?.enabled
 
 	if (!enabled) {
@@ -225,9 +227,11 @@ export async function openPluginSettings(
 }
 
 export const showHotkeysFor = async function (
+	evt: MouseEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
+	evt.preventDefault();
 	const enabled = modal instanceof CPModal ? modal.plugin.settings.installed[pluginItem.id].enabled : (pluginItem as PluginInstalled).enabled
 
 	if (!enabled) {
@@ -278,8 +282,8 @@ export function getElementFromMousePosition(
 	return null;
 }
 
-export function focusSearchInput() {
+export function focusSearchInput(time: number) {
 	setTimeout(() => {
 		(document.querySelector(".qps-search-component input") as HTMLInputElement)?.focus();
-	}, 100);	
+	}, time);
 }

@@ -1,2 +1,2 @@
-fix: color note in readme
-fix: listener click on desktop
+improvements: around update note button color
+fix: editing note

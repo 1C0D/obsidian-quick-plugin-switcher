@@ -1,1 +1,2 @@
-fix: just forget to remove a listener from desktop. shortcuts are ok again now
+fix: color note in readme
+fix: listener click on desktop

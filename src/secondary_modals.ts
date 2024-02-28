@@ -258,13 +258,20 @@ export class ReadMeModal extends Modal {
 		const shortcuts = contentEl.createDiv(
 			{
 				cls: "read-me-shortcuts",
-			},)
+			})
+			
+		const notesButtonContainer = shortcuts.createDiv({cls: "notes-button-container"});
 
-		const noteButton = new ButtonComponent(shortcuts)
+		const notesButton = new ButtonComponent(notesButtonContainer)
 			.setButtonText("📝")
 			.onClick(async (e) => {
 				await handleNote(e, this.modal, pluginItem)
 			})
+
+		// color background
+		if (pluginItem.hasNote) {
+			notesButtonContainer.addClass("notes-button-background");
+		}
 
 		if (Platform.isDesktop) {
 			shortcuts.createSpan({

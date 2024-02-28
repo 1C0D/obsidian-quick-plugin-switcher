@@ -90,7 +90,9 @@ export class QPSModal extends Modal {
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
 		this.modalEl.removeEventListener("dblclick", this.getHandleClick);
-		this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
+		if (Platform.isMobile) {
+			this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);			
+		}
 	}
 
 	container() {
@@ -108,7 +110,9 @@ export class QPSModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		if (Platform.isMobile) {
+			this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		}
 		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 

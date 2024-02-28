@@ -93,6 +93,7 @@ export class CPModal extends Modal {
 
 	}
 	getHandleClick = (evt: MouseEvent) => {
+		if (this.isDblClick) return;
 		handleClick(evt, this);
 	}
 
@@ -103,10 +104,10 @@ export class CPModal extends Modal {
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
 		if (Platform.isMobile){
-			this.modalEl.removeEventListener("click", this.getHandleClick);
+			this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
 		}
+		this.modalEl.removeEventListener("click", this.getHandleClick);
 
 	}
 
@@ -129,10 +130,10 @@ export class CPModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
 		if(Platform.isMobile){
-			this.modalEl.addEventListener("click", this.getHandleClick);
+			this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
 		}
+		this.modalEl.addEventListener("click", this.getHandleClick);
 	}
 
 	async onOpen() {

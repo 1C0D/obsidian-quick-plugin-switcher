@@ -3,7 +3,7 @@ import { around } from "monkey-around";
 import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import QPSSettingTab from "./settings";
-import { fetchData } from "./community-plugins_modal";
+import { fetchData, updateNotes } from "./community-plugins_modal";
 import { CommPlugin, PackageInfoData, QPSSettings } from "./types/global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
 import { Console } from './Console';
@@ -96,6 +96,9 @@ export default class QuickPluginSwitcher extends Plugin {
 				new QPSModal(this.app, this).open();
 				focusSearchInput(10);
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this))
+				setTimeout(async () => {
+					await updateNotes(this)
+				}, 700);
 			}
 		);
 
@@ -109,6 +112,9 @@ export default class QuickPluginSwitcher extends Plugin {
 				new QPSModal(this.app, this).open();
 				focusSearchInput(10);
 				await this.exeAfterDelay(this.pluginsCommInfo.bind(this));
+				setTimeout(async () => {
+					await updateNotes(this);
+				}, 700);
 			},
 		});
 	}

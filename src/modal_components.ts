@@ -769,7 +769,6 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 
 export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal)?.parentElement;
-	console.log("icieuuu")
 	if (elementFromPoint?.classList.contains("button-container")) {
 		const matchingItem = findMatchingItem(
 			modal,
@@ -787,7 +786,6 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 			modal,
 			elementFromPoint.parentElement as HTMLElement
 		);
-		console.log("findMatchingItem", findMatchingItem)
 		if (matchingItem && modal instanceof CPModal) {
 			handleNote(evt, modal, matchingItem as PluginCommInfo);
 		}

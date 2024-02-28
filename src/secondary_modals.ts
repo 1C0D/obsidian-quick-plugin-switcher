@@ -265,7 +265,7 @@ export class ReadMeModal extends Modal {
 		const notesButton = new ButtonComponent(notesButtonContainer)
 			.setButtonText("📝")
 			.onClick(async (e) => {
-				await handleNote(e, this.modal, pluginItem)
+				await handleNote(e, this.modal, pluginItem, this)
 			})
 
 		// color background
@@ -341,7 +341,7 @@ export class ReadMeModal extends Modal {
 }
 
 export class SeeNoteModal extends Modal {
-	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>) {
+	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>,public _this?:ReadMeModal) {
 		super(app);
 	}
 

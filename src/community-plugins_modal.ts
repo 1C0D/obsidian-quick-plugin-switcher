@@ -104,7 +104,7 @@ export class CPModal extends Modal {
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		if (Platform.isMobile){
+		if (Platform.isMobile) {
 			this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
 		}
 		this.modalEl.removeEventListener("click", this.getHandleClick);
@@ -130,7 +130,7 @@ export class CPModal extends Modal {
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		if(Platform.isMobile){
+		if (Platform.isMobile) {
 			this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
 		}
 		this.modalEl.addEventListener("click", this.getHandleClick);
@@ -784,7 +784,31 @@ export async function installPluginFromOtherVault(
 	}
 }
 
-export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, pluginItem: PluginCommInfo) {
+export async function updateNotes(plugin: QuickPluginSwitcher) {
+	const name = "Community plugins notes";
+	const dir = plugin.settings.commPluginsNotesFolder;
+	let note: TFile;
+	const path = dir ? dir + "/" + name + ".md" : name + ".md";
+	note = this.app.vault.getAbstractFileByPath(path) as TFile;
+	if (note) {
+		let content = note ? await this.app.vault.read(note) : "";
+		const h1Titles: string[] = content.split('\n')
+			.filter((line:string) => line.startsWith('# '))
+			.map((line:string) => line.substring(2).trim());
+		const { commPlugins } = plugin.settings
+		Object.values(commPlugins).forEach((plugin: PluginCommInfo) => {
+			if(plugin.hasNote && !h1Titles.includes(plugin.name)) {
+				plugin.hasNote = false;
+			}else if(!plugin.hasNote && h1Titles.includes(plugin.name)) {
+				plugin.hasNote = true;
+			}
+		})
+			
+		
+	}
+}
+
+export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
 	const name = "Community plugins notes";
 	const dir = modal.plugin.settings.commPluginsNotesFolder;
 	let note: TFile;
@@ -825,13 +849,13 @@ export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, 
 	}
 
 	new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
-		await cb(result, modal, pluginItem, sectionContent, note, content, savedContent)
-	}).open();
+		await cb(result, modal, pluginItem, sectionContent, note, content, savedContent, _this)
+	}, _this).open();
 
 
 }
 
-async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string) {
+async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string, _this?: ReadMeModal) {
 	Console.log("sectionContent", sectionContent)
 	Console.log("result", result)
 	if (result === null) {
@@ -860,7 +884,11 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 		await modal.app.vault.modify(note, updatedContent);
 		pluginItem.hasNote = false;
 		await modal.plugin.saveSettings();
-		modal.onOpen()
+		if (_this) {
+			_this.onOpen()
+			modal.onOpen()
+		}
+		else modal.onOpen()
 		return
 	}
 	Console.log("result has content")
@@ -875,11 +903,15 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 			modal.app.vault.append(note, (result));
 		} else {
 			Console.log("replace")
-			const updatedContent = content.replace(sectionContent, ("# " + pluginItem.name + "\n\n") + result);
+			const updatedContent = content.replace(sectionContent, result);
 			await modal.app.vault.modify(note, updatedContent);
 		}
 		pluginItem.hasNote = true;
 		await modal.plugin.saveSettings();
-		modal.onOpen()
+		if (_this) {
+			_this.onOpen()
+			modal.onOpen()
+		}
+		else modal.onOpen()
 	}
 }

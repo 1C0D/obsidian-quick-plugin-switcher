@@ -12,7 +12,7 @@ import {
 } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { CPModal, getManifest, getReadMe, handleNote } from "./community-plugins_modal";
-import { getCommandCondition, isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
+import { isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHotkeysFor } from "./modal_utils";
 import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";

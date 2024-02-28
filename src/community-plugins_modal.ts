@@ -104,7 +104,9 @@ export class CPModal extends Modal {
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
 		this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
-		this.modalEl.removeEventListener("click", this.getHandleClick);
+		if (Platform.isMobile){
+			this.modalEl.removeEventListener("click", this.getHandleClick);
+		}
 
 	}
 
@@ -128,7 +130,9 @@ export class CPModal extends Modal {
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
 		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
 		this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
-		this.modalEl.addEventListener("click", this.getHandleClick);
+		if(Platform.isMobile){
+			this.modalEl.addEventListener("click", this.getHandleClick);
+		}
 	}
 
 	async onOpen() {

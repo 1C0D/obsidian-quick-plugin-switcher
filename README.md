@@ -1,11 +1,15 @@
 ## Quick Plugin Switcher
 
 New: 
+- add notes to community plugins
+![platformDep](img/note_button.png)
+![platformDep](img/edit_note.png)
+
 - option to make a plugin platform dependant
 ![platformDep](img/platformDep.jpg)
-- plugin updates improved
+- plugin updates
 - community plugins have been added and a lot of things fixed or improved
-- if some bugs remaining, plz report on github
+
 - I will update this readme again soon to show new things
 - I put a video on discord in the room updates
 

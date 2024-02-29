@@ -802,9 +802,7 @@ export async function updateNotes(plugin: QuickPluginSwitcher) {
 			}else if(!plugin.hasNote && h1Titles.includes(plugin.name)) {
 				plugin.hasNote = true;
 			}
-		})
-			
-		
+		})			
 	}
 }
 
@@ -851,8 +849,6 @@ export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, 
 	new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
 		await cb(result, modal, pluginItem, sectionContent, note, content, savedContent, _this)
 	}, _this).open();
-
-
 }
 
 async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommInfo, sectionContent: string, note: TFile, content: string, savedContent: string, _this?: ReadMeModal) {
@@ -873,12 +869,9 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 	if (result.trim() === "") {
 		Console.log(" resut has no content")
 		let updatedContent = "";
-		// if(Platform.isDesktop){
 		const regexPattern = new RegExp("# " + pluginItem.name + "\n\n?" + sectionContent + "\n?", "g");
 		updatedContent = content.replace(regexPattern, "");
-		// }else{
-		// 	updatedContent = content.replace("# " + pluginItem.name + "\n\n", "").replace("# " + pluginItem.name + "\n", "").replace(sectionContent + "\n", "").replace(sectionContent, "");
-		// }
+
 		Console.log("updatedContent", updatedContent)
 
 		await modal.app.vault.modify(note, updatedContent);
@@ -891,6 +884,7 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 		else modal.onOpen()
 		return
 	}
+
 	Console.log("result has content")
 	if (sectionContent.trim() === result.trim()) {
 		Console.log("same content")

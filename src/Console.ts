@@ -6,17 +6,19 @@ let DEBUG = "false";
 
 if (Platform.isDesktopApp) {
     require('dotenv').config();
-    DEBUG = process.env.DEBUG ?? "true";
+    DEBUG = process.env.DEBUG ?? "false";
 }
+
+const condition = (DEBUG.trim().toLowerCase() === "true" && !disableAnyway);
 
 export const Console = {
     debug: (...args: any[]) => {
-        if (DEBUG.trim().toLowerCase() === "true" && !disableAnyway) {
+        if (condition) {
             console.debug(...args);
         }
     },
     log: (...args: any[]) => {
-        if (DEBUG.trim().toLowerCase() === "true" && !disableAnyway) {
+        if (condition) {
             console.log(...args);
         }
     }

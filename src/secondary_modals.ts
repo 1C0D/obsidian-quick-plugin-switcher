@@ -325,9 +325,7 @@ export class ReadMeModal extends Modal {
 						await translation(selectedContent);
 					})
 				);
-				// menu.addItem((item) =>
-				// 	item.setTitle("Add note Ctrl+n").onClick(async (e) => await handleNote(e, this.modal, pluginItem))
-				// );
+				
 				menu.showAtPosition(this.mousePosition);
 			}
 		});

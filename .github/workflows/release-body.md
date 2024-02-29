@@ -1,2 +1,1 @@
-improvements: around update note button color
-fix: editing note
+some fixes. readme update

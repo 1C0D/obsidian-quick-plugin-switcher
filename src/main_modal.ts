@@ -18,13 +18,13 @@ import {
 	handleContextMenu,
 	addSearch,
 	handleDblClick,
-	handleDblTouch,
 	findMatchingItem,
 	doSearchQPS,
 	hideOnCLick,
 	checkbox,
 	vertDotsButton,
 	handleClick,
+	handleTouchStart,
 } from "./modal_components";
 import {
 	delayedReEnable,
@@ -75,23 +75,25 @@ export class QPSModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
-	getHandleDblTouch = (evt: TouchEvent) => {
-		if (this.isDblClick) return;
-		handleDblTouch(evt, this);
-	}
 	getHandleClick = (evt: MouseEvent) => {
 		if (this.isDblClick) return;
 		handleClick(evt, this);
+	}
+	getHandleTouch = (evt: TouchEvent) => {
+		if (this.isDblClick) return;
+		handleTouchStart(evt, this);
 	}
 
 	removeListeners() {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
-		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		this.modalEl.removeEventListener("dblclick", this.getHandleClick);
+		if (Platform.isDesktop) {
+			this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
+			this.modalEl.removeEventListener("click", this.getHandleClick);
+		}
 		if (Platform.isMobile) {
-			this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);			
+			this.modalEl.removeEventListener("touchstart", this.getHandleTouch);
 		}
 	}
 
@@ -109,11 +111,13 @@ export class QPSModal extends Modal {
 		this.modalEl.addEventListener("mousemove", this.getMousePosition);
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
-		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		if (Platform.isMobile) {
-			this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		if (Platform.isDesktop) {
+			this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
+			this.modalEl.addEventListener("click", this.getHandleClick);
 		}
-		this.modalEl.addEventListener("click", this.getHandleClick);
+		if (Platform.isMobile) {
+			this.modalEl.addEventListener("touchstart", this.getHandleTouch);
+		}
 	}
 
 	async onOpen() {

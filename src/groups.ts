@@ -1,4 +1,4 @@
-import {  DropdownComponent, Menu, Notice } from "obsidian";
+import { DropdownComponent, Menu, Notice } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./modal_utils";
@@ -522,13 +522,11 @@ export const editGroupName = (
     };
 
     const input = createInput(span, currentValue);
-
-    if (input) {
-        input.onblur = handleBlurOrEnter;
-        input.onkeydown = (event) => {
-            if (event.key === "Enter") {
-                handleBlurOrEnter();
-            }
+    if (!input) return
+    input.onblur = handleBlurOrEnter;
+    input.onkeydown = (event) => {
+        if (event.key === "Enter") {
+            handleBlurOrEnter();
         }
     }
 };

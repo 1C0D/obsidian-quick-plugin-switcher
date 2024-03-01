@@ -36,7 +36,7 @@ import {
 	handleClick,
 	handleContextMenu,
 	handleDblClick,
-	handleDblTouch,
+	handleTouchStart,
 	notesButton,
 	openGitHubRepo,
 	searchCommDivButton,
@@ -87,14 +87,13 @@ export class CPModal extends Modal {
 		if (this.isDblClick) return;
 		handleDblClick(evt, this);
 	}
-	getHandleDblTouch = (evt: TouchEvent) => {
-		if (this.isDblClick) return;
-		handleDblTouch(evt, this);
-
-	}
 	getHandleClick = (evt: MouseEvent) => {
 		if (this.isDblClick) return;
 		handleClick(evt, this);
+	}
+	getHandleTouch = (evt: TouchEvent) => {
+		if (this.isDblClick) return;
+		handleTouchStart(evt, this);
 	}
 
 	// Add H to hide groups on handlekeydown
@@ -103,11 +102,13 @@ export class CPModal extends Modal {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
 		document.removeEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.removeEventListener("contextmenu", this.getHandleContextMenu);
-		this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
-		if (Platform.isMobile) {
-			this.modalEl.removeEventListener("touchstart", this.getHandleDblTouch);
+		if (Platform.isDesktop) {
+			this.modalEl.removeEventListener("dblclick", this.getHandleDblClick);
+			this.modalEl.removeEventListener("click", this.getHandleClick);
 		}
-		this.modalEl.removeEventListener("click", this.getHandleClick);
+		if (Platform.isMobile) {
+			this.modalEl.removeEventListener("touchstart", this.getHandleTouch);
+		}
 
 	}
 
@@ -129,11 +130,13 @@ export class CPModal extends Modal {
 		this.modalEl.addEventListener("mousemove", this.getMousePosition);
 		document.addEventListener("keydown", this.getHandleKeyDown);
 		this.modalEl.addEventListener("contextmenu", this.getHandleContextMenu);
-		this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
-		if (Platform.isMobile) {
-			this.modalEl.addEventListener("touchstart", this.getHandleDblTouch);
+		if (Platform.isDesktop) {
+			this.modalEl.addEventListener("dblclick", this.getHandleDblClick);
+			this.modalEl.addEventListener("click", this.getHandleClick);
 		}
-		this.modalEl.addEventListener("click", this.getHandleClick);
+		if (Platform.isMobile) {
+			this.modalEl.addEventListener("touchstart", this.getHandleTouch);
+		}
 	}
 
 	async onOpen() {
@@ -793,20 +796,20 @@ export async function updateNotes(plugin: QuickPluginSwitcher) {
 	if (note) {
 		let content = note ? await this.app.vault.read(note) : "";
 		const h1Titles: string[] = content.split('\n')
-			.filter((line:string) => line.startsWith('# '))
-			.map((line:string) => line.substring(2).trim());
+			.filter((line: string) => line.startsWith('# '))
+			.map((line: string) => line.substring(2).trim());
 		const { commPlugins } = plugin.settings
 		Object.values(commPlugins).forEach((plugin: PluginCommInfo) => {
-			if(plugin.hasNote && !h1Titles.includes(plugin.name)) {
+			if (plugin.hasNote && !h1Titles.includes(plugin.name)) {
 				plugin.hasNote = false;
-			}else if(!plugin.hasNote && h1Titles.includes(plugin.name)) {
+			} else if (!plugin.hasNote && h1Titles.includes(plugin.name)) {
 				plugin.hasNote = true;
 			}
-		})			
+		})
 	}
 }
 
-export async function handleNote(e: KeyboardEvent | MouseEvent, modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
+export async function handleNote(e: KeyboardEvent | MouseEvent|TouchEvent , modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
 	const name = "Community plugins notes";
 	const dir = modal.plugin.settings.commPluginsNotesFolder;
 	let note: TFile;

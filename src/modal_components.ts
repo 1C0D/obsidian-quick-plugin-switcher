@@ -604,7 +604,7 @@ export const itemTextComponent = (
 };
 
 const pluginFeatureSubmenu = async (
-	evt: MouseEvent,
+	evt: MouseEvent | TouchEvent,
 	submenu: Menu,
 	pluginItem: PluginInstalled,
 	modal: QPSModal
@@ -671,7 +671,7 @@ export const getHkeyCondition = async function (
 	return hasKeyStartingWith(pluginCommands, item.id);
 };
 
-export const openGitHubRepo = async (e: MouseEvent | KeyboardEvent, modal: QPSModal | CPModal, plugin: PluginInstalled | PluginCommInfo) => {
+export const openGitHubRepo = async (e: MouseEvent | KeyboardEvent | TouchEvent, modal: QPSModal | CPModal, plugin: PluginInstalled | PluginCommInfo) => {
 	let repo: string;
 	if ("repo" in plugin) {
 		repo = plugin.repo
@@ -767,7 +767,7 @@ export async function hideOnCLick(modal: QPSModal | CPModal, groupNumber: number
 	await reOpenModal(modal)
 }
 
-export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
+export async function handleClick(evt: MouseEvent | TouchEvent, modal: QPSModal | CPModal) {
 	const elementFromPoint = getElementFromMousePosition(modal)?.parentElement;
 	if (elementFromPoint?.classList.contains("button-container")) {
 		const matchingItem = findMatchingItem(
@@ -792,19 +792,37 @@ export async function handleClick(evt: MouseEvent, modal: QPSModal | CPModal) {
 	}
 }
 
-export function handleDblTouch(evt: TouchEvent, modal: QPSModal | CPModal) {
-	var touchStartTimestamp = 0;// dns la fonction ?
-	var doubleClickDelay = 400;
-	const now = new Date().getTime();
-	const timeSinceLastTouch = now - touchStartTimestamp;
-	if (timeSinceLastTouch < doubleClickDelay) {
-		handleDblClick(evt, modal);
+var touchCount = 0;
+var touchDelay = 300;
+let clickTimeout: NodeJS.Timeout
+let element: HTMLElement
+export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
+	// if (clickTimeout) {
+	// 	clearTimeout(this.clickTimeout);
+	// }
+	touchCount++;
+	if (touchCount === 1) {
+		element = evt.target as HTMLElement
+		const clickTimeout = setTimeout(() => {
+			handleClick(evt, modal)
+			touchCount = 0
+		}, touchDelay);
 	}
-	touchStartTimestamp = now;
+
+	if (touchCount === 2) {
+		handleDblClick(evt, modal, element)
+		touchCount = 0;
+		clearTimeout(clickTimeout);
+
+	}
+
 }
 
-export function handleDblClick(evt: MouseEvent|TouchEvent, modal: QPSModal | CPModal) {
-	const elementFromPoint = getElementFromMousePosition(modal);
+
+
+export function handleDblClick(evt: MouseEvent | TouchEvent, modal: QPSModal | CPModal, element?: HTMLElement) {
+	
+	const elementFromPoint = element ? element : getElementFromMousePosition(modal);
 
 	const targetBlock = elementFromPoint?.closest(
 		".qps-comm-block"
@@ -824,7 +842,16 @@ export function handleDblClick(evt: MouseEvent|TouchEvent, modal: QPSModal | CPM
 
 	if (targetBlock) {
 		const matchingItem = findMatchingItem(modal, targetBlock);
-		if (matchingItem) {
+		if (!matchingItem) return
+		if (Platform.isMobile) {
+			setTimeout(() => {
+				new ReadMeModal(
+					modal.plugin.app,
+					modal as CPModal,
+					matchingItem as PluginCommInfo
+				).open();
+			}, 250);
+		} else {
 			new ReadMeModal(
 				modal.plugin.app,
 				modal as CPModal,
@@ -835,9 +862,8 @@ export function handleDblClick(evt: MouseEvent|TouchEvent, modal: QPSModal | CPM
 
 	if (pluginItemBlock) {
 		const matchingItem = findMatchingItem(modal, pluginItemBlock);
-		if (matchingItem) {
-			handleInputDblClick(modal as QPSModal, pluginItemBlock, matchingItem as PluginInstalled);
-		}
+		if (!matchingItem) return
+		handleInputDblClick(modal as QPSModal, pluginItemBlock, matchingItem as PluginInstalled);
 	}
 
 	if (targetGroup) {
@@ -868,22 +894,20 @@ const handleInputDblClick = async (
 	const input = createInput(itemContainer, currentValue);
 
 	if (!pluginItem.delayed) {
-		if (input) {
-			const setDelay = () => {
-				setTimeout(async () => {
-					await modal.addDelay(pluginItem.id, input);
-					modal.isDblClick = false;
-				}, 100);
-			}
-
-			input.onkeydown = (event) => {
-				if (event.key === "Enter") {
-					setDelay();
-				}
-			};
-
-			input.onblur = setDelay
+		if (!input) return;
+		const setDelay = () => {
+			setTimeout(async () => {
+				await modal.addDelay(pluginItem.id, input);
+				modal.isDblClick = false;
+			}, 100);
 		}
+
+		input.onkeydown = (event) => {
+			if (event.key === "Enter") {
+				setDelay();
+			}
+		};
+		input.onblur = setDelay
 	} else {
 		pluginItem.delayed = false;
 		modal.isDblClick = false;
@@ -935,7 +959,7 @@ export async function handleContextMenu(evt: MouseEvent, modal: QPSModal | CPMod
 }
 
 export function contextMenuCPM(
-	evt: MouseEvent,
+	evt: MouseEvent | TouchEvent,
 	modal: CPModal,
 	matchingItem: PluginCommInfo
 ) {
@@ -1028,11 +1052,15 @@ export function contextMenuCPM(
 		});
 		addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 	}
-	menu.showAtMouseEvent(evt);
+	if (evt instanceof MouseEvent) {
+		menu.showAtMouseEvent(evt);
+	} else {
+		menu.showAtPosition(modal.mousePosition);
+	}
 }
 
 async function contextMenuQPS(
-	evt: MouseEvent,
+	evt: MouseEvent | TouchEvent,
 	modal: QPSModal,
 	matchingItem: PluginInstalled
 ) {
@@ -1188,7 +1216,11 @@ async function contextMenuQPS(
 			addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 		}
 	}
-	menu.showAtMouseEvent(evt);
+	if (evt instanceof MouseEvent) {
+		menu.showAtMouseEvent(evt);
+	} else {
+		menu.showAtPosition(modal.mousePosition);
+	}
 }
 
 export async function updatePlugin(modal: QPSModal, matchingItem: PluginInstalled, commPlugins: Record<string, any>) {

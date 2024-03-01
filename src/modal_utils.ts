@@ -203,7 +203,7 @@ export async function reOpenModal(modal: QPSModal | CPModal, searchInit = false)
 }
 
 export async function openPluginSettings(
-	evt: MouseEvent | KeyboardEvent,
+	evt: MouseEvent| TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
@@ -222,12 +222,12 @@ export async function openPluginSettings(
 		new Notice("No Settings on this plugin", 2500);
 		return;
 	}
-	await modal.app.setting.open();
+	modal.app.setting.open();
 	await pluginSettings?.display();
 }
 
 export const showHotkeysFor = async function (
-	evt: MouseEvent | KeyboardEvent,
+	evt: MouseEvent| TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {

@@ -792,18 +792,15 @@ export async function handleClick(evt: MouseEvent | TouchEvent, modal: QPSModal 
 	}
 }
 
-var touchCount = 0;
-var touchDelay = 300;
+let touchCount = 0;
+let touchDelay = 300;
 let clickTimeout: NodeJS.Timeout
 let element: HTMLElement
 export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
-	// if (clickTimeout) {
-	// 	clearTimeout(this.clickTimeout);
-	// }
 	touchCount++;
 	if (touchCount === 1) {
 		element = evt.target as HTMLElement
-		const clickTimeout = setTimeout(() => {
+		clickTimeout = setTimeout(() => {
 			handleClick(evt, modal)
 			touchCount = 0
 		}, touchDelay);
@@ -813,9 +810,7 @@ export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
 		handleDblClick(evt, modal, element)
 		touchCount = 0;
 		clearTimeout(clickTimeout);
-
 	}
-
 }
 
 

@@ -1,1 +1,1 @@
-double touch on mobile is now fully working! So you can apply delay, rename groups, open readme in community plugins... If the long touch to open context menu is not working or anything else, please let me know on github (I think it's native on mobiles)
+double click listener slightly modified

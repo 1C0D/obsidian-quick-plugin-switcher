@@ -1,1 +1,1 @@
-double click listener slightly modified
+feature: setting option (true by default) keep previous value in dropdowns after a reload for quicker access. eg: to a group

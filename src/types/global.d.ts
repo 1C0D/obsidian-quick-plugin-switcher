@@ -83,6 +83,7 @@ interface QPSSettings {
     byAuthor: boolean;
     invertFiltersComm: boolean;
     commPluginsNotesFolder: string;
+    keepDropDownValues: boolean;
 }
 
 type KeyToSettingsMapType = {

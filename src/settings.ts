@@ -127,6 +127,18 @@ export default class QPSSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
+			.setName("Keep dropdowns last value")
+			.setDesc("If enabled, dropdowns will be kept in last value when opening the modal")
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.keepDropDownValues)
+					.onChange((value) => {
+						this.plugin.settings.keepDropDownValues = value;
+						this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
 			.setName("Community plugins notes folder")
 			.setDesc(
 				"Folder where Community plugins notes.md will be stored, after having been created (creating first note). Don't modify the content of the file if you don't know what you're doing"

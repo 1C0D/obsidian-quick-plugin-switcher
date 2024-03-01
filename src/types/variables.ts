@@ -75,5 +75,6 @@ export const DEFAULT_SETTINGS: QPSSettings = {
 	byAuthor: false,
 	invertFiltersComm: false,
 	commPluginsNotesFolder: "",
+	keepDropDownValues: true,
 };
 

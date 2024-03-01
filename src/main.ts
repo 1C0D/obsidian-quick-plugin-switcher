@@ -90,8 +90,10 @@ export default class QuickPluginSwitcher extends Plugin {
 			"toggle-right",
 			"Quick Plugin Switcher",
 			async (evt: MouseEvent) => {
-				this.settings.filters = Filters.All
-				this.settings.filtersComm = CommFilters.All
+				if (!this.settings.keepDropDownValues) {
+					this.settings.filters = Filters.All
+					this.settings.filtersComm = CommFilters.All				
+				}
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
 				focusSearchInput(10);
@@ -106,8 +108,10 @@ export default class QuickPluginSwitcher extends Plugin {
 			id: "quick-plugin-switcher-modal",
 			name: "open modal",
 			callback: async () => {
-				this.settings.filters = Filters.All
-				this.settings.filtersComm = CommFilters.All
+				if (!this.settings.keepDropDownValues) {
+					this.settings.filters = Filters.All
+					this.settings.filtersComm = CommFilters.All
+				}
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
 				focusSearchInput(10);

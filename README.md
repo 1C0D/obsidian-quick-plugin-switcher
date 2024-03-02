@@ -141,7 +141,10 @@ To delete a note, delete all its content.
 
 ## videos
 
--5- [youtube](https://youtu.be/-sPDQBTuEkc?si=uUKovOgOgnkdefyI) main presentation
+-6- [youtube](https://youtu.be/-sPDQBTuEkc?si=uUKovOgOgnkdefyI) main presentation
+
+-5- add command to plugin to quickly switch it
+![add_command_to_plugin](gif/add_command_to_plugin.gif)
 
 -4- shortcuts helper
 ![shortcuts helper](gif/shortcuts_helper.gif)

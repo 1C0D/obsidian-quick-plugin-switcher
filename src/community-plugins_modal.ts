@@ -250,7 +250,9 @@ export class CPModal extends Modal {
 				el.createSpan({
 					text: ` (🖱️x2/ctrl)Readme `,
 				});
-				el.createSpan({ text: "(n)📝" })
+				el.createSpan({ text: "(n)📝 " });
+				el.createSpan({	text: "(s)📊" });
+
 			}
 		);
 	}

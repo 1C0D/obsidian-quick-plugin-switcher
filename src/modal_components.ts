@@ -638,7 +638,6 @@ const pluginFeatureSubmenu = async (
 	const pluginSettings = modal.app.setting.openTabById(
 		id
 	);
-	submenu.addSeparator();
 	submenu.addItem((item) =>
 		item
 			.setTitle("Plugin settings (s)")
@@ -1015,14 +1014,7 @@ export function contextMenuCPM(
 					await openGitHubRepo(evt, modal, matchingItem);
 				})
 		})
-		// menu.addItem((item) =>
-		// 	item
-		// 		.setTitle("add a note")
-		// 		.setIcon("pencil-line")
-		// 		.onClick(async (evt) => {
-		// 			await handleNote(evt, modal, matchingItem);
-		// 		})
-		// );
+
 		menu.addItem((item) =>
 			item
 				.setTitle("open Readme (dbl touch)")
@@ -1035,6 +1027,7 @@ export function contextMenuCPM(
 		menu.addSeparator();
 		addToGroupSubMenu(menu, matchingItem, modal, true);
 		menu.addSeparator();
+		addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 		menu.addItem((item) => {
 			item
 				.setTitle("Remove All groups")
@@ -1042,11 +1035,9 @@ export function contextMenuCPM(
 					matchingItem.groupCommInfo.groupIndices.length === 0
 				)
 				.onClick(async () => {
-					// matchingItem.groupCommInfo.groupIndices;
 					await rmvAllGroupsFromPlugin(modal, matchingItem);
 				});
 		});
-		addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 	}
 	if (evt instanceof MouseEvent) {
 		menu.showAtMouseEvent(evt);
@@ -1084,19 +1075,25 @@ async function contextMenuQPS(
 	}
 
 	menu.addSeparator();
-	const text = matchingItem.target !== undefined
-		? `run on ${TargetPlatform[matchingItem.target]}`
-		: "run on Both";
 	menu.addItem((item) => {
-		item.setTitle(text)
+		if (Platform.isDesktop) {
+			const text = matchingItem.target !== undefined
+				? `run on ${TargetPlatform[matchingItem.target]}`
+				: "run on Both";
+			item.setTitle(text)
+		}
 		const submenu = Platform.isMobile ? menu : (item as any).setSubmenu() as Menu;
 		// Get only the string keys
 		Object.keys(TargetPlatform)
 			.filter((key) => isNaN(Number(key)))
 			.forEach((key) => {
+				let text = key
+				if (Platform.isMobile) {
+					text = `run on ${key}`
+				}
 				submenu.addItem((sub) => {
 					sub
-						.setTitle(key)
+						.setTitle(text)
 						.onClick(async () => {
 							const target = TargetPlatform[key as keyof typeof TargetPlatform];
 							if (matchingItem.isDesktopOnly &&
@@ -1159,6 +1156,7 @@ async function contextMenuQPS(
 					await updatePlugin(modal, matchingItem, commPlugins);
 				});
 		});
+
 		menu.addItem((item) => {
 			item.setTitle("Uninstall plugin")
 				.setDisabled(matchingItem.id === "quick-plugin-switcher")
@@ -1171,24 +1169,27 @@ async function contextMenuQPS(
 				});
 		});
 
-		const text = matchingItem.commandified ? "Remove command from plugin" : "Add command to plugin";
-		const disabled = Platform.isDesktop && matchingItem.target === TargetPlatform.Mobile || Platform.isMobile && matchingItem.target === TargetPlatform.Desktop;
-		menu.addItem((item) => {
-			item.setTitle(text)
-				.setIcon("arrow-right-left")
-				.setDisabled(disabled)
-				.onClick(async () => {
-					if (matchingItem.commandified) {
-						delete matchingItem.commandified;
-						await removeCommandFromPlugin(modal, matchingItem);
+
+		if (Platform.isDesktop) {
+			const text = matchingItem.commandified ? "Remove command from plugin" : "Add command to plugin";
+			const disabled = Platform.isDesktop && matchingItem.target === TargetPlatform.Mobile || Platform.isMobile && matchingItem.target === TargetPlatform.Desktop;
+			menu.addItem((item) => {
+				item.setTitle(text)
+					.setIcon("arrow-right-left")
+					.setDisabled(disabled)
+					.onClick(async () => {
+						if (matchingItem.commandified) {
+							delete matchingItem.commandified;
+							await removeCommandFromPlugin(modal, matchingItem);
+							await plugin.saveSettings();
+						} else {
+							matchingItem.commandified = true;
+							await addCommandToPlugin(modal, matchingItem);
+						}
 						await plugin.saveSettings();
-					} else {
-						matchingItem.commandified = true;
-						await addCommandToPlugin(modal, matchingItem);
-					}
-					await plugin.saveSettings();
-				});
-		});
+					});
+			});
+		}
 	}
 
 	if (matchingItem.id !== "quick-plugin-switcher") {
@@ -1222,6 +1223,7 @@ async function contextMenuQPS(
 			});
 		} else {
 			menu.addSeparator();
+			addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 			menu.addItem((item) => {
 				item
 					.setTitle("Remove All groups")
@@ -1233,7 +1235,6 @@ async function contextMenuQPS(
 						await rmvAllGroupsFromPlugin(modal, matchingItem);
 					});
 			});
-			addRemoveItemGroupMenuItems(modal, menu, matchingItem, true);
 		}
 	}
 	if (evt instanceof MouseEvent) {
@@ -1388,7 +1389,7 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
 }
 
 export async function addCommandToPlugin(
-	modal: QPSModal|QuickPluginSwitcher,
+	modal: QPSModal | QuickPluginSwitcher,
 	pluginItem: PluginInstalled
 ) {
 	const plugin = (modal instanceof QPSModal) ? modal.plugin : modal
@@ -1403,10 +1404,10 @@ export async function addCommandToPlugin(
 				new Notice(`${pluginItem.name} not available on this platform`, 2500)
 				return
 			}
-			if (isLoaded){
+			if (isLoaded) {
 				new Notice(`${pluginItem.name} disabled`, 2500)
 				modal.app.plugins.disablePlugin(pluginItem.id);
-			}else {
+			} else {
 				new Notice(`${pluginItem.name} enabled`, 2500)
 				modal.app.plugins.enablePlugin(pluginItem.id);
 			}

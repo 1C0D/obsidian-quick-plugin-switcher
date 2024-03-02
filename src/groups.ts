@@ -1,4 +1,4 @@
-import { DropdownComponent, Menu, Notice } from "obsidian";
+import { DropdownComponent, Menu, Notice, Platform } from "obsidian";
 import { CPModal, getManifest } from "./community-plugins_modal";
 import { QPSModal } from "./main_modal";
 import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./modal_utils";
@@ -473,18 +473,20 @@ export const addToGroupSubMenu = (
                 value = `add to ${value}`
             }
             const { groups, installed } = modal.plugin.settings
-            submenu.addItem((item) =>
-                item
-                    .setTitle(value)
-                    .setDisabled(groupIndices.indexOf(groupIndex) !== -1)
-                    .onClick(async () => {
-                        if (groupIndices.length === 6) return;
-                        groupIndices?.push(groupIndex);
-                        if (groups[groupIndex].hidden)
-                            installed[pluginItem.id].groupInfo.hidden = true
-                        await reOpenModal(modal);
-                    })
-            );
+            if (Platform.isDesktop || Platform.isMobile && groupIndices.indexOf(groupIndex) === -1) {
+                submenu.addItem((item) =>
+                    item
+                        .setTitle(value)
+                        .setDisabled(groupIndices.indexOf(groupIndex) !== -1)
+                        .onClick(async () => {
+                            if (groupIndices.length === 6) return;
+                            groupIndices?.push(groupIndex);
+                            if (groups[groupIndex].hidden)
+                                installed[pluginItem.id].groupInfo.hidden = true
+                            await reOpenModal(modal);
+                        })
+                );
+            }
         }
     });
 };

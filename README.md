@@ -1,108 +1,147 @@
-## Quick Plugin Switcher
+# Quick Plugin Switcher (QPS)
 
-New: 
-- add notes to community plugins
+This plugin simplifies the process of managing your plugins (demos at the end of this page)  
+
+## Introduction:
+
+This plugin is done around two windows:
+
+- the main window give access to all installed plugins with many options 
+- and the second window is an improved version of community plugins view with many options 
+
+installed plugins
+![windows](img/main_windows.jpg)
+community plugins
+![windows](img/second_window.png)
+
+there are buttons, context menus, dropdown menus, search menus, and you can double click on some elements 
+
+## Mainly, you can:
+
+- quickly toggle enable/disable on plugins
+- use groups for many operations
+- add a delay at start
+- enable/disable platform dependent mobile/desktop
+- get quick accesses (github repo, plugin folder...)
+- apply some filters search, hide groups...
+- take some notes on community plugins
+- tools to install plugins between vaults
+- switch a plugin via command
+
+## New: 
+
+- option in setting to keep last value in dropdown menus (true by default)
+- switch a plugin via command. 
+
+![addcmd](img/add_command.png)
+then in command palette  
+![cmdinpalette](img/command_in_palette.png)
+
+- add notes to community plugins 
+
 ![platformDep](img/note_button.png)
-![platformDep](img/edit_note.png)
+![platformDep](img/edit_note.png)  
 
 - option to make a plugin platform dependant
+
 ![platformDep](img/platformDep.jpg)
 - plugin updates
 - community plugins have been added and a lot of things fixed or improved
 
-- I will update this readme again soon to show new things
-- I put a video on discord in the room updates
+## Features
 
-- no more needed to click on a plugin before to use shortcuts  
-- desktop only are now marked with a ᴰ
-![show_hotkey](img/desktopOnly.jpg)
+### general
+- access QPS from ribbon bar or command 
 
-This plugin simplifies the process of managing your plugins (demos at the end of this page)
+### filters
 
-- quickly switch your plugins (ribbon bar icon or command)  
-- apply filters to show them  
-- search engine
-- add plugins to groups
-- plugin delayed start
-- open plugin in its directory, show description, open github...
-  
-![UI](img/UI.jpg)
+you have now an option in plugin settings to keep previous filter value when re opening a window
 
-you have now an option in settings to show shortcuts
+- first window
 
-![show_hotkey](img/show_hotkey_desc.jpg)
-
-
-## Filterable item list    
-
-![filters](img/filters.jpg) 
-  
-Most Switched filter (most switched plugins)   
-![most_switched](img/most-switched.jpg)
-  
-By group  
+![filters](img/filters.jpeg)  
+filter By group
 ![filters](img/show_by_group.jpg)
-  
-  
-## Add group to **plugins**
+filter by Most Switched filter (most switched plugins)
+![most_switched](img/most-switched.jpg)
 
-- Add groups to your plugins. Set number of groups in settings
+- second window
 
-- Toggle plugins by group   
-  
-1 - Add groups
-  - Shorcuts:
-    - Over a plugin name, press</b> <kbd>1 to 7 </kbd> to add group, <kbd>0/del/suppr</kbd> to delete.
-   
-  - Context Menu
-![groups](img/item_context_menu.jpg)
+![most_switched](img/comfilters.jpg)
 
-- Several groups(4 max) by plugin. Delete  
-![groups](img/several_groups.jpg) 
-  
-- rename groups (dbl click)
-![groups](img/rename.jpg)
-  
-2 - Toggle several plugins (disabled plugins are ignored) 
-      
-- All or by group
-![toggle](img/toggle-plugins-by-group.jpg)
 
-- re-enable plugins or skip it to reset the toggle
-![toggle](img/re-enable.jpg)  
+## search bar
 
-3 - Enable disable all plugins in a group  
-![toggle](img/togglePluginsInGroup.jpeg)  
+- first window
 
-## Delay plugins at start
+![search](img/searchbar.jpg)
+- second window
 
-- delay each plugin → dbl click
-![plugin-delay](img/plugin-delay.jpg)  
-notice time in the bullet and color
+![search](img/secondbar.png)
+![button](img/comotherbutton.png)
+this button to do some additional things...
 
-- delay by group
-![delay_group](img/delay_group.jpg)
-Erase time in the bullet entering 0 or nothing in delay group
+## floating groups bar
+![search](img/groupbar.png)
 
-## More tools
 
-some shortcuts have been added to this now. activate the option to show shortcuts guide in settings 
+- you can **double click the name** to rename a group
+- you can **double click the icon** (before name) to add a delay to a group (plugins in group delayed at start)
+- you can hide a group, shortcut h, or in context menu
+- you can open a **context menu** on group name
 
-**- Open plugin folder
-- Open plugin short description
-- Open plugin github
-- Open Obsidian plugin settings
-- Open plugin shortcuts**
+![search](img/groupcontext.png)
+in community plugin the behaviour is the same with some different options
 
-![tools](img/tools.jpg)
+![search](img/commgroupcontext.png)
 
-## Search tool
+## shortcut bar
 
-![search](img/search.jpg)
-if you add a space at the end of your search, it will modify search to "starting with" (instead of "including")
-![search_space](img/search_space.jpg)
+In the first window
+![search](img/shortcuts.png)
+Shortcut that you can press over a plugin name:  
+here we have 4 groups so we can press 1,2,3,4 over a plugin to add a group.  
+0/del/suppr to delete group(s).   
+f to open the plugin folder  
+g to open the github repo
+ctrl to open short plugin description  
+s plugin settings  
+h plugin hotkeys
+double click to add a delay on start to a plugin.  
+
+in commmunity plugins
+![search](img/comshortcuts.png)
+n to add a note of description. useful to remember things  
+ctrl/dbl click to open the github readme.
+
+## plugin items
+
+First window
+![search](img/pluginitems.png)
+- we can see 4 groups added to the same plugin. 6 groups max are possible
+- a delay at start of 2 seconds. double click on the plugin name. and same to disable the delay
+- the green dashed line is on a plugin only enable on mobile platform. Useful when you share a vault on the cloud between different devices.
+- desktop only plugins are marked with a ᴰ
+![show_hotkey](img/desktopOnly.jpg)
+-context menu
+![contextmenu](img/contextmenu.png)
+
+
+Second window
+![pluginitem](img/compluginitems.png)
+- the note button allow to create a note (then the button is green)
+![notes](img/notemodal.png)
+H1 are used to create each note in a same markdown file in your vault. You can choose the folder where this file will be in settings.
+To delete a note, delete all its content.
+- double clicking or pressing ctrl over a block will open the readme
+![readme](img/readme.png)
+- context menu with install uninstall enable
+
+
 
 ## videos
+
+-5- [youtube](https://youtu.be/-sPDQBTuEkc?si=uUKovOgOgnkdefyI) main presentation
 
 -4- shortcuts helper
 ![shortcuts helper](gif/shortcuts_helper.gif)

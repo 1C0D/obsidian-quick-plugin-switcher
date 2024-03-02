@@ -5,7 +5,7 @@ import { createInput, reOpenModal, conditionalEnable, isInstalled } from "./moda
 import { Filters, Groups, CommFilters, GroupsComm } from "./types/variables";
 import { removeItem } from "./utils";
 import { createClearGroupsMenuItem, hideOnCLick } from "./modal_components";
-import { PluginCommInfo, PluginInstalled, StringString } from "./types/global";
+import { PluginCommInfo, PluginInstalled, StringString } from "./global";
 
 export const byGroupDropdowns = (
     modal: QPSModal | CPModal,

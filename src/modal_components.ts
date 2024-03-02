@@ -36,10 +36,11 @@ import {
 } from "./community-plugins_modal";
 import { CommFilters, Filters, Groups, SortBy, TargetPlatform } from "./types/variables";
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled } from "./types/global";
+import { PluginCommInfo, PluginInstalled } from "./global";
 import { Console } from "./Console";
 import * as path from "path";
 import { existsSync } from "fs";
+import QuickPluginSwitcher from "./main";
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -816,7 +817,7 @@ export function handleTouchStart(evt: TouchEvent, modal: QPSModal | CPModal) {
 
 
 export function handleDblClick(evt: MouseEvent | TouchEvent, modal: QPSModal | CPModal, element?: HTMLElement) {
-	
+
 	const elementFromPoint = element ? element : getElementFromMousePosition(modal);
 
 	const targetBlock = elementFromPoint?.closest(
@@ -1105,6 +1106,11 @@ async function contextMenuQPS(
 							}
 							// set target
 							matchingItem.target = target;
+							if (matchingItem.commandified) {
+								await removeCommandFromPlugin(modal, matchingItem);
+								await addCommandToPlugin(modal, matchingItem);
+
+							}
 							if (matchingItem.enabled) {
 								if ((target === TargetPlatform.Mobile && Platform.isDesktop ||
 									target === TargetPlatform.Desktop && Platform.isMobile)) {
@@ -1162,6 +1168,25 @@ async function contextMenuQPS(
 					new Notice(`${matchingItem.name} uninstalled`, 2500);
 					await modal.plugin.installedUpdate();
 					await reOpenModal(modal);
+				});
+		});
+
+		const text = matchingItem.commandified ? "Remove command from plugin" : "Add command to plugin";
+		const disabled = Platform.isDesktop && matchingItem.target === TargetPlatform.Mobile || Platform.isMobile && matchingItem.target === TargetPlatform.Desktop;
+		menu.addItem((item) => {
+			item.setTitle(text)
+				.setIcon("arrow-right-left")
+				.setDisabled(disabled)
+				.onClick(async () => {
+					if (matchingItem.commandified) {
+						delete matchingItem.commandified;
+						await removeCommandFromPlugin(modal, matchingItem);
+						await plugin.saveSettings();
+					} else {
+						matchingItem.commandified = true;
+						await addCommandToPlugin(modal, matchingItem);
+					}
+					await plugin.saveSettings();
 				});
 		});
 	}
@@ -1360,4 +1385,42 @@ export function clearAllGroups(submenu: Menu, modal: CPModal | QPSModal) {
 			}
 		});
 	});
+}
+
+export async function addCommandToPlugin(
+	modal: QPSModal|QuickPluginSwitcher,
+	pluginItem: PluginInstalled
+) {
+	const plugin = (modal instanceof QPSModal) ? modal.plugin : modal
+	if (!pluginItem.commandified) return
+	const disabled = Platform.isDesktop && pluginItem.target === TargetPlatform.Mobile || Platform.isMobile && pluginItem.target === TargetPlatform.Desktop;
+	plugin.addCommand({
+		id: pluginItem.id + "-switcher",
+		name: "Switch " + pluginItem.name.toLocaleLowerCase(),
+		callback: async () => {
+			const isLoaded = modal.app.plugins.getPlugin(pluginItem.id)
+			if (disabled) {
+				new Notice(`${pluginItem.name} not available on this platform`, 2500)
+				return
+			}
+			if (isLoaded){
+				new Notice(`${pluginItem.name} disabled`, 2500)
+				modal.app.plugins.disablePlugin(pluginItem.id);
+			}else {
+				new Notice(`${pluginItem.name} enabled`, 2500)
+				modal.app.plugins.enablePlugin(pluginItem.id);
+			}
+		}
+	})
+}
+
+// removeCommandFromPlugin
+export async function removeCommandFromPlugin(
+	modal: QPSModal,
+	pluginItem: PluginInstalled
+) {
+	const { plugin } = modal;
+	const QPSname = modal.plugin.manifest.id + ":"
+	const pluginId = pluginItem.id + "-switcher"
+	modal.app.commands.removeCommand(QPSname + pluginId)
 }

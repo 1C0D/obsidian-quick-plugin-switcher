@@ -6,7 +6,7 @@ import { CPModal } from "./community-plugins_modal";
 import { getHkeyCondition } from "./modal_components";
 import { Filters } from "./types/variables";
 import { getIndexFromSelectedGroup } from "./groups";
-import { PluginCommInfo, PluginInstalled } from "./types/global";
+import { PluginCommInfo, PluginInstalled } from "./global";
 import { Console } from "./Console";
 
 /**
@@ -203,7 +203,7 @@ export async function reOpenModal(modal: QPSModal | CPModal, searchInit = false)
 }
 
 export async function openPluginSettings(
-	evt: MouseEvent| TouchEvent | KeyboardEvent,
+	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {
@@ -227,7 +227,7 @@ export async function openPluginSettings(
 }
 
 export const showHotkeysFor = async function (
-	evt: MouseEvent| TouchEvent | KeyboardEvent,
+	evt: MouseEvent | TouchEvent | KeyboardEvent,
 	modal: QPSModal | CPModal,
 	pluginItem: PluginInstalled | PluginCommInfo
 ) {

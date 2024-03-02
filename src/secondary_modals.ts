@@ -16,7 +16,7 @@ import { isInstalled, modifyGitHubLinks, openPluginSettings, reOpenModal, showHo
 import { base64ToUint8Array, getSelectedContent, isEnabled } from "./utils";
 import { openGitHubRepo, getHkeyCondition } from "./modal_components";
 import { translation } from "./translate";
-import { PluginCommInfo, PluginInstalled } from "./types/global";
+import { PluginCommInfo, PluginInstalled } from "./global";
 import { Console } from "./Console";
 
 // for plugin description
@@ -259,8 +259,8 @@ export class ReadMeModal extends Modal {
 			{
 				cls: "read-me-shortcuts",
 			})
-			
-		const notesButtonContainer = shortcuts.createDiv({cls: "notes-button-container"});
+
+		const notesButtonContainer = shortcuts.createDiv({ cls: "notes-button-container" });
 
 		const notesButton = new ButtonComponent(notesButtonContainer)
 			.setButtonText("📝")
@@ -325,7 +325,7 @@ export class ReadMeModal extends Modal {
 						await translation(selectedContent);
 					})
 				);
-				
+
 				menu.showAtPosition(this.mousePosition);
 			}
 		});
@@ -339,7 +339,7 @@ export class ReadMeModal extends Modal {
 }
 
 export class SeeNoteModal extends Modal {
-	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>,public _this?:ReadMeModal) {
+	constructor(app: App, public modal: CPModal, public pluginItem: PluginCommInfo, public sectionContent: string | null, public cb: (result: string | null) => Promise<void>, public _this?: ReadMeModal) {
 		super(app);
 	}
 

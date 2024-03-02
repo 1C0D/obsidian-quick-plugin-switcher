@@ -1,5 +1,5 @@
 import 'obsidian'
-import { CommFilters, Filters, SortBy, TargetPlatform } from './variables';
+import { CommFilters, Filters, SortBy, TargetPlatform } from './types/variables';
 import { PluginManifest } from 'obsidian';
 
 declare module "obsidian" {
@@ -19,9 +19,13 @@ declare module "obsidian" {
         disablePluginAndSave: (id: string) => Promise<void>;
         enablePlugin: (id: string) => Promise<void>;
         enablePluginAndSave: (id: string) => Promise<void>;
+        getPlugin: (id: string) => Plugin | null;
     }
 
-    interface Commands { executeCommandById: (commandId: string) => boolean; }
+    interface Commands {
+        executeCommandById: (commandId: string) => boolean;
+        removeCommand: (commandId: string) => void;
+    }
 
     interface Setting extends Modal { openTabById: (id: string) => Record<string, any>; }
 
@@ -41,6 +45,7 @@ interface PluginInstalled extends PluginManifest {
     groupInfo: PluginGroupInfo;
     delayed: boolean;
     time: number;
+    commandified?: boolean;
     toUpdate?: boolean;
     target?: TargetPlatform;
 }

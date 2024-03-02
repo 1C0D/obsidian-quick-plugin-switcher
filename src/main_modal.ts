@@ -42,7 +42,7 @@ import { DescriptionModal } from "./secondary_modals";
 import { Filters, Groups, TargetPlatform } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, rmvAllGroupsFromPlugin, groupIsEmpty, groupNbFromEmoticon, getPluginsInGroup, groupNbFromGrpName } from "./groups";
 import { CPModal } from "./community-plugins_modal";
-import { KeyToSettingsMapType, PluginInstalled } from "./types/global";
+import { KeyToSettingsMapType, PluginInstalled } from "./global";
 
 export class QPSModal extends Modal {
 	header: HTMLElement;
@@ -131,7 +131,7 @@ export class QPSModal extends Modal {
 		setGroupTitle(this, Groups, settings.numberOfGroups);
 		this.addHeader(this.header);
 		await addSearch(this, this.search, "Search plugins");
-		checkbox(this, this.search, "+Author");
+		checkbox(this, this.search, "Author");
 		searchDivButtons(this, this.search);
 		this.addGroups(this.groups);
 		if (settings.showHotKeys && !this.app.isMobile) this.setHotKeysdesc();
@@ -337,7 +337,7 @@ const itemTogglePluginButton = (
 		.setValue(enabled)
 		.setDisabled(disable)
 		.onChange(async () => {
-			await togglePlugin(modal, pluginItem); // searchInit = ? in reOpenModal...
+			await togglePlugin(modal, pluginItem); // searchInit = ? → in reOpenModal...
 		});
 };
 

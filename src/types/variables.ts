@@ -1,4 +1,4 @@
-import { QPSSettings, StringString } from "./global";
+import { QPSSettings, StringString } from "../global";
 
 export const COMMPLUGINS =
 	"https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json";

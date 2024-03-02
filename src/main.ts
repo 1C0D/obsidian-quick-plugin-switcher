@@ -4,10 +4,11 @@ import { QPSModal } from "./main_modal";
 import { isEnabled } from "./utils";
 import QPSSettingTab from "./settings";
 import { fetchData, updateNotes } from "./community-plugins_modal";
-import { CommPlugin, PackageInfoData, QPSSettings } from "./types/global";
+import { CommPlugin, PackageInfoData, QPSSettings } from "./global";
 import { COMMPLUGINS, COMMPLUGINSTATS, CommFilters, DEFAULT_SETTINGS, Filters, TargetPlatform } from './types/variables';
 import { Console } from './Console';
 import { focusSearchInput } from './modal_utils';
+import { addCommandToPlugin } from './modal_components';
 
 export default class QuickPluginSwitcher extends Plugin {
 	settings: QPSSettings;
@@ -61,6 +62,9 @@ export default class QuickPluginSwitcher extends Plugin {
 					installed[id].target === TargetPlatform.Mobile && Platform.isDesktop
 					|| installed[id].target === TargetPlatform.Desktop && Platform.isMobile
 				//delay at start
+				if (installed[id].commandified) {
+					await addCommandToPlugin(this, installed[id])
+				}
 				if ((installed[id].delayed
 					|| isPlatformDep)
 					&& installed[id].enabled) {
@@ -92,7 +96,7 @@ export default class QuickPluginSwitcher extends Plugin {
 			async (evt: MouseEvent) => {
 				if (!this.settings.keepDropDownValues) {
 					this.settings.filters = Filters.All
-					this.settings.filtersComm = CommFilters.All				
+					this.settings.filtersComm = CommFilters.All
 				}
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
@@ -136,7 +140,7 @@ export default class QuickPluginSwitcher extends Plugin {
 						);
 						if (
 							id && (installed[id].delayed && installed[id].time > 0
-							|| (installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop))
+								|| (installed[id].target === TargetPlatform.Mobile || installed[id].target === TargetPlatform.Desktop))
 						) {
 							installed[id].enabled = false;
 							cb();

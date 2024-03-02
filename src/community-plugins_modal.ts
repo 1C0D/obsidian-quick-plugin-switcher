@@ -47,7 +47,7 @@ import { QPSModal, circleCSSModif, toggleVisibility } from "./main_modal";
 import * as path from "path";
 import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
-import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./types/global";
+import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./global";
 import { Console } from "./Console";
 
 declare global {
@@ -809,7 +809,7 @@ export async function updateNotes(plugin: QuickPluginSwitcher) {
 	}
 }
 
-export async function handleNote(e: KeyboardEvent | MouseEvent|TouchEvent , modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
+export async function handleNote(e: KeyboardEvent | MouseEvent | TouchEvent, modal: CPModal, pluginItem: PluginCommInfo, _this?: ReadMeModal) {
 	const name = "Community plugins notes";
 	const dir = modal.plugin.settings.commPluginsNotesFolder;
 	let note: TFile;

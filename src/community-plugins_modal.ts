@@ -864,10 +864,6 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 		const updatedContent = content.replace(sectionContent, "");
 		await modal.app.vault.modify(note, updatedContent);
 		content = await modal.app.vault.read(note);
-
-		// new SeeNoteModal(modal.app, modal, pluginItem, sectionContent, async (result) => {
-		// 	await cb(result, modal, pluginItem, sectionContent, note, content, savedContent)
-		// }).open();
 		return
 	}
 
@@ -884,6 +880,7 @@ async function cb(result: string | null, modal: CPModal, pluginItem: PluginCommI
 		await modal.plugin.saveSettings();
 		if (_this) {
 			_this.onOpen()
+			modal.searchInit = false;
 			modal.onOpen()
 		}
 		else modal.onOpen()

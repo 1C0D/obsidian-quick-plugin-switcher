@@ -1,1 +1,1 @@
-fix: don't lose search content after closing a note
+feature: filter to see community plugins with notes

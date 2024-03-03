@@ -14,11 +14,11 @@ export const byGroupDropdowns = (
     const { plugin } = modal;
     const { settings } = plugin;
 
-    if (modal instanceof QPSModal && settings.filters === Filters.ByGroup) {
+    if (modal instanceof QPSModal && settings.filters === Filters.byGroup) {
         getDropdownOptions(Groups, plugin.lengthAll);
     } else if (
         modal instanceof CPModal &&
-        settings.filtersComm === CommFilters.ByGroup
+        settings.filtersComm === CommFilters.byGroup
     ) {
         getDropdownOptions(GroupsComm, Object.keys(settings.commPlugins).length);
     }

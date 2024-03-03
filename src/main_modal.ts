@@ -247,14 +247,14 @@ export class QPSModal extends Modal {
 		// Sort for chosen mode
 		// toggle plugin
 		for (const id of listItems) {
-			// don't show hiddens except if Filters.ByGroup
-			if (filters !== Filters.ByGroup && installed[id].groupInfo.hidden === true && filters !== Filters.Hidden) {
+			// don't show hiddens except if Filters.byGroup
+			if (filters !== Filters.byGroup && installed[id].groupInfo.hidden === true && filters !== Filters.hidden) {
 				continue
 			}
 			// don't filter enabled/disabled if Filters.Enabled/Disabled
 			if (
-				(filters === Filters.Enabled && !installed[id].enabled) ||
-				(filters === Filters.Disabled && installed[id].enabled)
+				(filters === Filters.enabled && !installed[id].enabled) ||
+				(filters === Filters.disabled && installed[id].enabled)
 			) {
 				continue;
 			}

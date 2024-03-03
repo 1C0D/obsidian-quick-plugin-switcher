@@ -169,6 +169,7 @@ export class CPModal extends Modal {
 					})`,
 				byGroup: `By Group`,
 				hidden: `Hidden(${getHidden(this).length})`,
+				hasNote: `With Note`,
 			})
 			.setValue(settings.filtersComm as string)
 			.onChange(async (value: keyof typeof CommFilters) => {
@@ -250,7 +251,7 @@ export class CPModal extends Modal {
 					text: ` (🖱️x2/ctrl)Readme `,
 				});
 				el.createSpan({ text: "(n)📝 " });
-				el.createSpan({	text: "(s)📊" });
+				el.createSpan({ text: "(s)📊" });
 
 			}
 		);
@@ -289,8 +290,8 @@ export class CPModal extends Modal {
 				if (commPlugins[item].groupCommInfo?.hidden && !commPlugins[item].groupCommInfo.groupIndices.length) {
 					commPlugins[item].groupCommInfo.hidden = false
 				}//if removed from group
-				if (filtersComm !== CommFilters.ByGroup) {
-					if (commPlugins[item].groupCommInfo?.hidden && filtersComm !== CommFilters.Hidden) {
+				if (filtersComm !== CommFilters.byGroup) {
+					if (commPlugins[item].groupCommInfo?.hidden && filtersComm !== CommFilters.hidden) {
 						return
 					}
 				}
@@ -491,13 +492,16 @@ function sortItemsBy(
 function cpmModeSort(modal: CPModal, listItems: string[]) {
 	const { settings } = modal.plugin;
 	const { filtersComm, commPlugins } = settings;
-	if (filtersComm === CommFilters.Installed) {
+	if (filtersComm === CommFilters.installed) {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => installedPlugins.includes(item));
-	} else if (filtersComm === CommFilters.NotInstalled) {
+	} else if (filtersComm === CommFilters.notInstalled) {
 		const installedPlugins = getInstalled();
 		return listItems.filter((item) => !installedPlugins.includes(item));
-	} else if (filtersComm === CommFilters.ByGroup) {
+	} else if (filtersComm === CommFilters.hasNote) {
+		const liste = listItems.filter((item) => commPlugins[item].hasNote)
+		return liste;
+	} else if (filtersComm === CommFilters.byGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup
 		);
@@ -507,7 +511,7 @@ function cpmModeSort(modal: CPModal, listItems: string[]) {
 			});
 			return groupedItems;
 		} else return listItems;
-	} else if (filtersComm === CommFilters.Hidden) {
+	} else if (filtersComm === "hidden") {
 		return getHidden(modal);
 	}
 	else {

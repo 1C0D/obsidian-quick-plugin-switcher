@@ -119,7 +119,7 @@ export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) =
 		plugin.reset = false;
 	}
 	// EnabledFirst
-	if (filters === Filters.EnabledFirst) {
+	if (filters === Filters.enabledFirst) {
 		const enabledItems = listItems.filter((id) => installed[id].enabled);
 		const disabledItems = listItems.filter((id) => !installed[id].enabled);
 		sortByName(plugin, enabledItems);
@@ -127,7 +127,7 @@ export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) =
 		listItems = [...enabledItems, ...disabledItems];
 	}
 	// ByGroup
-	else if (filters === Filters.ByGroup) {
+	else if (filters === Filters.byGroup) {
 		const groupIndex = getIndexFromSelectedGroup(
 			settings.selectedGroup
 		);
@@ -142,11 +142,11 @@ export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) =
 		}
 	}
 	// MostSwitched
-	else if (filters === Filters.MostSwitched) {
+	else if (filters === Filters.mostSwitched) {
 		// && !plugin.reset
 		sortByName(plugin, listItems);
 		sortSwitched(plugin, listItems);
-	} else if (filters === Filters.Hidden) {
+	} else if (filters === Filters.hidden) {
 		return getHidden(modal) as string[];
 	}
 	// All

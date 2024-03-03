@@ -14,21 +14,22 @@ declare global {
 }
 
 export const Filters: StringString = {
-	All: "all",
-	Enabled: "enabled",
-	Disabled: "disabled",
-	EnabledFirst: "enabledFirst",
-	MostSwitched: "mostSwitched",
-	ByGroup: "byGroup",
-	Hidden: "hidden",
+	all: "all",
+	enabled: "enabled",
+	disabled: "disabled",
+	enabledFirst: "enabledFirst",
+	mostSwitched: "mostSwitched",
+	byGroup: "byGroup",
+	hidden: "hidden",
 };
 
 export const CommFilters: StringString = {
-	All: "all",
-	NotInstalled: "not installed",
-	Installed: "installed",
-	ByGroup: "byGroup",
-	Hidden: "hidden",
+	all: "all",
+	notInstalled: "notInstalled",
+	installed: "installed",
+	byGroup: "byGroup",
+	hidden: "hidden",
+	hasNote: "hasNote",
 };
 
 export enum TargetPlatform {

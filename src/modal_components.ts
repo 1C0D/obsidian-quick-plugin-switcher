@@ -51,7 +51,7 @@ export const mostSwitchedResetButton = (
 	const { settings } = modal.plugin;
 	const { filters, installed } = settings
 	if (
-		filters === Filters.MostSwitched &&
+		filters === Filters.mostSwitched &&
 		Object.keys(installed).some((id) =>
 			installed[id].switched !== 0
 		)
@@ -123,11 +123,10 @@ export const getFilters = (
 ) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
-	if (settings.filtersComm === CommFilters.ByGroup) return
+	if (settings.filtersComm === CommFilters.byGroup) return
 
 	new ButtonComponent(contentEl)
 		.setIcon("arrow-up-narrow-wide")
-		// .setCta()
 		.setClass("comm-button")
 		.setTooltip(
 			"change type of sorting"
@@ -198,7 +197,7 @@ export const checkbox = (
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	if (modal instanceof QPSModal && settings.filters === Filters.ByGroup || modal instanceof CPModal && settings.filtersComm === CommFilters.ByGroup
+	if (modal instanceof QPSModal && settings.filters === Filters.byGroup || modal instanceof CPModal && settings.filtersComm === CommFilters.byGroup
 	) return
 	const isQPS = modal instanceof QPSModal
 	contentEl.createDiv({ text: text, cls: "qps-comm-invert" }, (el) => {
@@ -577,7 +576,7 @@ export const itemToggleClass = (
 		itemContainer.toggleClass("qps-update", true);
 	}
 	if (
-		settings.filters === Filters.MostSwitched &&
+		settings.filters === Filters.mostSwitched &&
 		pluginItem.switched !== 0
 	) {
 		itemContainer.toggleClass("qps-most-switched", true);

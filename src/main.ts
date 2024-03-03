@@ -95,8 +95,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			"Quick Plugin Switcher",
 			async (evt: MouseEvent) => {
 				if (!this.settings.keepDropDownValues) {
-					this.settings.filters = Filters.All
-					this.settings.filtersComm = CommFilters.All
+					this.settings.filters = Filters.all
+					this.settings.filtersComm = CommFilters.all
 				}
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();
@@ -113,8 +113,8 @@ export default class QuickPluginSwitcher extends Plugin {
 			name: "open modal",
 			callback: async () => {
 				if (!this.settings.keepDropDownValues) {
-					this.settings.filters = Filters.All
-					this.settings.filtersComm = CommFilters.All
+					this.settings.filters = Filters.all
+					this.settings.filtersComm = CommFilters.all
 				}
 				await this.installedUpdate();
 				new QPSModal(this.app, this).open();

@@ -1,1 +1,1 @@
-fix: menu shortened on mobile/tablet
+feature: show community stats. shortcut (s) on desktop (appearing in the shortcut bar) or in the context menu on mobile. thanks to the site [obsidian stats](https://www.moritzjung.dev/obsidian-stats)

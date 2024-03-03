@@ -40,6 +40,7 @@ import {
 	notesButton,
 	openGitHubRepo,
 	searchCommDivButton,
+	showStats,
 	vertDotsButton,
 } from "./modal_components";
 import { ReadMeModal, SeeNoteModal } from "./secondary_modals";
@@ -95,8 +96,6 @@ export class CPModal extends Modal {
 		if (this.isDblClick) return;
 		handleTouchStart(evt, this);
 	}
-
-	// Add H to hide groups on handlekeydown
 
 	removeListeners() {
 		this.modalEl.removeEventListener("mousemove", this.getMousePosition);
@@ -566,7 +565,8 @@ const handleHotkeysCPM = async (
 
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(evt, modal, pluginItem),
-		n: async () => await handleNote(evt, modal, pluginItem)
+		n: async () => await handleNote(evt, modal, pluginItem),
+		s: async () => showStats(pluginItem),
 	};
 
 	const keyPressed = evt.key;

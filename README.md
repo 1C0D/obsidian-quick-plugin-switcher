@@ -30,6 +30,10 @@ there are buttons, context menus, dropdown menus, search menus, and you can doub
 
 ## New: 
 
+- see downloads stats for each community plugin using (s) or in the context menu on mobile.  Using this site [obsidian stats](https://www.moritzjung.dev/obsidian-stats)
+
+![addcmd](gif/show_stats.gif)
+
 - option in setting to keep last value in dropdown menus (true by default)
 - switch a plugin via command. 
 

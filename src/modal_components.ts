@@ -38,9 +38,11 @@ import { CommFilters, Filters, Groups, SortBy, TargetPlatform } from "./types/va
 import { getPluginsInGroup, editGroupName, groupMenu, addRemoveGroupMenuItems, addToGroupSubMenu, addRemoveItemGroupMenuItems, getIndexFromSelectedGroup, groupNbFromEmoticon, rmvAllGroupsFromPlugin, groupNbFromGrpName, addDelayToGroup } from "./groups";
 import { PluginCommInfo, PluginInstalled } from "./global";
 import { Console } from "./Console";
+
 import * as path from "path";
 import { existsSync } from "fs";
 import QuickPluginSwitcher from "./main";
+import slug from 'slug';
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -705,6 +707,15 @@ export const searchDivButtons = (
 	);
 };
 
+export function showStats(
+	pluginItem: PluginCommInfo
+) {
+	const idSlug = slug(pluginItem.id);
+	const URL = `https://www.moritzjung.dev/obsidian-stats/plugins/${idSlug}#plugin-download-chart`;
+	window.open(URL, "_blank");
+}
+
+
 export const searchCommDivButton = (
 	modal: CPModal,
 	contentEl: HTMLElement
@@ -961,8 +972,18 @@ export function contextMenuCPM(
 	evt.preventDefault();
 	const menu = new Menu();
 	const { settings } = modal.plugin;
-	const { installed } = settings;
 	const id = matchingItem.id;
+	if(Platform.isMobile){
+		menu.addItem((item) => {
+			item
+				.setTitle("View stats")
+				.setIcon("stats")
+				.onClick(async () => {
+					showStats(matchingItem);
+				})
+		})
+		menu.addSeparator()
+	}
 	menu.addItem((item) => {
 		item.setTitle("Install plugin")
 			.setDisabled(isInstalled(id) || id === "quick-plugin-switcher")

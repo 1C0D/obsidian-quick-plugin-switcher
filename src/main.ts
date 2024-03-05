@@ -20,6 +20,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.app.workspace.onLayoutReady(async () => {
+			this.settings.savedVersion = this.manifest.version;
 			const installed = this.settings.installed || {};
 			const manifests = this.app.plugins.manifests || {};
 
@@ -332,22 +333,7 @@ export default class QuickPluginSwitcher extends Plugin {
 	};
 
 	async loadSettings() {
-		const previousSettings = { ...(await this.loadData()) };
-		// temporary fix
-		if ("allPluginsList" in previousSettings) {
-			delete previousSettings.allPluginsList;
-			delete previousSettings.pluginStats;
-			delete previousSettings.commPlugins;
-
-			Console.log("allPluginsList... has been deleted");
-		}
-		if ("showReset" in previousSettings) {
-			delete previousSettings.showReset;
-		}
-
-		this.settings = { ...DEFAULT_SETTINGS, ...previousSettings };
-		this.settings.savedVersion = this.manifest.version;
-		await this.saveSettings();
+		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
 	}
 
 	async saveSettings() {

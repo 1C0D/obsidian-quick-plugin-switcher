@@ -1,1 +1,1 @@
-feature: filter to see community plugins with notes
+fix: save settings  problem linked to sync

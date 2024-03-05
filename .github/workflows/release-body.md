@@ -1,1 +1,1 @@
-fix: save settings  problem linked to sync
+sync data now working

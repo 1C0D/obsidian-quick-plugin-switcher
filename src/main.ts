@@ -332,8 +332,14 @@ export default class QuickPluginSwitcher extends Plugin {
 		}
 	};
 
+
 	async loadSettings() {
 		this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData()) };
+	}
+
+
+	async onExternalSettingsChange(): Promise<void> {
+		await this.loadSettings();
 	}
 
 	async saveSettings() {

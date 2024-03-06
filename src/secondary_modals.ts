@@ -310,6 +310,10 @@ export class ReadMeModal extends Modal {
 
 		this.scope.register([], "n", async (e) => await handleNote(e, this.modal, pluginItem))
 
+		this.scope.register([], "escape", async (event) => {
+			this.close();
+		});
+
 		this.modalEl.addEventListener("contextmenu", (event) => {
 			event.preventDefault();
 			const selectedContent = getSelectedContent();

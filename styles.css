@@ -121,6 +121,7 @@
   margin-left: 5px;
   margin-right: 10px;
   margin-bottom: 5px;
+  gap: 3px;
 }
 
 .qps-community-groups {
@@ -134,30 +135,14 @@
   z-index: 1;
 }
 
-.qps-header .dropdown {
-  margin-left: 5px;
-}
-
-.qps-community-header button {
-  margin-left: 7px;
-}
-
 .qps-search-component {
   align-items: flex-start;
   padding-bottom: 0;
   margin-bottom: 5px
 }
 
-.qps-comm-invert {
-  margin-left: 5px;
-}
-
-.qps-comm-invert input {
-  vertical-align: middle;
-}
-
-.qps-hk-desc {
-  margin-bottom: 10px
+.qps-community-header{
+  flex-wrap: wrap;
 }
 
 .qps-hk-desc {
@@ -281,7 +266,7 @@
 }
 
 .notes-button-container {
-  display: inline-block;  
+  display: inline-block;
 }
 
 .notes-button-container button {

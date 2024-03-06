@@ -178,8 +178,8 @@ export class CPModal extends Modal {
 				await reOpenModal(this);
 			});
 
-		getFilters(this, contentEl)
 		byGroupDropdowns(this, contentEl);
+		getFilters(this, contentEl)
 		checkbox(this, contentEl, "Inv");
 	};
 

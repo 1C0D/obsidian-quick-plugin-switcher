@@ -123,7 +123,6 @@ export const getFilters = (
 ) => {
 	const { plugin } = modal;
 	const { settings } = plugin;
-	if (settings.filtersComm === CommFilters.byGroup) return
 
 	new ButtonComponent(contentEl)
 		.setIcon("arrow-up-narrow-wide")
@@ -197,8 +196,7 @@ export const checkbox = (
 	const { plugin } = modal;
 	const { settings } = plugin;
 
-	if (modal instanceof QPSModal && settings.filters === Filters.byGroup || modal instanceof CPModal && settings.filtersComm === CommFilters.byGroup
-	) return
+	if (modal instanceof QPSModal && settings.filters === Filters.byGroup) return
 	const isQPS = modal instanceof QPSModal
 	contentEl.createDiv({ text: text, cls: "qps-comm-invert" }, (el) => {
 		el.createEl("input",

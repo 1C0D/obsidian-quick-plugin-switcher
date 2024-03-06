@@ -149,7 +149,7 @@ export class QPSModal extends Modal {
 				enabledFirst: `Enabled First(${plugin.lengthAll})`,
 				mostSwitched: `Most Switched(${plugin.lengthAll})`,
 				byGroup: `By Group`,
-				hidden: `Hidden(${getHidden(this).length})`,
+				hidden: `Hidden(${getHidden(this, Object.keys(settings.installed)).length})`,
 			})
 			.setValue(settings.filters as string)
 			.onChange(async (value) => {
@@ -193,6 +193,7 @@ export class QPSModal extends Modal {
 						const hidden = settings.groups[i]?.hidden
 						if (hidden) {
 							el.style.textDecoration = "line-through"
+							el.style.opacity = "0.6"
 						} else {
 							el.style.textDecoration = "none"
 						}

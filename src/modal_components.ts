@@ -9,6 +9,7 @@ import {
 	SearchComponent,
 	Setting,
 	TextComponent,
+	debounce,
 } from "obsidian";
 import { DescriptionModal } from "./secondary_modals";
 import {
@@ -79,13 +80,13 @@ export async function addSearch(
 			search
 				.setValue(settings.search)
 				.setPlaceholder(placeholder)
-				.onChange(async (value: string) => {
+				.onChange(debounce(async (value: string) => {
 					if (modal.searchTyping) {
 						settings.search = value;
-						modal.items.empty();
-						modal.addItems(value);
+							modal.items.empty();
+							modal.addItems(value);							
 					}
-				});
+				},20));
 		})
 		.setClass("qps-search-component");
 }

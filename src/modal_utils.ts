@@ -147,7 +147,7 @@ export const modeSort = (modal: QPSModal, plugin: Plugin, listItems: string[]) =
 		sortByName(plugin, listItems);
 		sortSwitched(plugin, listItems);
 	} else if (filters === Filters.hidden) {
-		return getHidden(modal) as string[];
+		return getHidden(modal, listItems) as string[];
 	}
 	// All
 	else {
@@ -182,14 +182,16 @@ export function getInstalled() {
 	return Object.keys(this.app.plugins.manifests);
 }
 
-export function getHidden(modal: QPSModal | CPModal) {
+export function getHidden(modal: QPSModal | CPModal, listItems: string[]) {
 	const { settings } = modal.plugin
 	const { installed, commPlugins } = settings
+	let hiddens: string[]
 	if (modal instanceof QPSModal) {
-		return Object.keys(installed).filter((item) => installed[item].groupInfo.hidden);
+		hiddens = Object.keys(installed).filter((key) => installed[key].groupInfo.hidden===true);
 	} else {
-		return Object.keys(commPlugins).filter((item) => commPlugins[item].groupCommInfo.hidden);
+		hiddens = Object.keys(commPlugins).filter((key) => commPlugins[key].groupCommInfo.hidden===true);
 	}
+	return listItems.filter((item) => hiddens.includes(item));
 }
 
 export function isInstalled(id: string) {

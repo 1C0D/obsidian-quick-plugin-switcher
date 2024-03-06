@@ -168,7 +168,7 @@ export class CPModal extends Modal {
 				notInstalled: Platform.isMobile ? "Not Installed" : `Not Installed(${Object.keys(settings.commPlugins).length - getInstalled().length
 					})`,
 				byGroup: `By Group`,
-				hidden: `Hidden(${getHidden(this).length})`,
+				hidden: `Hidden(${getHidden(this, Object.keys(settings.commPlugins)).length})`,
 				hasNote: `With Note`,
 			})
 			.setValue(settings.filtersComm as string)
@@ -214,6 +214,7 @@ export class CPModal extends Modal {
 						const hidden = settings.groupsComm[i]?.hidden
 						if (hidden) {
 							el.style.textDecoration = "line-through"
+							el.style.opacity = "0.6"
 						} else {
 							el.style.textDecoration = "none"
 						}
@@ -512,7 +513,7 @@ function cpmModeSort(modal: CPModal, listItems: string[]) {
 			return groupedItems;
 		} else return listItems;
 	} else if (filtersComm === "hidden") {
-		return getHidden(modal);
+		return getHidden(modal, listItems);
 	}
 	else {
 		return listItems;

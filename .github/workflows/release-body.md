@@ -1,1 +1,1 @@
-sync data now working
+escape added to community readme to close it

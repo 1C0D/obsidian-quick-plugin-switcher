@@ -284,12 +284,11 @@ export class ReadMeModal extends Modal {
 		const data = await getReadMe(pluginItem);
 		// const content = Buffer.from(data.content, "base64").toString("utf-8"); // Buffer not working on mobile
 		if (!data) {
-			Console.log("pluginItem", pluginItem)
+			// Console.log("pluginItem", pluginItem)
 			return
 		}
 		const decoder = new TextDecoder("utf-8");
 		const content = decoder.decode(base64ToUint8Array(data.content));
-
 		const updatedContent = modifyGitHubLinks(content, pluginItem);
 
 		await MarkdownRenderer.render(this.app, updatedContent, div, "/", this.comp);

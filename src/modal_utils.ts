@@ -187,9 +187,9 @@ export function getHidden(modal: QPSModal | CPModal, listItems: string[]) {
 	const { installed, commPlugins } = settings
 	let hiddens: string[]
 	if (modal instanceof QPSModal) {
-		hiddens = Object.keys(installed).filter((key) => installed[key].groupInfo.hidden===true);
+		hiddens = Object.keys(installed).filter((key) => installed[key].groupInfo.hidden === true);
 	} else {
-		hiddens = Object.keys(commPlugins).filter((key) => commPlugins[key].groupCommInfo.hidden===true);
+		hiddens = Object.keys(commPlugins).filter((key) => commPlugins[key].groupCommInfo.hidden === true);
 	}
 	return listItems.filter((item) => hiddens.includes(item));
 }
@@ -255,20 +255,34 @@ export const showHotkeysFor = async function (
 };
 
 export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
-	const regex = /!\[([^\]]*)\]\(([^)]*)\)/g;
-	return content
-		.replace(/\/blob\//g, "/raw/")
-		.replace(regex, (match, alt, url) => {
+	content = content.replace(/\/blob\/master/g, "/raw/HEAD")
+	const imgRegex = /(!\[([^\]]*)\]\(([^)]*)\))/g;
+	content
+		.replace(imgRegex, (match, alt, url) => {
 			if (!url.startsWith("http")) {
 				if (url.startsWith(".")) {
-					url = `https://github.com/${pluginItem.repo
-						}/raw/HEAD${url.substr(1)}`;
+					url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
 				} else {
 					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 				}
 			}
 			return `![${alt}](${url})`;
-		});
+		})
+
+	// <div align="center" > <img src="./screenshots/book.png" width = "677" /> </div>
+	const ImgSrc = /(<img\s[^>]*src="\s*)(\.?\/?[^"]+)"[^>]*>/gi;
+	content = content.replace(ImgSrc, (match, prefix, url) => {
+		if (!url.startsWith("http")) {
+			if (url.startsWith(".")) {
+				url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
+			}
+			else {
+				url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
+			}
+		}
+		return `${prefix}${url}"`;
+	});
+	return content
 }
 
 export function getElementFromMousePosition(

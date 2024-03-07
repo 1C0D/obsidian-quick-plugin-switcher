@@ -1431,7 +1431,7 @@ export async function addCommandToPlugin(
 	const disabled = Platform.isDesktop && pluginItem.target === TargetPlatform.Mobile || Platform.isMobile && pluginItem.target === TargetPlatform.Desktop;
 	plugin.addCommand({
 		id: pluginItem.id + "-switcher",
-		name: "Switch " + pluginItem.name.toLocaleLowerCase(),
+		name: "⇔ switch " + pluginItem.name.toLocaleLowerCase(),
 		callback: async () => {
 			const isLoaded = modal.app.plugins.getPlugin(pluginItem.id)
 			if (disabled) {

@@ -1,2 +1,1 @@
-fix: search typing fluidity
-hidden are now searchable too
+feature: copy translate added in community window on selection (context menu and shortcut (t) for translate. You must install Translate plugin and set it. (I use Bergamot engine on desktop)

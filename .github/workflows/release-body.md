@@ -1,1 +1,1 @@
-feature: copy translate added in community window on selection (context menu and shortcut (t) for translate. You must install Translate plugin and set it. (I use Bergamot engine on desktop)
+fix: all attachment well shown in readme (img, gif...). Some were missing

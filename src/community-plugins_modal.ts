@@ -15,6 +15,7 @@ import QuickPluginSwitcher from "./main";
 import {
 	calculateTimeElapsed,
 	formatNumber,
+	getSelectedContent,
 	isEnabled,
 	removeItem,
 } from "./utils";
@@ -50,6 +51,7 @@ import { CommFilters, GroupsComm } from "./types/variables";
 import { setGroupTitle, byGroupDropdowns, getEmojiForGroup, getCirclesItem, installAllPluginsInGroup, getIndexFromSelectedGroup, rmvAllGroupsFromPlugin } from "./groups";
 import { KeyToSettingsMapType, PackageInfoData, PluginCommInfo } from "./global";
 import { Console } from "./Console";
+import { translation } from "./translate";
 
 declare global {
 	interface Window {
@@ -252,7 +254,8 @@ export class CPModal extends Modal {
 					text: ` (🖱️x2/ctrl)Readme `,
 				});
 				el.createSpan({ text: "(n)📝 " });
-				el.createSpan({ text: "(s)📊" });
+				el.createSpan({ text: "(s)📊 " });
+				el.createSpan({ text: "(t)translate" });
 
 			}
 		);
@@ -567,11 +570,16 @@ const handleHotkeysCPM = async (
 	const { settings } = plugin;
 	const { groupsComm, commPlugins } = settings
 	const numberOfGroups = settings.numberOfGroupsComm;
-
+	
+	
 	const KeyToSettingsMap: KeyToSettingsMapType = {
 		g: async () => await openGitHubRepo(evt, modal, pluginItem),
 		n: async () => await handleNote(evt, modal, pluginItem),
 		s: async () => showStats(pluginItem),
+		t: async () => {
+			const selectedContent = getSelectedContent()??"";
+			await translation(selectedContent);
+		}
 	};
 
 	const keyPressed = evt.key;

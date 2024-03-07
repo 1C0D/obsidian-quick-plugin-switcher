@@ -275,7 +275,7 @@ export class ReadMeModal extends Modal {
 
 		if (Platform.isDesktop) {
 			shortcuts.createSpan({
-				text: " (t) translate selection  (n) add note"
+				text: " (t) translate  (n) add note"
 			})
 		}
 

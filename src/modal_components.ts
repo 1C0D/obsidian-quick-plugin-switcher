@@ -25,7 +25,7 @@ import {
 	focusSearchInput,
 	delayedReEnable,
 } from "./modal_utils";
-import { hasKeyStartingWith, isEnabled } from "./utils";
+import { getSelectedContent, hasKeyStartingWith, isEnabled } from "./utils";
 import {
 	CPModal,
 	getManifest,
@@ -44,6 +44,7 @@ import * as path from "path";
 import { existsSync } from "fs";
 import QuickPluginSwitcher from "./main";
 import slug from 'slug';
+import { translation } from "./translate";
 
 export const mostSwitchedResetButton = (
 	modal: QPSModal,
@@ -83,10 +84,10 @@ export async function addSearch(
 				.onChange(debounce(async (value: string) => {
 					if (modal.searchTyping) {
 						settings.search = value;
-							modal.items.empty();
-							modal.addItems(value);							
+						modal.items.empty();
+						modal.addItems(value);
 					}
-				},20));
+				}, 20));
 		})
 		.setClass("qps-search-component");
 }
@@ -971,7 +972,21 @@ export function contextMenuCPM(
 	const menu = new Menu();
 	const { settings } = modal.plugin;
 	const id = matchingItem.id;
-	if(Platform.isMobile){
+	const selectedContent = getSelectedContent();
+	if (selectedContent) {
+		menu.addItem((item) =>
+			item.setTitle("Copy").onClick(async () => {
+				await navigator.clipboard.writeText(selectedContent);
+			})
+		);
+		menu.addItem((item) =>
+			item.setTitle("Translate (t)").onClick(async () => {
+				await translation(selectedContent);
+			})
+		);
+		menu.addSeparator()
+	}
+	if (Platform.isMobile) {
 		menu.addItem((item) => {
 			item
 				.setTitle("View stats")

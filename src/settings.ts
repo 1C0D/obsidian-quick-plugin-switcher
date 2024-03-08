@@ -1,6 +1,7 @@
 import { PluginSettingTab, Setting } from "obsidian";
 import QuickPluginSwitcher from "./main";
 import { confirm } from "./secondary_modals";
+import { FolderSuggest } from "./suggester";
 
 export default class QPSSettingTab extends PluginSettingTab {
 	constructor(app: any, public plugin: QuickPluginSwitcher) {
@@ -139,18 +140,18 @@ export default class QPSSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Community plugins notes folder")
+			.setName("Community plugins notes folder suggester")
 			.setDesc(
-				"Folder where Community plugins notes.md will be stored, after having been created (creating first note). Don't modify the content of the file if you don't know what you're doing"
+				"If you provide a non existing folder path, it will be created, adding a new note. If you delete the file in, you lose your notes"
 			)
-			.addText((text) => {
-				text
+			.addText((component) => {
+				new FolderSuggest(this.app, component.inputEl);
+				component
 					.setValue(this.plugin.settings.commPluginsNotesFolder)
-
-				text.inputEl.onblur = async () => {
-					this.plugin.settings.commPluginsNotesFolder = text.getValue();
+				component.inputEl.onblur = async () => {
+					this.plugin.settings.commPluginsNotesFolder = component.getValue();
 					await this.plugin.saveSettings();
 				}
-			})
+			});
 	}
 }

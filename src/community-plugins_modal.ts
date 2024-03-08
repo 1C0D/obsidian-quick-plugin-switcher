@@ -27,6 +27,7 @@ import {
 	getElementFromMousePosition,
 	getHidden,
 	focusSearchInput,
+	getHasNote,
 } from "./modal_utils";
 import {
 	addSearch,
@@ -171,7 +172,7 @@ export class CPModal extends Modal {
 					})`,
 				byGroup: `By Group`,
 				hidden: `Hidden(${getHidden(this, Object.keys(settings.commPlugins)).length})`,
-				hasNote: `With Note`,
+				hasNote: `With Note(${getHasNote(this, Object.keys(settings.commPlugins)).length})`,
 			})
 			.setValue(settings.filtersComm as string)
 			.onChange(async (value: keyof typeof CommFilters) => {
@@ -295,7 +296,7 @@ export class CPModal extends Modal {
 					commPlugins[item].groupCommInfo.hidden = false
 				}//if removed from group
 				if (filtersComm !== CommFilters.byGroup) {
-					if (commPlugins[item].groupCommInfo?.hidden && filtersComm !== CommFilters.hidden) {
+					if (commPlugins[item].groupCommInfo?.hidden && filtersComm === "all") {
 						return
 					}
 				}
@@ -517,6 +518,8 @@ function cpmModeSort(modal: CPModal, listItems: string[]) {
 		} else return listItems;
 	} else if (filtersComm === "hidden") {
 		return getHidden(modal, listItems);
+	} else if (filtersComm === "hasNote") {
+		return getHasNote(modal, listItems);
 	}
 	else {
 		return listItems;

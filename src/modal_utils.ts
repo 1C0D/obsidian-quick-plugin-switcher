@@ -187,11 +187,15 @@ export function getHidden(modal: QPSModal | CPModal, listItems: string[]) {
 	const { installed, commPlugins } = settings
 	let hiddens: string[]
 	if (modal instanceof QPSModal) {
-		hiddens = Object.keys(installed).filter((key) => installed[key].groupInfo.hidden === true);
+		hiddens = listItems.filter((key) => installed[key].groupInfo.hidden === true);
 	} else {
-		hiddens = Object.keys(commPlugins).filter((key) => commPlugins[key].groupCommInfo.hidden === true);
+		hiddens = listItems.filter((key) => commPlugins[key].groupCommInfo.hidden === true);
 	}
 	return listItems.filter((item) => hiddens.includes(item));
+}
+
+export function getHasNote(modal: CPModal, listItems: string[]) {
+	return listItems.filter((item) => modal.plugin.settings.commPlugins[item].hasNote);
 }
 
 export function isInstalled(id: string) {

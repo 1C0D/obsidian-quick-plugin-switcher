@@ -1,1 +1,2 @@
-fix: all attachment well shown in readme (img, gif...). Some were missing
+change:plugins hidden only when on all filter (not others)
+improvement: suggeter on note folder in settings

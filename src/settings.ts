@@ -139,16 +139,21 @@ export default class QPSSettingTab extends PluginSettingTab {
 					});
 			});
 
+		const fragment = new DocumentFragment();
+		fragment.createDiv({}, div => {
+			div.innerHTML = `
+						Enter a new folder path or search it. <br>If you provide a non existing folder path, it will be created when adding a new note.<br> If you delete the file in, you lose your notes`
+		});
+
 		new Setting(containerEl)
-			.setName("Community plugins notes folder suggester")
-			.setDesc(
-				"If you provide a non existing folder path, it will be created, adding a new note. If you delete the file in, you lose your notes"
-			)
-			.addText((component) => {
-				new FolderSuggest(this.app, component.inputEl);
+			.setName("Community plugins notes folder")
+			.setDesc(fragment)
+			.addSearch((component) => {
+				const inputEl = component.inputEl;
+				new FolderSuggest(this.app, inputEl);
 				component
 					.setValue(this.plugin.settings.commPluginsNotesFolder)
-				component.inputEl.onblur = async () => {
+				inputEl.onblur = async () => {
 					this.plugin.settings.commPluginsNotesFolder = component.getValue();
 					await this.plugin.saveSettings();
 				}

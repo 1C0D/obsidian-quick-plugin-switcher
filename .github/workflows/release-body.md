@@ -1,1 +1,1 @@
-fix: simplification suggester code
+modif: little modif on suggester setting

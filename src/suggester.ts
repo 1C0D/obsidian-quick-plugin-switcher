@@ -5,8 +5,9 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 
     protected getSuggestions(query: string): TFolder[] | Promise<TFolder[]> {
         const result: TFolder[] = [];
+        query = query.toLocaleLowerCase()
         for (const abstractFile of this.app.vault.getAllLoadedFiles()) {
-            if (abstractFile instanceof TFolder && abstractFile.path.includes(query)) {
+            if (abstractFile instanceof TFolder && abstractFile.path.toLocaleLowerCase().includes(query)) {
                 result.push(abstractFile);
             }
         }

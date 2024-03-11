@@ -148,7 +148,8 @@ export default class QPSSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Community plugins notes folder")
 			.setDesc(fragment)
-			.addSearch((component) => {
+			.addText((component) => {
+				component.setPlaceholder("search or type new folder");
 				const inputEl = component.inputEl;
 				new FolderSuggest(this.app, inputEl);
 				component

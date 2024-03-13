@@ -1,7 +1,7 @@
 {
 	"id": "quick-plugin-switcher",
 	"name": "Quick Plugin Switcher",
-	"version": "7.9.3",
+	"version": "7.10.0",
 	"minAppVersion": "0.15.0",
 	"description": "Quickly manage installed and community plugins. The only way to evolve in the jungle of plugins",
 	"author": "1C0D",

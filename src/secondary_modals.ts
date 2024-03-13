@@ -49,7 +49,16 @@ export class DescriptionModal extends Modal {
 				text: pluginItem.authorUrl,
 				href: pluginItem.authorUrl,
 			});
-		contentEl.createEl("p", { text: pluginItem.description });
+
+		let desc;	
+		Object.values(this.plugin.settings.commPlugins).forEach((item) => {
+			if (item.id === pluginItem.id) {
+				desc = item.description;
+			}
+		})
+		
+		desc = desc ? desc : pluginItem.description;
+		contentEl.createEl("p", { text: desc });
 	}
 
 	onClose() {

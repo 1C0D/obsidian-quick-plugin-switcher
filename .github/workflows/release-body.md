@@ -1,1 +1,1 @@
-modif: little modif on suggester setting
+fix: Images not visible in readme

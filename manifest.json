@@ -3,7 +3,7 @@
 	"name": "Quick Plugin Switcher",
 	"version": "7.9.2",
 	"minAppVersion": "0.15.0",
-	"description": "Adds a ribbon icon to quickly switch plugins with filters (all, enabled, disabled, most switched)",
+	"description": "Quickly manage installed and community plugins. The only way to evolve in the jungle of plugins",
 	"author": "1C0D",
 	"authorUrl": "https://github.com/1C0D",
 	"isDesktopOnly": false

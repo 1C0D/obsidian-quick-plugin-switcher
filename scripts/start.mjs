@@ -4,12 +4,6 @@ const currentEvent = process.env.npm_lifecycle_event;
 
 console.log(`Starting the ${currentEvent} process...\n`);
 
-execSync('git fetch');
-console.log('- Fetched git changes');
-
-execSync('git pull');
-console.log('- Pulled git changes');
-
 execSync('npm install', { stdio: 'inherit' });
 console.log('- Installed dependencies');
 

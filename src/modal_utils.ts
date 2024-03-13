@@ -259,23 +259,9 @@ export const showHotkeysFor = async function (
 };
 
 export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
-	content = content.replace(/\/blob\/master/g, "/raw/HEAD")
-	const imgRegex = /(!\[([^\]]*)\]\(([^)]*)\))/g;
-	content
-		.replace(imgRegex, (match, alt, url) => {
-			if (!url.startsWith("http")) {
-				if (url.startsWith(".")) {
-					url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
-				} else {
-					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
-				}
-			}
-			return `![${alt}](${url})`;
-		})
-
 	// <div align="center" > <img src="./screenshots/book.png" width = "677" /> </div>
 	const ImgSrc = /(<img\s[^>]*src="\s*)(\.?\/?[^"]+)"[^>]*>/gi;
-	content = content.replace(ImgSrc, (match, prefix, url) => {
+	content = content.replace(ImgSrc, (match, alt, url) => {
 		if (!url.startsWith("http")) {
 			if (url.startsWith(".")) {
 				url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
@@ -283,9 +269,31 @@ export function modifyGitHubLinks(content: string, pluginItem: PluginCommInfo) {
 			else {
 				url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
 			}
+		} else {
+			return match
 		}
-		return `${prefix}${url}"`;
+
+		return `${alt}${url}"`;
 	});
+
+	// ![windows](img / main_windows.jpg)
+	const imgRegex = /!\[([^\]]*)\]\(([^)]*)\)/g;
+	content = content
+		.replace(imgRegex, (match, alt, url) => {
+			if (!url.startsWith("http")) {
+				if (url.startsWith(".")) {
+					url = `https://github.com/${pluginItem.repo}/raw/HEAD${url.substr(1)}`;
+				} else {
+					url = `https://github.com/${pluginItem.repo}/raw/HEAD/${url}`;
+				}
+			} else {
+				return match
+			}
+			return `![${alt}](${url})`;
+		})
+
+	content = content.replace(/\/blob\/master/g, "/raw/HEAD")
+
 	return content
 }
 

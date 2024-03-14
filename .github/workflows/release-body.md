@@ -1,1 +1,1 @@
-improvement: now showing updated shortdescriptions in installed plugins. (it's taking the description from the releases...else the manifest description)
+fix: hotkeys search readme

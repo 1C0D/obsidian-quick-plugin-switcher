@@ -253,7 +253,11 @@ export const showHotkeysFor = async function (
 	await this.app.setting.open();
 	await this.app.setting.openTabById("hotkeys");
 	const tab = await this.app.setting.activeTab;
-	tab.searchComponent.inputEl.value = pluginItem.name + ":";
+	let name = pluginItem.name;
+	if (modal instanceof CPModal) {
+		name = modal.plugin.settings.installed[pluginItem.id].name
+	}
+	tab.searchComponent.inputEl.value = name + ":";
 	tab.updateHotkeyVisibility();
 	tab.searchComponent.inputEl.blur();
 };
